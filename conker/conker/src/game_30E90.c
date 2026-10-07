@@ -95,7 +95,57 @@ void func_15004A4C(void) {
 // 246 instructions and was reverted), and increment statement order,
 // none changed it, consistent with this session's other likely-branch
 // near-misses.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_30E90/func_15004AAC.s")
+extern u16 D_800BE2A0;
+extern u16 D_800BE2A2;
+extern u16 D_800BE2A4;
+
+struct func_15004AAC_s {
+    s16 x, y, z;
+    s16 pad[5];
+};
+
+struct func_15004AAC_s2 {
+    u8 pad0[0x16];
+    u16 count;
+    u8 pad18[0x10];
+    struct func_15004AAC_s *rec;
+    f32 sx, sy, sz;
+    u8 pad38[0x18];
+    u16 unk50;
+    u16 unk52;
+};
+
+void func_15004AAC(struct func_15004AAC_s2 *arg0, s32 arg1) {
+    s32 max;
+    s32 i;
+    s32 v;
+
+    max = 0;
+    for (i = 0; i < arg0->count; i++) {
+        v = (arg0->rec[i].x * arg0->sx) * (arg0->rec[i].x * arg0->sx)
+          + (arg0->rec[i].y * arg0->sy) * (arg0->rec[i].y * arg0->sy)
+          + (arg0->rec[i].z * arg0->sz) * (arg0->rec[i].z * arg0->sz);
+        if (max < v) {
+            max = v;
+        }
+    }
+    if (max == 0) {
+        return;
+    }
+    max = sqrtf(max);
+    v = arg0->unk50;
+    if (v == 0) {
+        arg0->unk50 = max;
+        arg0->unk52 = max;
+        D_800BE2A2++;
+        return;
+    }
+    if (v < max || arg0->unk52 < max) {
+        D_800BE2A0++;
+        return;
+    }
+    D_800BE2A4++;
+}
 // extern u16 D_800BE2A0;
 // extern u16 D_800BE2A2;
 // extern u16 D_800BE2A4;

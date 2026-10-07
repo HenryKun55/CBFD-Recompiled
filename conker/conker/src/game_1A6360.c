@@ -24,7 +24,38 @@ void func_15178EB0(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1A6360/func_15179008.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1A6360/func_151794C8.s")
+extern s16 D_800DD438[3];
+
+void func_151794C8(void) {
+    s32 x;
+    s32 y;
+    s32 z;
+    f32 vx;
+    f32 vy;
+    f32 vz;
+    f32 s;
+    f32 c;
+    f32 a;
+
+    x = D_800DBFF0->unk2F8;
+    y = D_800DBFF0->unk2FC;
+    z = D_800DBFF0->unk300;
+    a = D_800DBFF0->unk398;
+    s = func_150AD78C(a);
+    c = func_150AD780(a);
+    vx = 0.0f;
+    vy = 500.0f * s;
+    vz = -500.0f * c;
+    a = D_800DBFF0->unk3A0;
+    s = func_150AD78C(a);
+    c = func_150AD780(a);
+    x += vx * c + vz * s;
+    z += vz * c - vx * s;
+    y += vy;
+    D_800DD438[0] = x;
+    D_800DD438[2] = z;
+    D_800DD438[1] = y;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1A6360/func_15179600.s")
 

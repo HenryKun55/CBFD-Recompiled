@@ -68,4 +68,26 @@ void func_15155F90(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_182C30/func_15155FD4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_182C30/func_15156028.s")
+struct func_15156028_s {
+    u8 pad[0x10];
+    u8 unk10;
+};
+
+void func_15156028(struct func_15156028_s *arg0, struct127 **arg1, u8 arg2) {
+    if (arg2 == 0) {
+        s32 a = arg1[0] - gObjects;
+        if (a >= 0 && a < 25 && a == arg0->unk10) {
+            func_1516972C((struct102 *)arg0);
+        }
+    } else if (arg2 == 0x2D) {
+        s32 a = arg1[0] - gObjects;
+        s32 b = arg1[1] - gObjects;
+        if (a >= 0 && a < 25 && b >= 0 && b < 25) {
+            if (a == arg0->unk10) {
+                arg0->unk10 = b;
+            } else if (b == arg0->unk10) {
+                arg0->unk10 = a;
+            }
+        }
+    }
+}

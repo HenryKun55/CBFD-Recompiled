@@ -97,4 +97,59 @@ struct func_1518AB60_s *func_1518AB60(s32 arg0, u8 arg1) {
     return ret;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B7EC0/func_1518ABD0.s")
+struct func_1518ABD0_s {
+    u8 pad0[0x10];
+    struct func_1518AA10_s *unk10;
+    struct func_1518AA10_s *unk14;
+    s32 unk18;
+    s32 unk1C;
+    s16 unk20;
+    s16 unk22;
+    u8 unk24;
+};
+
+s32 func_1518ABD0(struct func_1518ABD0_s *arg0, s32 arg1, u8 arg2) {
+    struct func_1518AA10_s *node;
+    s32 idx;
+
+    if (arg0 == NULL) {
+        if (arg2 != 0) {
+            D_8008D5C0[arg2](arg1);
+        }
+        return 0;
+    }
+    node = (struct func_1518AA10_s *) func_1518AB60(arg1, arg2);
+    if (node == NULL) {
+        if (arg2 != 0) {
+            D_8008D5C0[arg2](arg1);
+        }
+        return 0;
+    }
+    node->unk14 = arg0->unk10;
+    if (node->unk14 != NULL) {
+        node->unk14->unk18 = node;
+    } else {
+        arg0->unk14 = node;
+    }
+    arg0->unk10 = node;
+    node->unk18 = NULL;
+    arg0->unk22 = arg0->unk20;
+    arg0->unk1C++;
+    if (arg0->unk18 < arg0->unk1C) {
+        arg0->unk1C--;
+        node = arg0->unk14;
+        if (node->unk18 == NULL) {
+            arg0->unk10 = NULL;
+            arg0->unk14 = NULL;
+        } else {
+            node->unk18->unk14 = NULL;
+            arg0->unk14 = node->unk18;
+        }
+        idx = node->unk1C;
+        if (idx != 0) {
+            D_8008D5C0[idx](node->unk10);
+        }
+        func_1516972C((struct102 *)node);
+    }
+    return 1;
+}

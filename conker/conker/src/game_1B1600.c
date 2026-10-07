@@ -211,7 +211,40 @@ s32 func_15185DAC(f32 *arg0) {
     return 0.0f < arg0[1];
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_15185DD4.s")
+struct func_15185DD4_s {
+    s32 w[5];
+};
+
+extern struct func_15185DD4_s *(*D_8008D498[])(struct func_15185DD4_s *, struct func_15185DD4_s *, struct func_15185DD4_s *);
+extern s32 (*D_8008D4C0[])(struct func_15185DD4_s *);
+
+struct func_15185DD4_s *func_15185DD4(struct func_15185DD4_s *in, s32 n, s32 plane, struct func_15185DD4_s *out) {
+    struct func_15185DD4_s *(*clip)(struct func_15185DD4_s *, struct func_15185DD4_s *, struct func_15185DD4_s *);
+    s32 (*test)(struct func_15185DD4_s *);
+    struct func_15185DD4_s *prev;
+    struct func_15185DD4_s *cur;
+    s32 i;
+
+    prev = &in[n - 1];
+    clip = D_8008D498[plane];
+    test = D_8008D4C0[plane];
+    cur = in;
+    for (i = 0; i < n; i++) {
+        if (test(cur)) {
+            if (test(prev)) {
+                *out++ = *cur;
+            } else {
+                out = clip(prev, cur, out);
+                *out++ = *cur;
+            }
+        } else if (test(prev)) {
+            out = clip(prev, cur, out);
+        }
+        prev = cur;
+        cur++;
+    }
+    return out;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_15185F24.s")
 
@@ -219,7 +252,53 @@ s32 func_15185DAC(f32 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_15186794.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_151872B0.s")
+extern s32 D_800DE01C;
+extern s32 D_800DE020;
+extern s32 D_800DE024;
+extern s32 D_800DE030;
+extern s32 D_800DE034;
+extern s32 D_800DE038;
+extern f32 D_800DE03C;
+extern u8 D_800DE040;
+extern u8 D_800DE041;
+
+void func_151872B0(s32 arg0) {
+    D_800DE01C = 600;
+    D_800DE020 = 180;
+    D_800DE024 = 90;
+    D_800DE030 = 1016;
+    D_800DE034 = 0;
+    D_800DE038 = 1;
+    D_800DE03C = 1.0f;
+    D_800DE040 = 1;
+    D_800DE041 = 1;
+    switch (arg0) {
+    case 33:
+        D_800DE01C = 4800;
+        D_800DE020 = D_800DE01C - 1;
+        D_800DE024 = D_800DE01C - 2;
+        D_800DE030 = 1010;
+        D_800DE034 = 1;
+        D_800DE038 = 4;
+        D_800DE040 = 0;
+        break;
+    case 34:
+        D_800DE01C = 2400;
+        D_800DE020 = D_800DE01C - 1;
+        D_800DE024 = D_800DE01C - 2;
+        D_800DE038 = 4;
+        D_800DE040 = 0;
+        break;
+    case 20:
+        D_800DE041 = 0;
+        break;
+    case 41:
+        D_800DE01C = 1200;
+        D_800DE020 = 600;
+        D_800DE024 = 300;
+        break;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_151873E4.s")
 

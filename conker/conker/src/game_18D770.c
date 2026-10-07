@@ -288,10 +288,89 @@ struct225 *func_15160A58(struct127 *arg0, u8 arg1, struct17 *arg2, u8 arg3, s16 
 // }
 
 // ??
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18D770/func_15160B74.s")
+struct func_15160B74_s {
+    struct127 *obj;
+    u8 id;
+    u8 idx;
+    u8 pad6[2];
+    f32 vec[3];
+    s8 fn;
+};
+
+u8 func_15160B74(struct225 *arg0) {
+    u8 ret;
+    struct func_15160B74_s *s;
+    struct127 *obj;
+
+    ret = 1;
+    s = (struct func_15160B74_s *)&arg0->unk18;
+    obj = s->obj;
+    if (obj->interaction_state == 0) {
+        return 0;
+    }
+    if (obj->unique_id != s->id) {
+        return 0;
+    }
+    if ((obj->unk1D4 != NULL) && ((obj->unk74 & 0xF) != 0xF)) {
+        f32 pos[3];
+
+        func_15143134(s->vec, pos, (u8 *)obj->unk1D4 + (s->idx << 6));
+        arg0->unk14->unkE = pos[0];
+        arg0->unk14->unk10 = pos[1];
+        arg0->unk14->unk12 = pos[2];
+    } else {
+        arg0->unk14->unkE = obj->x_position;
+        arg0->unk14->unk10 = obj->y_position;
+        arg0->unk14->unk12 = obj->z_position;
+    }
+    if (s->fn != -1) {
+        ret = D_8008B1F8[s->fn](arg0);
+    }
+    return ret;
+}
 
 // another struct definition
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18D770/func_15160CDC.s")
+struct func_15160CDC_s {
+    void *unk0;
+    u8 unk4;
+    u8 unk5;
+    struct17 unk8;
+    struct17 unk14;
+    f32 unk20;
+    u8 unk24;
+    u8 unk25;
+};
+
+struct225 *func_15160CDC(struct127 *arg0, u8 arg1, struct17 *arg2, struct17 *arg3, f32 arg4, u8 arg5, s16 arg6, s32 arg7, s32 arg8, s32 arg9, s32 argA, u8 argB, u8 argC, u8 argD, u8 argE, s32 argF) {
+    struct225 *temp_v0;
+    Header header;
+    struct func_15160CDC_s data;
+    s32 zero[3];
+
+    if (arg0 == NULL) {
+        return NULL;
+    }
+    header.unk0 = arg5;
+    header.unk1 = 6;
+    header.unk2 = arg6;
+    header.unk4 = 0x11;
+    data.unk0 = arg0;
+    data.unk4 = ((u8 *)arg0)[0x3B];
+    data.unk5 = arg1;
+    data.unk8 = *arg2;
+    data.unk14 = *arg3;
+    data.unk20 = arg4;
+    data.unk24 = (argB ? 1 : 0) | (argD ? 2 : 0);
+    data.unk25 = argC;
+    zero[0] = 0;
+    zero[1] = 0;
+    zero[2] = 0;
+    temp_v0 = func_151602C0(&header, zero, arg7, arg8, arg9, argA, 0xFF, 0, sizeof(data), argE, argF);
+    if (temp_v0 != NULL) {
+        memcpy(&temp_v0->unk18, &data, sizeof(data));
+    }
+    return temp_v0;
+}
 
 // similar to func_15160B74
 #pragma GLOBAL_ASM("asm/nonmatchings/game_18D770/func_15160E30.s")

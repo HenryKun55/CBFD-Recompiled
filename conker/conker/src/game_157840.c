@@ -5,7 +5,37 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_157840/func_1512A390.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_157840/func_1512ABF8.s")
+struct func_1512ABF8_s {
+    s16 x;
+    s16 y;
+    s16 z;
+    s16 w;
+};
+extern struct func_1512ABF8_s D_800DC200[4][4];
+extern struct func_1512ABF8_s D_80089590[4];
+extern u8 D_800DC0C0[];
+
+void func_1512ABF8(void) {
+    u8 j;
+    u8 i;
+
+    for (i = 0; i < 4; i++) {
+        j = 0;
+        do {
+            D_800DC200[i][j] = D_80089590[j];
+            if (D_80082FA0 > 0 && D_80082FA0 < 4) {
+                D_800DC200[i][j].x *= 0.5f;
+                D_800DC200[i][j].y *= 0.5f;
+            }
+            if (D_800BE9F0 == 0x1B || D_800BE9F0 == 0x1E) {
+                D_800DC200[i][j].x *= 0.75f;
+                D_800DC200[i][j].y *= 0.75f;
+            }
+            j++;
+        } while (j < 4);
+    }
+    bzero(D_800DC0C0, 0x130);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_157840/func_1512AD54.s")
 

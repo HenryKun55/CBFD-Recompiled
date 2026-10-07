@@ -158,7 +158,57 @@ s32 func_1503D774(s32 arg0, s32 arg1) {
     return 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6A3D0/func_1503D804.s")
+struct func_1503D804_s {
+    s32 unk0;
+    s32 unk4;
+    s16 unk8;
+    s16 unkA;
+    s32 unkC;
+};
+
+struct func_1503D804_d {
+    s16 unk0;
+    s16 unk2;
+};
+
+extern s32 *D_800C4020[];
+void *allocate_memory(s32, s32, s32, s32);
+
+s32 func_1503D804(s32 arg0) {
+    s32 count;
+    s32 idx;
+    struct func_1503D804_s *src;
+    struct func_1503D804_d *dst;
+    s32 i;
+
+    idx = -1;
+    if (arg0 == 0x24) {
+        count = 0x5E;
+        idx = 0;
+    } else {
+        count = 0;
+    }
+    if (count == 0) {
+        return 0;
+    }
+    if (D_800C6360[arg0] != 0) {
+        return 0;
+    }
+    src = (struct func_1503D804_s *)(&D_800D19A0)[arg0];
+    if (idx != -1) {
+        src += D_800C4020[arg0][idx];
+    }
+    D_800C6360[arg0] = (s32)allocate_memory(count * 4, 1, 0, 2);
+    if (D_800C6360[arg0] == 0) {
+        return 1;
+    }
+    dst = (struct func_1503D804_d *)D_800C6360[arg0];
+    for (i = 0; i < count; i++) {
+        dst[i].unk0 = src[i].unk8;
+        dst[i].unk2 = src[i].unkA;
+    }
+    return 0;
+}
 
 struct func_1503D984_s {
     u32 word;

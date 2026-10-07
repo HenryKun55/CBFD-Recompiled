@@ -24,7 +24,7 @@ import subprocess
 import sys
 import tempfile
 
-IDO = '../ido/ido5.3_recomp/cc'
+IDO = os.environ.get('IDO_CC', '../ido/ido5.3_recomp/cc')
 CFLAGS = ('-G 0 -Xfullwarn -Xcpluscomm -signed -nostdinc -non_shared -Wab,-r4300_mul -D_LANGUAGE_C -D_FINALROM '
           '-DF3DEX_GBI_2 -D_MIPS_SZLONG=32 -woff 649,838 -I . -I include -I include/2.0L -I include/2.0L/PR '
           '-I include/libc -I src/libultra/os -I src/libultra/audio -I src/libultra/io').split()
@@ -45,8 +45,12 @@ def find_target(func):
 
 
 def find_source(rel):
-    # The linked file whose pragma includes it (not src/game/'s drafts).
+    # The linked file whose pragma includes it (not src/game/'s drafts): the guess from
+    # the .s path first (asm/nonmatchings/FILE/FUNC.s is in src/FILE.c), then all files.
     needle = f'"{rel}"'
+    guess = 'src/' + rel[len('asm/nonmatchings/'):].rsplit('/', 1)[0] + '.c'
+    if os.path.exists(guess) and needle in open(guess, encoding='utf-8', errors='replace').read():
+        return guess
     for path in glob.glob('src/**/*.c', recursive=True):
         if '/game/' in path.replace('\\', '/'):
             continue

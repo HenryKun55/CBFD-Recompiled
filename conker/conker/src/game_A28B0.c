@@ -1562,7 +1562,31 @@ void func_15079F50(void) {
 //     gCurrentObject->unk226 = D_800D1893;
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_15079FBC.s")
+void func_15079FBC(void) {
+    s16 phi_v1;
+
+    if ((gObjects->unk65 == 0) || (gObjects->unk44 < 5.0f)) {
+        gCurrentObject->unk232 = D_800D1891;
+        gCurrentObject->unk218 = (struct216 *)func_1507BB28(0, gCurrentObject->unk232);
+        gCurrentObject->unk218 -= 1;
+        return;
+    }
+
+    gCurrentObject->unk78 = gObjects->unk31C->unk4C;
+
+    if (gObjects->unk31C->chased) {
+        phi_v1 = gObjects->unk44;
+    } else {
+        phi_v1 = gObjects->unk44 * D_8009A1E4;
+    }
+    if (phi_v1 < 17) {
+        D_800D1893 += 1;
+        D_800D1890 = 8;
+    }
+    D_800D1892 = phi_v1;
+    func_15075F40();
+    gCurrentObject->unkF4 |= 0x40;
+}
 // NON-MATCHING: JUSTREG
 // void func_15079FBC(void) {
 //     s16 phi_v1;

@@ -3,7 +3,45 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_13BB20/func_1510E670.s")
+struct func_1510E670_s {
+    s32 unk0;
+    s32 *unk4;
+    s32 unk8;
+    s32 unkC;
+};
+
+void func_150AD8B0(void *arg0, void *arg1, void *arg2);
+
+s32 func_1510E670(s32 arg0) {
+    s32 *tri = ((struct func_1510E670_s *)&D_800D3300)[arg0].unk4;
+    s32 base = ((struct func_1510E670_s *)&D_800D3300)[arg0].unk8;
+    s16 *v0;
+    s16 *v1;
+    s16 *v2;
+    f32 a[3];
+    f32 b[3];
+    f32 c[3];
+    f32 y;
+
+    if (tri != NULL) {
+        v0 = (s16 *)(tri[0] + base);
+        v1 = (s16 *)(tri[1] + base);
+        v2 = (s16 *)(tri[2] + base);
+        a[0] = v1[0] - v0[0];
+        a[1] = v1[1] - v0[1];
+        a[2] = v1[2] - v0[2];
+        b[0] = v2[0] - v0[0];
+        b[1] = v2[1] - v0[1];
+        b[2] = v2[2] - v0[2];
+        func_150AD8B0(a, b, c);
+        y = c[1];
+        if (y < 0.0f) {
+            return 0;
+        }
+        return 1;
+    }
+    return 0;
+}
 
 void func_1510E950(s32 **arg0, void *arg1, void *arg2, f32 *arg3, f32 *arg4, s32 *arg5, s16 *arg6, f32 arg7, f32 arg8, f32 arg9, f32 arg10, u16 arg11, void *arg12, f32 arg13, f32 arg14, s32 arg15);
 

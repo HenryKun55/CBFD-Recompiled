@@ -159,7 +159,49 @@ s32 func_1502B5C8(s32 *status, s32 count, ...) {
     }
     return ret;
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502B6BC.s")
+#include <stdarg.h>
+extern u8 D_AB1950;
+s32 func_1502AC88(s32 offset, s32 arg, s32 *out);
+s32 func_1502B350(s32 offset, s32 arg, s32 *out);
+
+s32 func_1502B6BC(s32 *status, s32 arg1, s32 *outCount, s32 count, ...) {
+    va_list args;
+    s32 offset;
+    s32 sp44;
+    s32 arg;
+    s32 *p;
+    s32 sp38;
+    s32 ret;
+
+    p = &sp44;
+    if (status != NULL) {
+        p = status;
+    }
+    *p = 1;
+    offset = (s32) &D_AB1950;
+    va_start(args, count);
+    for (; count != 0; count--) {
+        arg = va_arg(args, s32);
+        if (*p != 0) {
+            offset += func_1502AC88(offset, arg, &sp38);
+        }
+        *p = sp38 & 0xFFFFFFF;
+    }
+    if (*p != 0) {
+        ret = func_1502B350(offset, sp38, p);
+        if (*p != 0 && ret != 0) {
+            arg1 = func_1502B4A8((struct func_1502B4A8_s *) ret, arg1);
+        } else {
+            arg1 = 0;
+        }
+        if (outCount != NULL) {
+            *outCount = arg1;
+        }
+    } else {
+        ret = 0;
+    }
+    return ret;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502B7F0.s")
 // void func_1502B7F0(s32 *arg0, s32 arg1, s32 arg2, s32 arg3) {
 //     s32 sp38;

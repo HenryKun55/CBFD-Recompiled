@@ -175,6 +175,31 @@ void func_150D6C98(f32 *arg0, f32 *arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1028F0/func_150D6E60.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1028F0/func_150D6F0C.s")
+struct func_150D6F0C_s {
+    u8 *unk0;
+    u8 unk4;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    f32 unk18;
+};
+
+s32 func_150D6F0C(u8 *arg0, s32 arg1) {
+    struct func_150D6F0C_s *p = (struct func_150D6F0C_s *)(arg0 + 0xA8);
+    u8 *obj = p->unk0;
+
+    if (*(s32 *)obj == 0 || p->unk4 != obj[0x3B]) {
+        return 0;
+    }
+    func_150D6C98((f32 *)obj, (f32 *)(arg0 + 0x40));
+    *(f32 *)(arg0 + 0x38) = *(f32 *)(arg0 + 0x3C) = sqrtf(p->unk8) * p->unk10;
+    arg0[0x2B] = p->unk14 - p->unk18 * p->unk8 * p->unk8;
+    p->unk8 += D_800BE9A4;
+    if (p->unkC < p->unk8) {
+        return 0;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1028F0/func_150D7068.s")

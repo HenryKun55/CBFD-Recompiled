@@ -137,7 +137,55 @@ void func_1509CE64(u16 *arg0, void (*arg1)(s32)) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C9EC0/func_1509CF28.s")
+void *func_1502B6BC();
+extern void *D_800D2FB0;
+
+struct func_1509CF28_s {
+    s32 unk0;
+    u32 unk4;
+};
+struct func_1509CF28_e {
+    struct func_1509CF28_s *unk0;
+    s32 unk4;
+};
+struct func_1509CF28_h {
+    s32 unk0;
+    s32 unk4;
+    struct func_1509CF28_e unk8[1];
+};
+
+s32 func_1509CF28(s32 arg0, u32 *arg1) {
+    struct func_1509CF28_h *base;
+    struct func_1509CF28_s *p;
+    s32 pad;
+    u32 count;
+    u32 i;
+    s32 done;
+
+    count = 0;
+    D_800D2FB0 = func_1502B6BC(0, 0, &count, 3, 8, 0, arg0);
+    base = D_800D2FB0;
+    if (base == NULL) {
+        *arg1 = 0;
+        return 0;
+    }
+    base->unk4 = count - 1;
+    *arg1 = count - 1;
+    for (i = 1; i < count; i++) {
+        p = ((struct func_1509CF28_e *)D_800D2FB0)[i].unk0;
+        done = 0;
+        while (!done) {
+            p->unk0 += (s32)((struct func_1509CF28_e *)D_800D2FB0)[i].unk0;
+            if (p->unk4 & 0x80000000) {
+                done = 1;
+            }
+            p->unk4 &= 0x0FFFFFFF;
+            p++;
+        }
+        base->unk8[i - 1].unk0[1].unk4 = (base->unk8[i - 1].unk0[1].unk4 & 0x0FFFFFFF) >> 1;
+    }
+    return 1;
+}
 
 extern void *D_800D2FB0;
 void func_10004074(void *);

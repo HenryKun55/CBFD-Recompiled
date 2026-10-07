@@ -115,7 +115,35 @@ void func_1513B798(void *arg0) {
 //     arg0 += 8;
 //     return arg0;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_168A90/func_1513B83C.s")
+struct func_1513B83C_s {
+    u8 pad0[0x10];
+    u8 unk10;
+    u8 pad11;
+    s8 unk12;
+    u8 pad13[0x49 - 0x13];
+    u8 unk49;
+    u8 pad4A[0x54 - 0x4A];
+    Gfx *unk54;
+    Gfx *unk58[2][4];
+    Mtx unk78[2];
+};
+
+extern s32 (*D_80089C28[])(struct func_1513B83C_s *, s16);
+
+Gfx *func_1513B83C(Gfx *gdl, struct func_1513B83C_s *arg1, s16 arg2) {
+    if ((arg1->unk10 & 2) && !(arg1->unk49 & (1 << arg2))) {
+        return gdl;
+    }
+    if (arg1->unk12 != -1) {
+        if (D_80089C28[arg1->unk12](arg1, arg2) == 0) {
+            return gdl;
+        }
+    }
+    gSPMatrix(gdl++, &arg1->unk78[D_800BE9C0], 2);
+    gSPSegment(gdl++, 1, arg1->unk58[D_800BE9C0][arg2]);
+    gSPDisplayList(gdl++, arg1->unk54);
+    return gdl;
+}
 
 s32 func_1513B968(s32 arg0, s32 arg1) {
     // FIXME: &arg0->unk_120[D_800BE9C0]

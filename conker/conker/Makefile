@@ -64,7 +64,7 @@ TARGET = $(BUILD_DIR)/$(BASENAME).$(VERSION)
 
 LD_SCRIPT = $(BASENAME).ld
 
-CC     := ../ido/ido5.3_recomp/cc
+CC     := $(or $(IDO_CC),../ido/ido5.3_recomp/cc)
 
 CROSS   = mips-linux-gnu-
 AS      = $(CROSS)as

@@ -84,7 +84,42 @@ void func_150BE210(struct func_150BE210_s *arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EB340/func_150BE2E8.s")
+extern f32 D_800A0068;
+
+struct func_150BE2E8_s {
+    u8 pad0[0x10];
+    s16 unk10[3];
+    u8 pad16[0x3C - 0x16];
+    s16 unk3C;
+    s16 unk3E;
+    u8 pad40[0x7C - 0x40];
+    s16 unk7C[3];
+    s16 unk82[3];
+};
+
+void func_150BE2E8(struct func_150BE2E8_s *arg0) {
+    f32 x0, y0, z0, x1, y1, z1;
+    f32 a, b;
+
+    x0 = arg0->unk7C[0];
+    y0 = arg0->unk7C[1];
+    z0 = arg0->unk7C[2];
+    x1 = arg0->unk82[0];
+    y1 = arg0->unk82[1];
+    z1 = arg0->unk82[2];
+    a = arg0->unk3C * (1.0f / 16384.0f);
+    b = arg0->unk3E * (1.0f / 16384.0f);
+    a -= a * D_800A0068;
+    b += a * D_800BE9E4;
+    arg0->unk10[0] = (x1 - x0) * b + x0;
+    arg0->unk10[1] = (y1 - y0) * b + y0;
+    arg0->unk10[2] = (z1 - z0) * b + z0;
+    if (b > 1.0f) {
+        b = 1.0;
+    }
+    arg0->unk3C = a * 16384.0f;
+    arg0->unk3E = b * 16384.0f;
+}
 
 s16 *func_150BE438(s16 *arg0, s32 arg1) {
     struct127 *obj;

@@ -181,7 +181,76 @@ struct func_151CE634_node *func_151CE634(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1FA770/func_151CEA20.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1FA770/func_151CEAAC.s")
+extern f32 D_800AB008;
+struct func_151CEC10_s;
+struct func_151CEC10_b;
+s32 func_151CEC10(struct func_151CEC10_s *out, f32 *a1, struct func_151CEC10_b *a2);
+void *func_15147A80(void *, s32, s32, s32, s32, s32, s32, s32, s32, u8, s32);
+
+struct func_151CEAAC_info {
+    f32 x, y, z;
+    s16 unkC;
+    s16 unkE;
+    s32 unk10;
+    u8 unk14;
+    u8 unk15;
+};
+
+struct func_151CEAAC_s {
+    u8 *unk0;
+    u8 unk4;
+    void *unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    f32 unk18;
+    u8 unk1C;
+    f32 unk20;
+    f32 unk24;
+};
+
+void *func_151CEAAC(u8 *arg0, void *arg1, u8 arg2, u8 arg3, s32 arg4) {
+    s32 pad;
+    struct func_151CEAAC_info info;
+    struct func_151CEAAC_s data;
+    void *ret;
+    s32 t;
+
+    info.unk15 = 0x19;
+    info.unkC = 0x12C;
+    info.unkE = 0x10;
+    info.unk10 = 0x11;
+    info.unk14 = 3;
+    data.unk0 = arg0;
+    if (arg0 != NULL) {
+        data.unk4 = arg0[0x3B];
+    } else {
+        data.unk4 = 0;
+    }
+    data.unk8 = arg1;
+    data.unkC = 0.0f;
+    data.unk10 = 1.0f;
+    data.unk14 = 0.0f;
+    data.unk18 = 1.0f;
+    if (arg2) {
+        t = 2;
+    } else {
+        t = 0;
+    }
+    data.unk1C = t;
+    data.unk20 = func_150ADA68() * 400.0f + 400.0f;
+    data.unk24 = func_150ADA68() * 2.0f * D_800AB008;
+    if (!func_151CEC10((struct func_151CEC10_s *)&info, (f32 *)arg0, arg1)) {
+        info.x = 0.0f;
+        info.y = 0.0f;
+        info.z = 0.0f;
+    }
+    ret = func_15147A80(&info, 0x28, 0x28, 0, 0xF, 0xF, 0, 0, 0, arg3, arg4);
+    if (ret != NULL) {
+        memcpy(*(void **)((u8 *)ret + 0x98), &data, 0x28);
+    }
+    return ret;
+}
 
 struct func_151CEC10_s {
     f32 x, y, z;

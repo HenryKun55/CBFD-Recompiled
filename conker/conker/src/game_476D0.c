@@ -4,7 +4,42 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_476D0/func_1501A220.s")
+void func_1501A220(s32 arg0, s32 arg1) {
+    s32 n;
+    s32 i;
+    f32 temp_f0;
+    f32 temp_f2;
+
+    D_80082FA0 = arg0;
+
+    if (D_80082FA0 == 0) {
+        n = 1;
+    } else {
+        n = D_80082FA0 + 2;
+    }
+    D_800BE628 = allocate_memory(n * 0x180, 1, 1, 0);
+    D_800BE62C = allocate_memory(n * 16, 1, 1, 0);
+    if (D_80082FA0 == 1) {
+        temp_f0 = D_800BE63C[0] - 2.0f;
+        temp_f2 = temp_f0 * 0.8f;
+        D_800BE6B8 = ((s32)temp_f2 - (s32)temp_f2 % 4) / temp_f0;
+        if (temp_f2) {}
+    }
+
+    func_150006E0(D_800BE9F0);
+
+    for (i = 0; i <= D_80082FA0; i++) {
+        func_1501A8C0(i, D_80082FA0, 1023, 0);
+    }
+    if (D_80082FA0 != 0) {
+        func_1501A8C0(i, 0, 1023, 0);
+    }
+
+    D_800BE617 = 1;
+    D_800BE614 = 1;
+    D_800BE635 = 0;
+    func_1510B070(arg1);
+}
 // NON-MATCHING: 80% there
 // void func_1501A220(s32 arg0, s32 arg1) {
 //     s32 phi_s0;

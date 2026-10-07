@@ -30,7 +30,41 @@ void func_15036C70(struct func_15036C70_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_15037698.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_15037880.s")
+extern f32 D_8009862C;
+extern s16 D_800C3FF4[3];
+
+s32 func_15037880(s32 arg0, f32 *arg1) {
+    f32 dx;
+    f32 dz;
+    s32 type;
+    struct127 *obj;
+
+    obj = &gObjects[arg0];
+    type = obj->unk2F8 & 7;
+    if (type == 1) {
+        arg1[0] = D_800DBFF0->unk2F8;
+        arg1[1] = D_800DBFF0->unk2FC;
+        arg1[2] = D_800DBFF0->unk300;
+        return 1;
+    }
+    if (type == 2) {
+        if (obj->unk5 == 4) {
+            dx = obj->x_position - D_800C3FF4[0];
+            dz = obj->z_position - D_800C3FF4[2];
+            if (D_8009862C < ((dx * dx) + (dz * dz))) {
+                return 1;
+            }
+        }
+        arg1[0] = D_800C3FF4[0];
+        arg1[1] = D_800C3FF4[1];
+        arg1[2] = D_800C3FF4[2];
+        return 1;
+    }
+    if (type == 3) {
+        return 1;
+    }
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_150379DC.s")
 

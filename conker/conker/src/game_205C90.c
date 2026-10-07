@@ -96,7 +96,29 @@ void func_151D8BE0(u8 *arg0) {
     func_151D8C00(arg0, arg0 + 0x18);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_205C90/func_151D8C00.s")
+extern f32 *func_15144B34(u8);
+extern f32 func_15143E64(f32 *);
+
+void func_151D8C00(u8 *arg0, u8 *arg1) {
+    f32 *p;
+    f32 vec[3];
+    f32 d;
+    f32 s;
+
+    p = func_15144B34(arg1[0x18]);
+    vec[0] = ((f32 *)arg1)[0] - p[0];
+    vec[1] = ((f32 *)arg1)[1] - p[1];
+    vec[2] = ((f32 *)arg1)[2] - p[2];
+    d = func_15143E64(vec);
+    if (d < ((f32 *)arg1)[3]) {
+        s = 1.0f;
+    } else if (((f32 *)arg1)[4] + ((f32 *)arg1)[3] < d) {
+        s = 0.0f;
+    } else {
+        s = 1.0f - ((f32 *)arg1)[5] * (d - ((f32 *)arg1)[3]);
+    }
+    arg0[0x12] = s * 8.0f;
+}
 
 void func_151D8D5C(struct102 *arg0, s32 arg1, u8 arg2) {
     if (arg2 == 0x58) {

@@ -163,7 +163,50 @@ void func_15153C84(void *arg0, s32 arg1, s32 arg2, u8 arg3, s32 arg4) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_151541B8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_1515452C.s")
+struct func_1515452C_sub {
+    f32 t;     /* 0x170 */
+    f32 end;   /* 0x174 */
+    f32 scale; /* 0x178 */
+    f32 a;     /* 0x17C */
+    f32 b;     /* 0x180 */
+    u8 flags;  /* 0x184 */
+};
+
+struct func_1515452C_t {
+    u8 pad0[0x18];
+    f32 unk18;
+    f32 unk1C;
+    f32 pos[3];
+    u8 pad2C[0x50 - 0x2C];
+    f32 vel[3];
+    u8 pad5C[0x70 - 0x5C];
+    u8 unk70;
+    u8 pad71[0x170 - 0x71];
+    struct func_1515452C_sub sub;
+};
+
+s32 func_1515452C(struct func_1515452C_t *arg0) {
+    struct func_1515452C_sub *s = &arg0->sub;
+    f32 v;
+
+    v = sqrtf(s->t) * s->scale;
+    arg0->unk18 = v;
+    if (!(s->flags & 1)) {
+        arg0->unk1C = v;
+    }
+    {
+        f32 t = s->t;
+        arg0->unk70 = s->a - s->b * t * t;
+        s->t += D_800BE9A4;
+        if (s->end < s->t) {
+            return 0;
+        }
+    }
+    arg0->pos[0] += arg0->vel[0] * D_800BE9A4;
+    arg0->pos[1] += arg0->vel[1] * D_800BE9A4;
+    arg0->pos[2] += arg0->vel[2] * D_800BE9A4;
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_15154684.s")
 

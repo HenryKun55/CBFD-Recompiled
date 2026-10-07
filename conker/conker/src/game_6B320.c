@@ -42,7 +42,46 @@ s32 func_1503E1F4(s32 arg0, s32 arg1) {
     return 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503E260.s")
+struct func_1503E260_s {
+    void *unk0;
+    s32 unk4;
+    s32 unk8;
+    s16 unkC;
+    u8 unkE;
+    u8 unkF;
+};
+extern u8 *D_80084460[];
+extern u8 D_80098914[];
+s32 func_1503E1F4(s32 arg0, s32 arg1);
+void func_10004074(s32);
+
+void func_1503E260(s32 arg0) {
+
+    u8 *list;
+    s32 i;
+    s32 n;
+
+    if (((struct func_1503E260_s *)D_800C6660)[arg0].unkF != 0) {
+        list = D_80084460[((struct func_1503E260_s *)D_800C6660)[arg0].unkE];
+        if (list != NULL) {
+            n = D_80098914[((struct func_1503E260_s *)D_800C6660)[arg0].unkE];
+            for (i = 0; i < n; i++) {
+                if (list[i] != 0xFF) {
+                    if (func_1503E1F4(i, arg0)) {
+                        gObjects[arg0].unk94 |= 1 << list[i];
+                    }
+                }
+            }
+        }
+        ((struct func_1503E260_s *)D_800C6660)[arg0].unkF = 0;
+        if (((struct func_1503E260_s *)D_800C6660)[arg0].unk0) {
+            func_10004074(((struct func_1503E260_s *)D_800C6660)[arg0].unk0);
+        }
+        ((struct func_1503E260_s *)D_800C6660)[arg0].unk0 = 0;
+        gObjects[arg0].unk74 &= ~0x80;
+
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503E3C4.s")
 
@@ -135,7 +174,29 @@ void func_1503F108(s32 arg0) {
     *(f32 *)(p->unk0 + 0x1EC) = 10.0f;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503F16C.s")
+struct func_1503F16C_s {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+    s16 unkC;
+    s16 unkE;
+};
+s32 func_1503EF4C(s32 arg0, s32 arg1, s32 arg2);
+
+void func_1503F16C(s32 arg0) {
+    ((struct func_1503F16C_s *)D_800C6660)[arg0].unkC = 300;
+    if (func_1503EF4C(2, 0, arg0)) {
+        gObjects[arg0].unk94 |= 0x40;
+        gObjects[arg0].unk94 &= ~0x200;
+    }
+    if (func_1503EF4C(2, 1, arg0)) {
+        gObjects[arg0].unk94 |= 0x80;
+        gObjects[arg0].unk94 &= ~0x100;
+    }
+    if (func_1503EF4C(2, 2, arg0)) {
+        gObjects[arg0].unk94 &= ~0x400;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503F2B0.s")
 

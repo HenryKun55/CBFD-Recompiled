@@ -253,7 +253,47 @@ s32 func_150A2FA4(s32 arg0, u32 arg1) {
     return 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_CDE80/func_150A3058.s")
+struct func_150A3058_s {
+    u8 pad0[0x14];
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    u8 pad20[0xC];
+    f32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    u8 pad38[0x180 - 0x38];
+    f32 unk180;
+    u8 pad184[0x330 - 0x184];
+};
+
+struct func_150A3058_e {
+    u8 pad0[0x14];
+    u8 unk14;
+    u8 unk15;
+    u8 pad16;
+    u8 unk17;
+    u8 pad18[0x1C];
+};
+
+s32 func_150A3058(s32 arg0, s16 arg1, s16 arg2, s16 arg3) {
+    struct func_150A3058_s sp48;
+    u32 i;
+    struct func_150A3058_e *p;
+
+    sp48.unk14 = sp48.unk2C = arg1;
+    sp48.unk180 = sp48.unk18 = sp48.unk30 = arg2;
+    sp48.unk1C = sp48.unk34 = arg3;
+    for (i = 0; i < D_800D3094; i++) {
+        p = *(struct func_150A3058_e **)&D_800D3098;
+        if (p[i].unk14 == 0 && p[i].unk15 >> 2 == 3 && arg0 == p[i].unk17) {
+            if (func_150A1DA0(&sp48, &p[i], 0) == 0) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_CDE80/func_150A3194.s")
 

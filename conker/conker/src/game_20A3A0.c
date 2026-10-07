@@ -22,4 +22,26 @@ void func_151DCEF0(s32 arg0, u8 arg1, s32 arg2, s32 arg3) {
     osSetTimer(&D_80042A58, (u64)(12000 * D_8002BD10) / 1000000, 0, &__osEepromTimerQ, &D_80042A90);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_20A3A0/func_151DCFD8.s")
+s32 func_151DCFD8(s32 arg0) {
+    if (D_800E0A20 == 0) {
+        return 0;
+    }
+    if (osRecvMesg(&__osEepromTimerQ, NULL, arg0) != -1) {
+        if (D_800E0A2C <= 0) {
+            D_800E0A20 = 0;
+            D_800E0A2C = 0;
+            return 0;
+        }
+        if (osEepromRead((OSMesgQueue *)D_800E0A20, D_800E0A24, (u8 *)D_800E0A28) != 0) {
+            D_800E0A20 = 0;
+            D_800E0A2C = 0;
+            return 0;
+        }
+        D_800E0A2C -= 8;
+        D_800E0A24++;
+        D_800E0A28 += 8;
+        osSetTimer(&D_80042A58, (u64)(12000 * D_8002BD10) / 1000000, 0, &__osEepromTimerQ, &D_80042A90);
+        return 1;
+    }
+    return 0;
+}

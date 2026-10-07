@@ -9,7 +9,25 @@ void func_15010780(void) {
     func_15177410(0, 255, 6628, 108, 0, 0.0f, 15000, 80.0f, 77, 15, 127, 127, 127, 127, 127, 127);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_3DC30/func_15010880.s")
+void func_15010880(void) {
+    struct177 tmp;
+    struct260 *temp_v0;
+
+    func_15177410(0x10, 0xE9, -437, 0x463, -0xCBF, 90.0f, 15000, 36.0f, 0x4D, 15, 127, 127, 127, 127, 127, 127);
+    D_800E0934 = func_150DE32C;
+    // the label splits the basic block so the D_800D3098 load is not hoisted above the store
+lbl:
+    tmp.unk0 = 0;
+    tmp.unk4 = *((s32*) &D_800D3098) + 0xEA0;
+    tmp.unk8 = *((s32*) &D_800D3098) + 0xED4;
+    temp_v0 = func_15149130(300, -1, 94, -1, 0, 0, 12, 255, 1);
+    if (temp_v0 != NULL) {
+        memcpy((u8*)temp_v0 + 0x28, &tmp, 12);
+    }
+    if ((D_800D2E4C->unk12 & 0x40) != 0) {
+        func_15149130(5, 9, -1, -1, 1, 0, 0, 255, 1);
+    }
+}
 // NON-MATCHING: ops in wrong order
 // void func_15010880(void) {
 //     struct177 tmp;

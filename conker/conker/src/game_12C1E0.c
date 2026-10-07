@@ -55,7 +55,40 @@ s32 func_150FF6B4(u8 *arg0, s32 arg1, s32 arg2) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_12C1E0/func_150FF6E0.s")
+extern u8 D_800A2068;
+extern u8 D_800A2074;
+extern u8 D_800A205C;
+extern f32 D_800A2080[2][6][3];
+
+struct func_150FF6E0_s { f32 x, y, z; };
+s32 func_150FF6E0(struct func_150FF6E0_s *arg0, void *arg1, f32 *arg2, f32 *arg3, void *arg4, s32 arg5, s32 arg6) {
+    u8 r;
+    void *sp5C[10];
+    void *sp34[10];
+    u8 i;
+
+    r = func_150ADA20() & 1;
+    sp5C[0] = &D_800A2050;
+    sp5C[1] = &D_800A2068;
+    sp5C[2] = &D_800A2074;
+    sp5C[3] = &D_800A205C;
+    for (i = 0; i < 6; i++) {
+        sp5C[4 + i] = D_800A2080[r][i];
+        sp34[4 + i] = &arg0[i];
+    }
+    sp34[0] = arg1;
+    sp34[1] = arg2;
+    sp34[2] = arg3;
+    sp34[3] = arg4;
+    if (func_1514654C(arg5, arg6, 0, sp5C, sp34, 10)) {
+        arg3[0] -= arg2[0];
+        arg3[1] -= arg2[1];
+        arg3[2] -= arg2[2];
+    } else {
+        return 0;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_12C1E0/func_150FF840.s")
 

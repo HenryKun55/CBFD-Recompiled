@@ -72,7 +72,29 @@ s16 func_150639BC(struct struct127 *arg0) {
     return D_800CC2B2;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_90840/func_15063A38.s")
+extern f32 D_800CC2B4;
+
+s32 func_15063A38(struct127 *arg0, s32 arg1, s32 arg2) {
+    if (arg1 & arg2) {
+        D_800CC2B2 = ((s8 *)D_800CC284)[2] * 200;
+        if (arg0->unk31C->unk84) {
+            D_800CC2B2 = func_150639BC(arg0);
+        }
+        D_800CC2B4 = 12.0f;
+        D_800CC2B2 = arg0->unk31C->unk12 + (D_800CC2B2 * D_800CC264) / 2000;
+        if (D_800CC2B2 < -9000) {
+            arg0->unk76 = arg0->unk7A = arg0->unk7A - D_800CC2B2 - 9000;
+            D_800CC2B2 = -9000;
+        }
+        if (D_800CC2B2 > 9000) {
+            arg0->unk76 = arg0->unk7A = arg0->unk7A - D_800CC2B2 + 9000;
+            D_800CC2B2 = 9000;
+        }
+        arg0->unk31C->unk12 = D_800CC2B2;
+        return 1;
+    }
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_90840/func_15063B64.s")
 

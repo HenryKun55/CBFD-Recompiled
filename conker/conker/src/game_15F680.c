@@ -303,7 +303,60 @@ s32 func_151337C0(struct func_151337C0_s *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_15F680/func_15133894.s")
+typedef struct {
+    f32 x, y, z;
+} func_15133894_v;
+
+struct func_15133894_o {
+    u8 pad0[0x4F];
+    u8 unk4F;
+};
+
+struct func_15133894_s {
+    u8 pad0[0x10];
+    f32 unk10;
+    u8 pad14[0x24];
+    func_15133894_v unk38;
+    u8 pad44[0x1C];
+    s32 unk60;
+    u8 pad64[0xF];
+    u8 unk73;
+    u8 pad74[0x9C];
+    f32 unk110;
+    f32 unk114;
+    u8 pad118[0x18];
+    struct func_15133894_o *unk130;
+};
+
+extern s32 func_15046C80(func_15133894_v *, s32, f32, f32 *);
+extern s8 (*D_80089934[])(struct func_15133894_s *, f32, f32, f32, f32, f32 *);
+
+s8 func_15133894(struct func_15133894_s *arg0) {
+    s8 ret;
+    func_15133894_v old;
+    func_15133894_v pos;
+    struct func_15133894_o *o;
+    s32 flag;
+
+    ret = 1;
+    old = arg0->unk38;
+    func_151337C0(arg0);
+    if ((arg0->unk60 & 1) && arg0->unk73 && arg0->unk38.y < old.y) {
+        pos.x = arg0->unk38.x;
+        pos.y = arg0->unk10 + old.y;
+        pos.z = arg0->unk38.z;
+        if (func_15046C80(&pos, 0, arg0->unk38.y - arg0->unk10, &arg0->unk110)) {
+            flag = 0;
+            if ((o = arg0->unk130) != NULL && (arg0->unk130->unk4F & 0x60) == 0x40) {
+                flag = 1;
+            }
+            if (!flag) {
+                ret = D_80089934[arg0->unk73](arg0, old.x, old.y, old.z, arg0->unk110, &arg0->unk114);
+            }
+        }
+    }
+    return ret;
+}
 
 struct func_151339D4_s {
     u8 pad0[0x10];

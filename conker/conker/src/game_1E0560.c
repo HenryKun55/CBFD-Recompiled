@@ -36,7 +36,55 @@ struct func_151B30B0_s *func_151B30B0(void *arg0, f32 arg1, s32 arg2, u8 arg3, s
     return v;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E0560/func_151B3184.s")
+struct func_151B3184_s {
+    u8 pad0[0x10];
+    u8 unk10;
+    u8 pad11;
+    s16 unk12;
+    u8 unk14[0xC];
+    u8 unk20[0xC];
+    s8 unk2C;
+    s8 unk2D;
+    u8 pad2E[6];
+    s8 unk34;
+};
+
+extern s32 (*D_8008FAF0[])(struct func_151B3184_s *, void *, s32);
+extern s32 (*D_8008FAF8[])(struct func_151B3184_s *);
+
+void func_151B3184(struct func_151B3184_s *arg0) {
+    s32 pad;
+    u8 done = 0;
+
+    if (arg0->unk10 & 1) {
+        arg0->unk12 -= D_800BE9E4;
+        if (arg0->unk12 < 0) {
+            done = 1;
+        }
+    }
+    if (!done) {
+        if (arg0->unk2C != -1) {
+            if (!D_8008FAF0[arg0->unk2C](arg0, arg0->unk14, 1)) {
+                done = 1;
+            }
+        }
+        if (arg0->unk2D != -1) {
+            if (!D_8008FAF0[arg0->unk2D](arg0, arg0->unk20, 0)) {
+                done = 1;
+            }
+        }
+        if ((arg0->unk10 & 4) || (arg0->unk10 & 8)) {
+            arg0->unk10 |= 2;
+        } else if (arg0->unk34 != -1) {
+            if (!D_8008FAF8[arg0->unk34](arg0)) {
+                done = 1;
+            }
+        }
+    }
+    if (done) {
+        func_1516972C((struct102 *)arg0);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E0560/func_151B32C8.s")
 

@@ -28,7 +28,34 @@ void func_150C851C(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_F5800/func_150C8600.s")
+struct func_150C8600_s {
+    s32 *tbl[2];
+};
+extern struct func_150C8600_s D_80088810;
+s32 func_1510D0EC(s32, void *, s32, s32);
+
+Gfx *func_150C8600(Gfx *gfx) {
+    s32 i;
+    s32 sp58[3];
+    s32 v;
+    struct func_150C8600_s sp4C;
+
+    sp4C = D_80088810;
+    for (i = 0; i < 10; i++) {
+        v = *(s16 *)((u8 *)D_800BE4E0 + i * 10 + 4) >> 8;
+        if (v < 0) {
+            v = 0;
+        } else if (v > 4) {
+            v = 4;
+        }
+        if (*(u8 *)((u8 *)D_800BE4E0 + i * 10) >= 2) {
+            *(u8 *)((u8 *)D_800BE4E0 + i * 10) = 0;
+        }
+        v = func_1510D0EC(sp4C.tbl[*(u8 *)((u8 *)D_800BE4E0 + i * 10)][v], sp58, 3, 0);
+        gSPSegment(gfx++, i + 1, v);
+    }
+    return gfx;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_F5800/func_150C8730.s")
 

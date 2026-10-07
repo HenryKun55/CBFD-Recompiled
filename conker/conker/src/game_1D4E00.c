@@ -3,7 +3,48 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A7950.s")
+struct func_151A7950_v {
+    f32 x, y, z;
+    u8 pad[0xC];
+};
+struct func_151A7950_s {
+    u8 pad0[0x12];
+    s16 unk12;
+    u8 pad14[0x60 - 0x14];
+    struct func_151A7950_v *unk60;
+    struct func_151A7950_v *unk64;
+    f32 unk68;
+    u8 unk6C[0x10];
+    s32 unk7C;
+    struct func_151A7950_v unk80[1];
+};
+struct func_151A7950_a {
+    s16 unk0;
+    s16 unk2;
+};
+void *func_15167A68(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, s32 arg5);
+
+struct func_151A7950_s *func_151A7950(struct func_151A7950_a *arg0, s32 arg1, u8 arg2, s32 arg3) {
+    struct func_151A7950_s *obj;
+
+    obj = func_15167A68(0x2D, arg3, arg0->unk2 * sizeof(struct func_151A7950_v) + arg1 + 0x80, 1, arg2, 1);
+    if (obj == NULL) {
+        return NULL;
+    }
+    memcpy((u8 *)obj + 0x10, arg0, 0x50);
+    obj->unk64 = obj->unk80;
+    obj->unk60 = obj->unk64 + arg0->unk2;
+    obj->unk68 = 0.0f;
+    obj->unk64[0].x = 0.0f;
+    obj->unk64[0].y = 0.0f;
+    obj->unk64[0].z = 0.0f;
+    obj->unk64[arg0->unk2 - 1].x = 0.0f;
+    obj->unk64[arg0->unk2 - 1].y = 0.0f;
+    obj->unk64[arg0->unk2 - 1].z = 1.0f;
+    bzero(obj->unk6C, 0x10);
+    obj->unk7C = obj->unk12 * 64 + 0x140;
+    return obj;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A7A90.s")
 
@@ -152,7 +193,62 @@ void func_151A90C0(s32 arg0, s32 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A91AC.s")
+struct func_151A91AC_s {
+    s32 unk0;
+    s16 unk4;
+    u8 unk6;
+    u8 unk7;
+    s32 unk8;
+    s32 unkC;
+    u8 unk10;
+    u8 unk11;
+    u8 unk12;
+    u8 unk13;
+    u8 unk14;
+    u8 unk15;
+    u8 unk16;
+    u8 unk17;
+    s32 unk18;
+    s32 unk1C[4];
+};
+
+struct func_151A91AC_t {
+    s16 a[3];
+};
+
+extern struct func_151A91AC_t D_8008F9A4;
+
+void func_151A91AC(u8 *arg0, f32 *arg1, s32 arg2, s32 arg3) {
+    struct func_151A91AC_s s;
+    f32 f;
+    struct func_151A91AC_t tbl;
+    s32 c;
+    s32 b;
+    s32 a;
+
+    tbl = D_8008F9A4;
+    f = func_150ADA68() * 50.0f + 50.0f;
+    s.unk6 = tbl.a[func_150ADA20() % 3U];
+    s.unk7 = 0;
+    s.unk16 = 0;
+    s.unk17 = 7;
+    s.unk8 = 0;
+    s.unkC = 0;
+    s.unk0 = 0x1701;
+    s.unk4 = 0x3C;
+    s.unk10 = 0xA0;
+    s.unk11 = 0xFF;
+    s.unk12 = 0;
+    s.unk13 = 0;
+    s.unk14 = 0;
+    s.unk15 = 0xFF;
+    s.unk18 = 0x3B0002;
+    a = func_150ADA20();
+    b = func_150ADA20();
+    c = func_150ADA20();
+    func_1513C650((s32)&s, 1, 0, (s32)(arg0 + 0x58), arg1[0], arg1[1], arg1[2], f, f,
+                  a & 0xFF, (c & 1) + (b & 1), 3, 0xFF, 0, arg0[0xC], arg0[1]);
+}
 
 void func_151A931C(u8 *arg0, s32 arg1, u8 arg2) {
     if (arg2 == 0x17) {

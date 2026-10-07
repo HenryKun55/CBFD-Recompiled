@@ -153,7 +153,29 @@ void func_151C15FC(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1ED0F0/func_151C1628.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1ED0F0/func_151C1654.s")
+void func_151D42E8(f32 *, s32, s32, s32, s32);
+void func_151D40D4(f32 *, s32, s32, s32, s32, s32, s32, s32);
+
+void func_151C1654(f32 *arg0, s32 arg1, s32 arg2, u8 arg3, s32 arg4) {
+    if (D_800E0934 != NULL) {
+        D_800E0934(arg0[0], arg0[1], arg0[2]);
+    }
+    switch (arg3) {
+        case 1:
+            func_151D42E8(arg0, arg1, arg2, arg4, 0x24);
+            break;
+        case 2:
+            func_151D42E8(arg0, arg1, arg2, arg4, 0x25);
+            break;
+        case 3:
+            func_151D40D4(arg0, arg1, arg2, 0, arg4, 0x16, 0x26, 0);
+            break;
+        case 0:
+        default:
+            func_151D40D4(arg0, arg1, arg2, 0, arg4, 0x16, 0x15, 0);
+            break;
+    }
+}
 
 extern u8 D_800AA954[];
 extern u8 D_800AA958[][12];

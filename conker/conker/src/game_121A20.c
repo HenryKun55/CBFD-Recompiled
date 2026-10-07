@@ -5,7 +5,58 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_121A20/func_150F4570.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_121A20/func_150F48D0.s")
+void func_1514373C(f32, f32, f32 *, f32 *);
+
+struct func_150F48D0_q {
+    f32 timer;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    f32 unk20;
+};
+
+struct func_150F48D0_s {
+    u8 pad0[0x20];
+    f32 unk20[3];
+    u8 pad2C[0x38 - 0x2C];
+    f32 unk38;
+    f32 unk3C;
+    f32 unk40;
+    f32 unk44;
+    f32 unk48;
+    f32 unk4C;
+    f32 unk50[3];
+    u8 pad5C[0x170 - 0x5C];
+    struct func_150F48D0_q unk170;
+};
+
+s32 func_150F48D0(struct func_150F48D0_s *arg0) {
+    struct func_150F48D0_q *q;
+    f32 c;
+    f32 s;
+
+    q = &arg0->unk170;
+    arg0->unk170.timer -= D_800BE9A4;
+    if (arg0->unk170.timer <= 0.0f) {
+        return 0;
+    }
+    func_1514373C(q->unk10, q->unk20, &s, &c);
+    q->unk10 += q->unk14 * D_800BE9A4;
+    q->unk4 += arg0->unk44 * D_800BE9A4;
+    q->unk8 += arg0->unk48 * D_800BE9A4;
+    q->unkC += arg0->unk4C * D_800BE9A4;
+    arg0->unk38 = q->unk4 + s * q->unk18;
+    arg0->unk3C = q->unk8 + c;
+    arg0->unk40 = q->unkC - s * q->unk1C;
+lbl:
+    arg0->unk20[0] += arg0->unk50[0] * D_800BE9A4;
+    arg0->unk20[1] += arg0->unk50[1] * D_800BE9A4;
+    arg0->unk20[2] += arg0->unk50[2] * D_800BE9A4;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_121A20/func_150F4A38.s")
 

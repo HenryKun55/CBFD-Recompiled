@@ -203,7 +203,68 @@ s32 func_151420F8(struct127 *arg0) {
     }
     return 1;
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142180.s")
+struct func_15142180_v {
+    f32 x, y, z;
+};
+struct func_15142180_s {
+    s16 unk0;
+    s16 unk2;
+    s16 unk4;
+    s16 unk6;
+    struct func_15142180_v unk8;
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    f32 unk20;
+    f32 unk24;
+    f32 unk28;
+    s16 unk2C;
+    s16 unk2E;
+    s16 unk30;
+    s16 unk32;
+    s16 unk34;
+    s16 unk36;
+    s16 unk38;
+    s16 unk3A;
+    u8 unk3C;
+    f32 unk40;
+    s16 unk44;
+    s16 unk46;
+    s32 unk48;
+};
+extern f32 D_800A5470;
+extern f32 D_800A5474;
+void func_15153F18(void *, void *, s32, s32, s32);
+
+void func_15142180(u8 arg0, struct func_15142180_v *arg1, s32 arg2, f32 arg3, f32 arg4) {
+    struct func_15142180_s tmp;
+
+    tmp.unk8 = *arg1;
+    tmp.unk14 = 2.5f * arg3;
+    tmp.unk18 = (4.0f * 0.5f) * arg3;
+    tmp.unk1C = D_800A5470;
+    tmp.unk20 = D_800A5474;
+    tmp.unk24 = 3.0f * arg4;
+    tmp.unk28 = 3.5f * arg4;
+    tmp.unk2C = 3;
+    tmp.unk2E = 3;
+    tmp.unk2 = 0xFF;
+    tmp.unk4 = -25;
+    tmp.unk6 = 10;
+    tmp.unk30 = 3;
+    tmp.unk0 = 0;
+    tmp.unk32 = 1;
+    tmp.unk34 = 9;
+    tmp.unk36 = 15;
+    tmp.unk38 = 0xB4;
+    tmp.unk3A = 0x4B;
+    tmp.unk44 = 12;
+    tmp.unk46 = 21;
+    tmp.unk40 = 0.0f;
+    tmp.unk48 = arg2;
+    tmp.unk3C = arg0;
+    func_15153F18(&tmp, &tmp.unk8, 0, 0xFF, 1);
+}
 
 s32 func_151422C0(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     return (arg3 + arg2) >> 1;
@@ -554,7 +615,29 @@ Gfx *func_15142C10(Gfx *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, u8 *arg5) 
     }
     return arg0;
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142CF0.s")
+extern s16 D_800DD204;
+extern s16 D_800DD206;
+extern s16 D_800DD1C0;
+extern s16 D_800DD1C2;
+extern s16 D_800DD1C4;
+extern s16 D_800DD1C6;
+
+Gfx *func_15142CF0(Gfx *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6, u8 *arg7) {
+    if (arg1 != D_800DD204 || arg2 != D_800DD206 || arg3 != D_800DD1C0 || arg4 != D_800DD1C2 || arg5 != D_800DD1C4 || arg6 != D_800DD1C6) {
+        if (*arg7 == 1) {
+            gDPPipeSync(arg0++);
+            *arg7 = 0;
+        }
+        gDPSetPrimColor(arg0++, arg1, arg2, arg3, arg4, arg5, arg6);
+        D_800DD204 = arg1;
+        D_800DD206 = arg2;
+        D_800DD1C0 = arg3;
+        D_800DD1C2 = arg4;
+        D_800DD1C4 = arg5;
+        D_800DD1C6 = arg6;
+    }
+    return arg0;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142E24.s")
 // NON-MATCHING: mips_to_c reconstruction, hand-typed. Skips (returns
 // arg0 unchanged) if arg1/arg2 already match the cached

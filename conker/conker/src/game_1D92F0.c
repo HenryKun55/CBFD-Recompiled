@@ -30,7 +30,49 @@ s32 func_151AC3CC(struct func_151AC3CC_s *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D92F0/func_151AC408.s")
+s32 func_151D8E20();
+void func_151DAB58(u8 arg0, f32 arg1, u8 arg2, void *arg3, s32 arg4, u8 arg5, u8 arg6);
+
+struct func_151AC408_pt {
+    f32 x;
+    f32 y;
+    f32 z;
+    u8 pad[8];
+};
+
+struct func_151AC408_s {
+    u8 pad0;
+    u8 unk1;
+    u8 pad2[0xC - 0x2];
+    u8 unkC;
+    u8 padD[0x2D - 0xD];
+    s8 unk2D;
+    u8 pad2E[0x94 - 0x2E];
+    struct func_151AC408_pt *unk94;
+    u8 *unk98;
+};
+
+s32 func_151AC408(struct func_151AC408_s *arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4, void *arg5) {
+    struct func_151AC408_pt *pts;
+    u8 *p;
+    f32 vec[3];
+    u8 id;
+    s32 pad;
+
+    pts = arg0->unk94;
+    p = arg0->unk98;
+    vec[0] = pts[arg0->unk2D].x;
+    vec[1] = arg4;
+    vec[2] = pts[arg0->unk2D].z;
+    id = func_151D8E20();
+    if (func_150ADA20() & 1) {
+        func_151D9B8C(id, *(f32 *)p * 6.0f, p[0x1B], arg5, vec, (func_150ADA20() % 41U) + 80, 1, 1, 0, arg0->unkC, arg0->unk1);
+    } else {
+        func_151DAB58(id, *(f32 *)p * 1.5f, p[0x1B], vec, 1, arg0->unkC, arg0->unk1);
+    }
+    p[0x20] = 4;
+    return 1;
+}
 
 struct func_151AC550_s {
     u8 pad0;

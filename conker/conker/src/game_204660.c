@@ -5,7 +5,64 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_204660/func_151D71B0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_204660/func_151D7264.s")
+typedef struct { f32 x, y, z; } func_151D7264_v;
+
+struct func_151D7264_sub {
+    s32 unk0;
+    u8 pad4;
+    u8 unk5;
+    u8 pad6[2];
+    func_151D7264_v pos;
+    f32 unk14;
+};
+
+struct func_151D7264_s {
+    u8 pad0[0xD];
+    u8 unkD;
+    s16 unkE;
+    u8 pad10[0x18];
+    struct func_151D7264_sub unk28;
+};
+
+typedef s32 (*func_151D7264_fn)(struct func_151D7264_s *);
+extern func_151D7264_fn D_8008FCA0[];
+extern f32 func_15143E64();
+extern void func_151D7830();
+extern void func_151D77C8();
+
+void func_151D7264(struct func_151D7264_s *arg0) {
+    struct func_151D7264_sub *p;
+    func_151D7264_v pos;
+    u8 flag;
+    func_151D7264_v diff;
+
+    p = &arg0->unk28;
+    pos = *(func_151D7264_v *)((u8 *)arg0 + 0x30);
+    flag = *((u8 *)arg0 + 0x2D) & 1;
+    if (D_8008FCA0[*((u8 *)arg0 + 0x2C)](arg0) == 0) {
+        arg0->unkE = -1;
+        arg0->unkD |= 1;
+        return;
+    }
+    if (p->unk5 & 1) {
+        if (flag) {
+            diff.x = p->pos.x - pos.x;
+            diff.y = p->pos.y - pos.y;
+            diff.z = p->pos.z - pos.z;
+            if (func_15143E64(&diff) < p->unk14) {
+                if (p->unk0 == 0) {
+                    func_151D7830(arg0);
+                }
+            } else {
+                func_151D77C8(arg0);
+            }
+        } else {
+            func_151D77C8(arg0);
+        }
+    } else {
+        func_151D77C8(arg0);
+    }
+}
 
 struct func_151D73A8_s {
     u8 pad[0x2C];
@@ -69,7 +126,71 @@ void func_151D74B0(void *arg0, u8 arg1, s8 arg2, u8 arg3, s32 arg4) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_204660/func_151D7538.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_204660/func_151D75C4.s")
+struct func_151D75C4_obj {
+    s32 unk0;
+    u8 pad4[3];
+    u8 unk7;
+    u8 pad8[0x3B - 0x8];
+    u8 unk3B;
+    u8 pad3C[0x1D4 - 0x3C];
+    s32 unk1D4;
+    u8 pad1D8[0x318 - 0x1D8];
+    s32 unk318;
+    u8 *unk31C;
+};
+
+struct func_151D75C4_sub {
+    u8 pad0[5];
+    u8 unk5;
+    u8 pad6[2];
+    u8 unk8[1];
+};
+
+struct func_151D75C4_s {
+    u8 pad0[0x28];
+    struct func_151D75C4_sub unk28;
+    u8 pad[0x40 - 0x28 - sizeof(struct func_151D75C4_sub)];
+    struct func_151D74B0_s unk40;
+};
+
+typedef s32 (*func_151D75C4_fn)(struct func_151D75C4_s *);
+extern func_151D75C4_fn D_8008FCA8[];
+extern u8 D_800AB280[][12];
+extern u8 D_800AB2D4[];
+
+s32 func_151D75C4(struct func_151D75C4_s *arg0) {
+    struct func_151D75C4_sub *sub;
+    struct func_151D74B0_s *s;
+    struct func_151D75C4_obj *obj;
+
+    sub = &arg0->unk28;
+    s = &arg0->unk40;
+    obj = s->ptr;
+    if (obj->unk0 == 0 || obj->unk3B != s->unk4) {
+        return 0;
+    }
+    if (obj->unk1D4 == 0) {
+        sub->unk5 &= ~1;
+        return 1;
+    }
+    if (obj->unk31C != NULL && obj->unk31C[0x197] != 0) {
+        if (obj->unk318 != 0) {
+            sub->unk5 &= ~1;
+            return 1;
+        }
+    }
+    if (obj->unk7 != 0xFF) {
+        sub->unk5 &= ~1;
+        return 1;
+    }
+    func_15143134(D_800AB280[s->unk5], sub->unk8, (D_800AB2D4[s->unk5] << 6) + obj->unk1D4);
+    sub->unk5 |= 1;
+    if (s->unk6 != -1) {
+        D_8008FCA8[s->unk6](arg0);
+    } else {
+        return 1;
+    }
+}
 
 struct func_151D7724_s2 {
     u8 pad0[0x84];

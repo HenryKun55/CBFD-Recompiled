@@ -313,7 +313,55 @@ void func_151A18DC(u8 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1CC440/func_151A1FB4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1CC440/func_151A24A8.s")
+struct func_151A24A8_s {
+    u8 pad0[0x14];
+    s32 unk14;
+    u8 pad18[0x2F - 0x18];
+    u8 unk2F;
+    u8 pad30[2];
+    s16 unk32;
+    s16 unk34[3];
+    u8 pad3A[5];
+    u8 unk3F;
+    u8 unk40;
+    u8 unk41;
+    u8 unk42;
+    u8 pad43;
+    u16 unk44;
+    u8 pad46[0x50 - 0x46];
+    s16 unk50[14];
+};
+
+void func_151A24A8(struct func_151A24A8_s *arg0) {
+    s16 *p;
+
+    p = arg0->unk50;
+    if (p[2] < arg0->unk34[2]) {
+        arg0->unk3F = p[0] * (p[1] - arg0->unk34[2]);
+    }
+    if (p[5] < arg0->unk34[2]) {
+        arg0->unk34[0] = arg0->unk34[1] = p[3] * (p[4] - arg0->unk34[2]);
+    }
+    if (arg0->unk34[2] < p[8]) {
+        arg0->unk3F = p[9] * arg0->unk34[2];
+    }
+    if (arg0->unk34[2] < p[10]) {
+        s16 temp = p[11] * D_800BE9E4;
+
+        arg0->unk34[0] += temp;
+        arg0->unk34[1] += temp;
+    }
+    if (arg0->unk34[2] < p[6]) {
+        arg0->unk2F = 0x13;
+        arg0->unk44 |= 0x101;
+        arg0->unk40 = arg0->unk41 = arg0->unk42 = p[7] * arg0->unk34[2];
+        arg0->unk14 = 0x520003;
+    }
+    if (arg0->unk34[2] < p[12]) {
+        arg0->unk32 = p[13];
+        p[12] = -9999;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1CC440/func_151A25E0.s")
 

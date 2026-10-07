@@ -528,7 +528,96 @@ s32 func_151CC77C(struct func_151CC77C_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1F4650/func_151CC840.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1F4650/func_151CCD1C.s")
+struct func_151CCD1C_s {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    u8 unk10;
+    s16 unk12;
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    u8 unk1A;
+    u8 unk1B;
+    u8 unk1C;
+    u8 unk1D;
+    u8 unk1E;
+    u8 unk1F;
+    u8 unk20;
+    u8 unk21;
+    u8 unk22;
+    u8 unk23;
+    s32 unk24;
+    s32 unk28;
+    s32 unk2C;
+    s32 unk30;
+    s32 unk34;
+    s32 unk38;
+    s32 unk3C;
+    u8 unk40;
+    u8 unk41;
+    u8 pad42[2];
+    u8 unk44;
+    u8 pad45[0x58 - 0x45];
+};
+
+struct func_151CCD1C_t {
+    u8 *unk0;
+    f32 unk4;
+    f32 unk8;
+    u8 unkC;
+    u8 unkD;
+    u8 pad[0x5C - 0xE];
+    struct func_151CCD1C_s unk5C;
+};
+
+void *func_1515548C(struct func_151CCD1C_s *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6);
+void *memcpy(void *, const void *, size_t);
+
+void func_151CCD1C(u8 *arg0, u8 arg1, u8 arg2, u8 arg3) {
+    struct func_151CCD1C_t sp2C;
+    u8 *ret;
+
+    sp2C.unk0 = arg0;
+    sp2C.unk4 = 0.0f;
+    sp2C.unk8 = 130.0f;
+    sp2C.unkD = 0;
+    sp2C.unkC = 0;
+    sp2C.unk5C.unk12 = 300;
+    sp2C.unk5C.unk14 = (1 << (arg0[0x23D] + 11)) | 0x50;
+    sp2C.unk5C.unk16 = 1;
+    sp2C.unk5C.unk18 = 0xFF;
+    sp2C.unk5C.unk1A = 7;
+    sp2C.unk5C.unk1B = arg1;
+    sp2C.unk5C.unk1C = arg2;
+    sp2C.unk5C.unk1D = arg3;
+    sp2C.unk5C.unk1E = 0xB4;
+    sp2C.unk5C.unk1F = 0xFF;
+    sp2C.unk5C.unk20 = 0xFF;
+    sp2C.unk5C.unk21 = 0xFF;
+    sp2C.unk5C.unk22 = 0xFF;
+    sp2C.unk5C.unk23 = 0xFF;
+    sp2C.unk5C.unk24 = 0;
+    sp2C.unk5C.unk28 = 0x200004;
+    sp2C.unk5C.unk2C = 0x1F0601;
+    sp2C.unk5C.unk30 = 8;
+    sp2C.unk5C.unk34 = 0x44;
+    sp2C.unk5C.unk38 = 0x80;
+    sp2C.unk5C.unk3C = 0x20;
+    sp2C.unk5C.unk40 = 0;
+    sp2C.unk5C.unk41 = 10;
+    sp2C.unk5C.unk0 = 0.0f;
+    sp2C.unk5C.unk4 = 0.0f;
+    sp2C.unk5C.unk44 = arg0[0x23D];
+    sp2C.unk5C.unk10 = 0xB4;
+    sp2C.unk5C.unk8 = 65.0f;
+    sp2C.unk5C.unkC = 65.0f;
+    ret = func_1515548C(&sp2C.unk5C, 0, 0, 0, 0x58, 0xFF, 1);
+    if (ret != NULL) {
+        memcpy(ret + 0x70, &sp2C, 0x58);
+    }
+}
 
 void *func_151A4FD0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6, s32 arg7);
 void *memcpy(void *, const void *, size_t);

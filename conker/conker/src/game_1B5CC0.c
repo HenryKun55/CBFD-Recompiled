@@ -3,7 +3,65 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B5CC0/func_15188810.s")
+struct func_15188810_s {
+    u8 unk0;
+    u8 unk1;
+    u8 unk2;
+    u8 unk3;
+    s8 unk4;
+    u8 pad5;
+    s16 unk6;
+    void *unk8;
+    struct func_15188810_s *unkC;
+    u8 *unk10;
+    s32 unk14;
+};
+
+extern void *allocate_memory(s32, s32, s32, s32);
+extern void func_10004074(void *);
+extern s32 func_1502DB20(u8);
+void func_15188A58();
+
+void func_15188810(u8 *arg0, s32 arg1, s32 arg2) {
+    struct func_15188810_s *var_s0;
+    u32 n;
+    void *temp_v0_2;
+    s32 pad[2];
+
+    for (var_s0 = (struct func_15188810_s *)D_800DF7C8[0]; var_s0 != NULL; var_s0 = var_s0->unkC) {
+        if (arg0 == var_s0->unk10) {
+            if (var_s0->unk6 < arg1) {
+                var_s0->unk6 = arg1;
+            }
+            var_s0->unk4 = arg2;
+            return;
+        }
+    }
+    var_s0 = allocate_memory(0x18, 1, 0, 0);
+    if (var_s0 != NULL) {
+        n = func_1502DB20(arg0[4]);
+        if (n == 0) {
+            func_10004074(var_s0);
+            return;
+        }
+        temp_v0_2 = allocate_memory((n * 3) << 7, 1, 1, 1);
+        if (temp_v0_2 == NULL) {
+            func_10004074(var_s0);
+            return;
+        }
+        var_s0->unk0 = 0;
+        var_s0->unk1 = 3;
+        var_s0->unk2 = 0;
+        var_s0->unk3 = 0x14;
+        var_s0->unk4 = arg2;
+        var_s0->unk6 = arg1;
+        var_s0->unk8 = temp_v0_2;
+        var_s0->unk10 = arg0;
+        var_s0->unk14 = 0;
+        bzero(temp_v0_2, (n * 3) << 7);
+        func_15188A58(var_s0, D_800DF7C8);
+    }
+}
 
 struct func_1518894C_s {
     u8 unk0;
@@ -134,7 +192,34 @@ void func_15188AD0(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1B5CC0/func_15188B74.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B5CC0/func_15188D00.s")
+struct func_15188D00_s {
+    u8 unk0;
+    u8 pad1[0xB];
+    struct func_15188D00_s *unkC;
+};
+
+extern Mtx D_80089470;
+extern Gfx *(*D_8008D590[])(Gfx *, struct func_15188D00_s *, s16);
+
+Gfx *func_15188D00(Gfx *gdl, s32 arg1, s16 arg2) {
+    struct func_15188D00_s *p;
+
+    p = (struct func_15188D00_s *)D_800DF7C8[arg1];
+    if (p == NULL) {
+        return gdl;
+    }
+    gSPMatrix(gdl++, &D_80089470, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    { Gfx *_g = gdl++; _g->words.w0 = 0xD9FFFFFF; _g->words.w1 = 0x200004; }
+    { Gfx *_g = gdl++; _g->words.w0 = 0xD9EEFFFF; _g->words.w1 = 0; }
+    gDPPipeSync(gdl++);
+    { Gfx *_g = gdl++; _g->words.w0 = 0xE2001E01; _g->words.w1 = 0; }
+    { Gfx *_g = gdl++; _g->words.w0 = 0xEC000000; _g->words.w1 = 0xFF; }
+    while (p != NULL) {
+        gdl = D_8008D590[p->unk0](gdl, p, arg2);
+        p = p->unkC;
+    }
+    return gdl;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1B5CC0/func_15188E48.s")
 

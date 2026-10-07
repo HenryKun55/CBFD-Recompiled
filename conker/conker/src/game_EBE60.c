@@ -45,7 +45,34 @@ s32 func_150BEAA8(s32 arg0, s32 arg1) {
     return -1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EBE60/func_150BEACC.s")
+extern f32 D_800A00C0;
+extern f32 D_800A00C4;
+extern f32 D_800A00C8;
+extern f32 D_800A00CC;
+void func_15141F78(u8, void *, f32, u8, f32 *, u8);
+void func_15142180(s32, f32 *, f32, f32, f32);
+
+struct func_150BEACC_s {
+    u8 pad0[0x18];
+    f32 unk18;
+    u8 pad1C[0x8];
+};
+
+void func_150BEACC(struct127 *arg0, s32 arg1, s32 arg2) {
+    f32 sp4C[3];
+    struct func_150BEACC_s sp28;
+
+    if (arg0->unk1D4 == NULL) {
+        return;
+    }
+    if (func_150BE9B0(sp4C, arg0, &sp28, arg1) == 0) {
+        return;
+    }
+    func_15141F78(0xB, &sp28, (f32)arg2 * D_800A00C0 * D_800A00C4, arg0->unk40 * D_800A00C8, sp4C, arg1);
+    if (arg2 >= 0x4C) {
+        func_15142180(2, sp4C, sp28.unk18, 3.232f, D_800A00CC);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_EBE60/func_150BEC30.s")
 

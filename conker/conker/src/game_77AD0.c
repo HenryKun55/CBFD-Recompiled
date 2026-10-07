@@ -573,11 +573,76 @@ void func_1504C9E4(struct127 *arg0, s8 arg1, u8 arg2) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_1504CA60.s")
+void func_1504CA60(struct127 *arg0) {
+    f32 sp2C;
+    f32 sp28;
+
+    sp28 = arg0->unk180 + 20.0f;
+    arg0->unk1CC = arg0->y_position;
+    sp2C = 18.0f;
+    if (30.0f < arg0->unk28) {
+        sp2C = 80.0f;
+    }
+    if (arg0->unk81) {
+        sp2C = 80.0f;
+        sp28 -= 30.0f;
+        if ((arg0->unk28 < 5.0f) && (arg0->y_velocity < 0.0f)) {
+            arg0->unk81 = 0;
+            arg0->y_velocity = 45.0f;
+        }
+    } else if (arg0->unk28 < 20.0f) {
+        if ((func_150ADA20() & 0x3F) == 0) {
+            arg0->y_velocity = 25.0f;
+        }
+    }
+    func_15058EA4(arg0, sp28, 3.8f, sp28, -3.5f, 80.0f, -sp2C);
+    arg0->unk80 = 1;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_1504CB98.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_150511E8.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_15051558.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_1505210C.s")
+extern f32 D_80099330;
+extern f32 D_80099334;
+extern f32 D_80099338;
+
+f32 func_1505210C(struct127 *arg0, f32 arg1, f32 arg2, f32 *arg3, f32 arg4) {
+    f32 s;
+    f32 pad;
+    f32 angle;
+    f32 c;
+    f32 x;
+    f32 pitch;
+
+    arg2 = -arg2;
+    angle = arg0->unk40 * D_80099330;
+    s = func_150AD780(angle);
+    c = func_150AD78C(angle);
+    x = (arg1 * s) + (arg2 * c);
+    arg2 = (-arg1 * c) + (arg2 * s);
+    arg1 = func_150484A0(x, 1.0f) * D_80099334;
+    pitch = func_150484A0(arg2, 1.0f) * D_80099338;
+    arg2 = pitch;
+    if (arg1 >= 180.0f) {
+        arg1 -= 360.0f;
+    }
+    if (pitch >= 180.0f) {
+        arg2 = pitch - 360.0f;
+    }
+    if (arg1 > arg4) {
+        arg1 = arg4;
+    }
+    if (arg1 < -arg4) {
+        arg1 = -arg4;
+    }
+    if (arg2 > arg4) {
+        arg2 = arg4;
+    }
+    if (arg2 < -arg4) {
+        arg2 = -arg4;
+    }
+    *arg3 = arg2;
+    return arg1;
+}
 // NON-MATCHING: 3 instructions. The three `add.s` have their operands swapped
 // (target: add old, step; ours: add step, old). IDO produces the same order whichever
 // way round the source writes the addition, with a field read or a local for the old
@@ -651,7 +716,54 @@ void func_1505250C(struct127 *arg0, s32 arg1) {
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_15052590.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_15052760.s")
+extern f32 D_80099348;
+extern f32 D_8009934C;
+
+struct func_15052760_s {
+    u8 pad0[4];
+    u8 unk4;
+    u8 pad5[0x76 - 5];
+    u16 unk76;
+    u8 pad78[0x87 - 0x78];
+    u8 unk87;
+    u8 pad88[0xC4 - 0x88];
+    f32 unkC4;
+    u8 padC8[0x1E5 - 0xC8];
+    u8 unk1E5;
+    u8 pad1E6[0x226 - 0x1E6];
+    u8 unk226;
+    u8 pad227[0x22C - 0x227];
+    u16 unk22C;
+};
+
+void func_15052760(struct func_15052760_s *arg0, s16 arg1) {
+    s32 var_v0;
+    s32 var_a1;
+    f32 var_f0;
+    s8 temp;
+
+    arg1 = (u16)arg1 - arg0->unk76;
+    var_v0 = (arg1 * 100) / D_800CC264;
+    if (((arg0->unk4 == 0x29) || (arg0->unk4 != 8)) && !(arg0->unk22C & 8)) {
+        var_f0 = D_80099348;
+        var_a1 = 7;
+        if (arg0->unk4 == 0xA) {
+            var_a1 = 0x28;
+        }
+        if (arg0->unk226 == 0xFF) {
+            temp = var_v0 >> 8;
+            if ((arg0->unk87 ^ temp) & 0x80) {
+                var_v0 = 0;
+            }
+            var_f0 = D_8009934C;
+            var_a1 = 4;
+            arg0->unk87 = temp;
+        }
+        if (arg0->unk1E5 != 0) {
+            arg0->unkC4 += ((f32)(var_v0 / (arg0->unk1E5 * var_a1)) - arg0->unkC4) * var_f0;
+        }
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_150528C8.s")
 
 void func_15052EF0(struct127 *arg0) {
@@ -851,7 +963,26 @@ void func_1505371C(struct127 *arg0) {
 }
 
 // ???
-#pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_15053750.s")
+void func_15053750(struct127 *arg0) {
+    f32 diff;
+
+    diff = arg0->unk154 - arg0->xz_scale;
+    if (diff != 0.0f) {
+        if (fabsf(diff) < arg0->unk15C) {
+            func_15062BDC(arg0, arg0->unk154, arg0->y_scale);
+        } else {
+            func_15062BDC(arg0, ((diff < 0.0f) ? -1 : 1) * arg0->unk15C + arg0->xz_scale, arg0->y_scale);
+        }
+    }
+    diff = arg0->unk158 - arg0->y_scale;
+    if (diff != 0.0f) {
+        if (fabsf(diff) < arg0->unk15C) {
+            func_15062BDC(arg0, arg0->xz_scale, arg0->unk158);
+        } else {
+            func_15062BDC(arg0, arg0->xz_scale, ((diff < 0.0f) ? -1 : 1) * arg0->unk15C + arg0->y_scale);
+        }
+    }
+}
 
 void func_15053894(struct127 *arg0) {
     arg0->unk7F += 1;

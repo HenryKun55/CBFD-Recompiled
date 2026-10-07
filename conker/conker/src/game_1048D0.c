@@ -115,7 +115,35 @@ void func_150D7630(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1048D0/func_150D765C.s")
+struct func_150D765C_s {
+    s32 *tbl[2];
+};
+extern struct func_150D765C_s D_80088900;
+s32 func_1510D0EC(s32, void *, s32, s32);
+
+Gfx *func_150D765C(Gfx *gdl) {
+    s32 i;
+    s32 set;
+    s32 sp60[2];
+    s32 idx;
+    s32 seg;
+    s32 base;
+    struct func_150D765C_s tables;
+
+    tables = D_80088900;
+    set = 0;
+    base = D_800D9910 >> 8;
+    idx = base;
+    for (i = 0; i < 6; i++) {
+        if (i >= 4) {
+            set = 1;
+        }
+        seg = func_1510D0EC(tables.tbl[set][idx % 5], sp60, 3, 0);
+        gSPSegment(gdl++, i + 2, seg);
+        idx += 13;
+    }
+    return gdl;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1048D0/func_150D7790.s")
 

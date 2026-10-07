@@ -95,7 +95,29 @@ void func_15095060(struct func_15095060_src *arg0, s32 arg1, void *arg2) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_1509563C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_15095760.s")
+s32 func_1509563C(f32 x, f32 y, f32 z, f32 *a, f32 *b, f32 *c, f32 *d, f32 e);
+void func_15095A90(s32 arg0, s32 arg1, f32 arg2, f32 arg3, f32 arg4, s32 arg5, s32 arg6, s32 arg7, s32 arg8);
+
+struct func_15095760_s {
+    u8 pad0[0x40];
+    Vp vp[2];
+    u8 pad60[0x120];
+};
+
+Gfx *func_15095760(Gfx *gfx, s16 *pos) {
+    f32 sp44;
+    f32 sp40;
+    f32 sp3C;
+    f32 sp38;
+
+    if (func_1509563C(pos[0], pos[1], pos[2], &sp44, &sp40, &sp3C, &sp38, 4000.0f) == 0) {
+        return gfx;
+    }
+    gDPPipeSync(gfx++);
+    gDPSetPrimDepth(gfx++, (s32)(((sp3C / sp38) * ((struct func_15095760_s *)D_800BE628)[D_80082FA4].vp[D_800BE9C0].vp.vscale[2]
+                         + ((struct func_15095760_s *)D_800BE628)[D_80082FA4].vp[D_800BE9C0].vp.vtrans[2]) * 32.0f), 0);
+    func_15095A90((s32)gfx, (s32)pos, sp44, sp40, sp38, 1, 0, 0, 0);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_150958B0.s")
 

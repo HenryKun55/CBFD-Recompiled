@@ -11,7 +11,21 @@ void func_15044370(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15044380.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_1504452C.s")
+void func_1504452C(u8 **arg0, f32 *arg1, f32 arg2, f32 arg3, f32 arg4, f32 arg5, f32 arg6, s32 arg7) {
+    s32 i;
+    f32 x, y, z;
+    s16 *p;
+
+    for (i = 0; i < 3; i++) {
+        p = (s16 *)(arg0[i] + arg7);
+        x = p[0] - arg4;
+        y = p[1] - arg5;
+        z = p[2] - arg6;
+        arg1[i * 3 + 0] = (x * arg3) + (z * arg2);
+        arg1[i * 3 + 1] = y;
+        arg1[i * 3 + 2] = (z * arg3) - (x * arg2);
+    }
+}
 
 void func_15044658(void) {
 }
@@ -48,9 +62,102 @@ struct func_150448D0_s *func_150448D0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s3
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15044964.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15044A28.s")
+struct func_15044A28_s {
+    struct func_15044A28_s *next;
+    s16 unk4;
+    u8 pad6[6];
+    u8 unkC;
+    u8 unkD;
+    u8 unkE;
+};
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15044B78.s")
+extern s32 (*D_80085E80[])(struct func_15044A28_s *);
+extern void (*D_80085E8C[])(void);
+
+void func_15044A28(void) {
+    struct func_15044A28_s *prev;
+    struct func_15044A28_s *p;
+    struct func_15044A28_s *next;
+    s32 t;
+    s32 e;
+    s32 c;
+
+    prev = NULL;
+    p = *(struct func_15044A28_s **)&D_800CBE00;
+    while (p != NULL) {
+        e = p->unkE;
+        c = p->unkC;
+        next = p->next;
+        if (e == 0) {
+            if (D_80085E80[c](p)) {
+                D_80085E8C[p->unkD]();
+            }
+        } else {
+            t = e - D_800BE9E4;
+            if (t < 0) {
+                t = 0;
+            }
+            p->unkE = t;
+        }
+        t = p->unk4;
+        if (t != -1) {
+            t = t - D_800BE9E4;
+            if (t <= 0) {
+                if (prev == NULL) {
+                    *(struct func_15044A28_s **)&D_800CBE00 = p->next;
+                } else {
+                    prev->next = p->next;
+                }
+                func_100043B4(p, 2);
+            } else {
+                p->unk4 = t;
+                prev = p;
+            }
+        } else {
+            prev = p;
+        }
+        p = next;
+    }
+}
+
+struct func_15044B78_s {
+    u8 pad0[6];
+    s16 unk6;
+    s16 unk8;
+    s16 unkA;
+    u8 padC[4];
+    s16 unk10;
+    s16 unk12;
+    s16 unk14;
+    u8 unk16;
+};
+
+s32 func_15044B78(struct func_15044B78_s *arg0) {
+    f32 pad2;
+    f32 s;
+    f32 c;
+    f32 dx, dy, dz;
+    f32 pad;
+    f32 rz;
+    struct126 *p;
+    s32 h, w, d;
+
+    p = gObjects[0].unk31C;
+    h = (s16)p->unk114 >> 1;
+    w = (s16)p->unk116;
+    d = (s16)p->unk118;
+    dx = gObjects[0].x_position - arg0->unk6;
+    dy = (gObjects[0].y_position - arg0->unk8) + h;
+    dz = gObjects[0].z_position - arg0->unkA;
+    s = func_15048A40(arg0->unk16);
+    c = func_150489B0(arg0->unk16);
+    rz = (dz * c) + (dx * s);
+    dx = (dx * c) - (dz * s);
+    if (fabsf(dy) < arg0->unk14 + h && fabsf(dx) < arg0->unk12 + w && fabsf(rz) < arg0->unk10 + d) {
+        return 1;
+    }
+    return 0;
+}
 
 struct func_15044CE4_s {
     u8 pad0[6];

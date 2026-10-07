@@ -205,7 +205,40 @@ void _n_freeParam(ALParam *param)
   n_syn->paramList = param;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/libultra/audio/n_synthesizer/_n_collectPVoices.s")
+void _n_collectPVoices(void) {
+    ALLink *dl;
+    ALLink *unlinked;
+    ALLink *linked;
+    ALLink *after;
+    ALLink *link2;
+
+    while ((dl = n_syn->pLameList.next) != NULL) {
+        unlinked = dl;
+        if (unlinked->next != NULL) {
+            unlinked->next->prev = unlinked->prev;
+        }
+        if (unlinked->prev != NULL) {
+            unlinked->prev->next = unlinked->next;
+        }
+        linked = dl;
+        after = &n_syn->pFreeList;
+        linked->next = after->next;
+        linked->prev = after;
+        if (after->next != NULL) {
+            after->next->prev = linked;
+        }
+        after->next = linked;
+        link2 = (ALLink *)&((N_PVoice *)dl)->vvoice;
+        if (link2->next != NULL) {
+            link2->next->prev = link2->prev;
+        }
+        if (link2->prev != NULL) {
+            link2->prev->next = link2->next;
+        }
+        ((N_PVoice *)dl)->vvoice = NULL;
+        ((ALLink *)&((N_PVoice *)dl)->vvoice)->prev = NULL;
+    }
+}
 // Frees a physical voice: moves it to the synthesizer's "lame" list, which holds the
 // voices freed during this audio frame until they go back on the free list at the
 // start of the next one (libultra's n_synthesizer.c, with its alUnlink and alLink

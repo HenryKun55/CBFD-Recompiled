@@ -88,7 +88,36 @@ void func_1506B370(void) {
 void func_1506B3B0(void) {
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_1506B3B8.s")
+void func_1506B3B8(void) {
+    struct127 *obj;
+    s16 diff;
+    u8 idx;
+    u8 mag;
+
+    idx = 0;
+    diff = (gCurrentObject->unk7A + (gCurrentObject->unk1FD << 8)) - func_1505A630(gObjects[0].x_position - gCurrentObject->x_position, gCurrentObject->z_position - gObjects[0].z_position, 0);
+    mag = diff >> 8;
+    if (mag & 0x80) {
+        mag = -mag;
+    }
+    if (mag < ((u8 *)D_80099A3C)[idx]) {
+        idx = 1;
+    } else {
+        if (D_80099A43 < mag) {
+            idx = 5;
+        } else if (*(u8 *)&D_80099A3E < mag) {
+            idx = 2;
+        }
+        if (diff < 0) {
+            idx += 4;
+        } else {
+            idx += 3;
+        }
+    }
+    gCurrentObject->unk138 = 0;
+    gCurrentObject->unk244 = ((u8 *)D_80099A3C)[idx];
+    gCurrentObject->unk21C = 20000;
+}
 // NON-MATCHING: 5% there...
 // void func_1506B3B8(void) {
 //     u8 sp19;
@@ -2626,7 +2655,52 @@ void func_15074C00(s32 arg0, struct127 *arg1, s32 arg2) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_15074C80.s")
+struct func_15074C80_s {
+    s32 unk0;
+    u8 pad4[0x10];
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    f32 unk20;
+    u8 pad24[0x18];
+    f32 unk3C;
+    u8 pad40[0x36];
+    u16 unk76;
+    u8 pad78[0x152];
+    u8 unk1CA;
+    u8 pad1CB[0xAD];
+    u16 unk278;
+};
+s32 func_150335C8(void *, void *, s32, s32, s32, s32);
+void func_15166118(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
+s32 func_151942E8(void *, void *);
+extern f32 D_8009A104;
+
+void func_15074C80(struct func_15074C80_s *arg0, struct func_15074C80_s *arg1) {
+    s32 var_a2;
+
+    if (arg0->unk278 == 0x11) {
+        func_151942E8(arg0, arg1);
+    }
+    if (arg0->unk278 == 2 || arg0->unk278 == 0x12 || arg0->unk278 == 3 || arg0->unk278 == 6) {
+        if (arg1->unk1CA == 0) {
+            if (arg0->unk278 == 2) {
+                var_a2 = 0x2A;
+            } else if (arg0->unk278 == 0x12) {
+                var_a2 = 0x2F;
+            } else if (arg0->unk278 == 3) {
+                var_a2 = 0x39;
+            } else {
+                var_a2 = 0x51;
+            }
+            func_150335C8(arg0, arg1, var_a2, 0xC, 1, 0);
+        }
+        arg0->unk1CA = 0;
+    }
+    if (arg1->unk0 == 0x19) {
+        func_15166118((s32)(256.0f - (func_150484A0(arg0->unk20, arg0->unk3C) * D_8009A104)), 0xC0 - (arg0->unk76 >> 8), (s32)arg0->unk14, (s32)arg0->unk18, (s32)arg0->unk1C, 0x10, 0x14, 0, 0xFF, 0);
+    }
+}
 
 void func_15074DEC(struct127 *arg0, s32 arg1, s32 arg2) {
     arg0->unk2E8 = 1;

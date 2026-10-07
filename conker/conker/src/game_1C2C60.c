@@ -559,7 +559,51 @@ void func_1519C06C(u8 *arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1C2C60/func_1519C09C.s")
+struct225 *func_151602C0();
+void *memcpy(void *, const void *, u32);
+extern f32 D_800A8AF8;
+
+struct func_1519C09C_s {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+};
+
+struct225 *func_1519C09C(s32 arg0, f32 *arg1, u8 arg2, u8 arg3, u8 arg4, u8 arg5, u8 arg6, s32 arg7) {
+    struct225 *temp_v0;
+    Header header;
+    Header2 header2;
+    s32 tmp;
+    struct func_1519C09C_s data;
+
+    tmp = arg0;
+    data.unk0 = 35.0f;
+    data.unk4 = 5.0f;
+    data.unk8 = 110.0f;
+    data.unkC = 1.0f;
+    data.unk10 = 0.0f;
+    data.unk14 = 7.0f;
+    data.unk18 = D_800A8AF8;
+    data.unk1C = 127.0f;
+    header.unk0 = 2;
+    header.unk1 = 2;
+    header.unk2 = 300;
+    header.unk4 = 0x22;
+    header2.unk0 = arg1[0];
+    header2.unk4 = arg1[1];
+    header2.unk8 = arg1[2];
+    temp_v0 = func_151602C0(&header, &header2, arg2, arg3, arg4, arg5, 0xFF, 0, sizeof(data) + sizeof(tmp), arg6, arg7);
+    if (temp_v0 != NULL) {
+        memcpy(&temp_v0->unk18, &data, sizeof(data));
+        memcpy((u8 *)&temp_v0->unk18 + sizeof(data), &tmp, sizeof(tmp));
+    }
+    return temp_v0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1C2C60/func_1519C200.s")
 

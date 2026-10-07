@@ -7,7 +7,43 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_124920/func_150F78B4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_124920/func_150F7E20.s")
+extern f32 D_800A1BD8;
+
+struct func_150F7E20_inner {
+    u8 pad0[0x18];
+    f32 unk18;
+    f32 unk1C;
+    f32 unk20;
+    f32 unk24;
+    f32 unk28;
+};
+
+struct func_150F7E20_s {
+    u8 pad0[0x2C];
+    f32 unk2C;
+    f32 unk30;
+    u8 pad34[0x5C - 0x34];
+    u8 unk5C;
+    u8 pad5D[0x110 - 0x5D];
+    struct func_150F7E20_inner unk110;
+};
+
+s32 func_150F7E20(struct func_150F7E20_s *arg0) {
+    struct func_150F7E20_inner *temp_v0;
+    f32 temp_f2;
+
+    temp_v0 = &arg0->unk110;
+    arg0->unk5C = (u32)(temp_v0->unk18 * D_800A1BD8);
+    temp_f2 = (sinf(temp_v0->unk1C) * temp_v0->unk28) + temp_v0->unk24;
+    arg0->unk30 = temp_f2;
+    arg0->unk2C = temp_f2;
+    temp_v0->unk1C = func_15144B68(temp_v0->unk1C + (temp_v0->unk20 * D_800BE9A4));
+    temp_v0->unk18 -= D_800BE9A4;
+    if (temp_v0->unk18 < 0.0f) {
+        return 0;
+    }
+    return 1;
+}
 
 void func_15140410();
 

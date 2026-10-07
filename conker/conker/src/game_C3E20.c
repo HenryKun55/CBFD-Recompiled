@@ -48,4 +48,22 @@ void func_15096D08(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C3E20/func_1509759C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C3E20/func_15097798.s")
+extern s32 D_800D2E30[];
+
+void func_15097798(s32 arg0) {
+    struct108 *p;
+    f32 sp20[3];
+    s32 pad[2];
+
+    p = &D_800DBFF0[arg0];
+    if (D_800D2DB4 != 0) {
+        func_15048F90(&p->unk2A4, &p->unk2F8, sp20);
+        func_1504917C(sp20, sp20);
+        p->unk2A4 += sp20[0] * -2.5f * D_800D2E30[arg0];
+        p->unk2A8 += sp20[1] * -2.0f * D_800D2E30[arg0];
+        *(f32 *)&p->unk2AC += sp20[2] * -2.5f * D_800D2E30[arg0];
+        p->unk2F8 += sp20[0] * -2.5f * D_800D2E30[arg0];
+        p->unk2FC += sp20[1] * -2.0f * D_800D2E30[arg0];
+        p->unk300 += sp20[2] * -2.5f * D_800D2E30[arg0];
+    }
+}

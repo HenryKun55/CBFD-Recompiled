@@ -450,7 +450,30 @@ void func_1514F110(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514F130.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514F194.s")
+extern u8 D_800A5958[];
+extern u8 D_800A5964[];
+void func_151BB044(s32 arg0);
+void func_151BC074(s32 arg0);
+void func_151BD2F8(s32 arg0, s32 arg1, s32 arg2);
+void func_151B9F00(s32 arg0, s32 arg1, s32 arg2);
+
+int func_1514F194(s32 arg0) {
+    void *temp_v0;
+
+    func_151D0F60(arg0, 1, 0xFF, 1);
+    func_151D0F60(arg0, 2, 0xFF, 1);
+    func_151BB044(arg0);
+    if (D_800BE616 == 0) {
+        func_151BC074(arg0);
+    }
+    func_151BD2F8(arg0, 0xFF, 1);
+    func_151B9F00(arg0, 0xFF, 1);
+    func_15160A58(arg0, 1, &D_800A5958, 2, 0x12C, 0xC, 0xFF, 0xFF, 0xFF, 2, 0, -1, 0, 0, 0xFF, 1);
+    temp_v0 = func_15160A58(arg0, 1, &D_800A5964, 2, 0x12C, 0xF, 0xFF, 0, 0, 0xFF, 1, -1, 0, 0, 0xFF, 1);
+    if (temp_v0 != 0) {
+        func_1514EC1C(temp_v0, arg0, 0x19);
+    }
+}
 
 struct func_1514F308_s {
     f32 x;

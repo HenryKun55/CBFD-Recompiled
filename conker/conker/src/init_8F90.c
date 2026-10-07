@@ -384,7 +384,56 @@ s32 func_10009980(s32 *arg0) {
     return func_100097CC;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_8F90/func_100099BC.s")
+struct func_100099BC_s {
+    struct func_100099BC_s *next;
+    struct func_100099BC_s *prev;
+    s32 unk8;
+    u32 unkC;
+};
+
+void func_100099BC(void) {
+    s32 pad;
+    OSMesg msg = 0;
+    struct func_100099BC_s *node;
+    struct func_100099BC_s *next;
+    u32 i;
+
+    for (i = 0; i < D_8002AE48; i++) {
+        if (osRecvMesg((OSMesgQueue *)&D_80041298, &msg, OS_MESG_NOBLOCK) == -1) {
+            osRecvMesg((OSMesgQueue *)&D_80041298, &msg, OS_MESG_BLOCK);
+        }
+    }
+    for (node = (struct func_100099BC_s *)D_80040F78.unk4; node != NULL; node = next) {
+        next = node->next;
+        if (node->unkC + 1 < D_8002AE44) {
+            if (node == (struct func_100099BC_s *)D_80040F78.unk4) {
+                D_80040F78.unk4 = (s32)next;
+            }
+            if (node->next != NULL) {
+                node->next->prev = node->prev;
+            }
+            if (node->prev != NULL) {
+                node->prev->next = node->next;
+            }
+            if ((struct func_100099BC_s *)D_80040F78.unk8 != NULL) {
+                struct func_100099BC_s *a = (struct func_100099BC_s *)D_80040F78.unk8;
+                struct func_100099BC_s *b = a;
+                node->next = a->next;
+                node->prev = a;
+                if (b->next != NULL) {
+                    b->next->prev = node;
+                }
+                b->next = node;
+            } else {
+                D_80040F78.unk8 = (s32)node;
+                node->next = NULL;
+                node->prev = NULL;
+            }
+        }
+    }
+    D_8002AE48 = 0;
+    D_8002AE44++;
+}
 
 void func_10009B2C(struct54 *arg0) {
     if (((s32)arg0 & 1) == 0) {

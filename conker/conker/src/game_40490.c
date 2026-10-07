@@ -263,7 +263,42 @@ s32 func_150142AC(struct134 *arg0) {
 // register permutation in the modulo block, and `move a3,zero` where
 // target materializes the same zero as `li a3,0` (tried a null
 // pointer cast, no effect).
-#pragma GLOBAL_ASM("asm/nonmatchings/game_40490/func_15014F6C.s")
+s32 func_15014F6C(void *arg0) {
+    u8 buf[0x54];
+    s32 flag;
+    void *obj;
+
+    *(u8 *) ((char *) arg0 + 0x16) |= 4;
+    *(u8 *) (buf + 0x51) = *(s32 *) ((char *) arg0 + 0x20);
+
+    if (*(s32 *) ((char *) arg0 + 0x1C) & 1) {
+        flag = 1;
+    } else {
+        flag = 0;
+    }
+    *(u8 *) (buf + 0x50) = flag;
+
+    *(s32 *) (buf + 0x0) = (s32) arg0;
+    *(s32 *) (buf + 0x4) = *(u32 *) ((char *) arg0 + 0x18) & 0xFFFF;
+    *(s32 *) (buf + 0x8) = (*(u32 *) ((char *) arg0 + 0x18) >> 16) & 0xFFFF;
+    *(s32 *) (buf + 0xC) =
+        *(u32 *) (buf + 0x4) + (func_150ADA20() % (*(u32 *) (buf + 0x8) + 1));
+
+    func_150A8050(buf + 0x10, *(f32 *) ((char *) arg0 + 0xC),
+                  *(f32 *) ((char *) arg0 + 0x10), 0.0f);
+
+    *(f32 *) (buf + 0x40) = (f32) *(s16 *) ((char *) arg0 + 0x0);
+    *(f32 *) (buf + 0x44) = (f32) *(s16 *) ((char *) arg0 + 0x2);
+    *(f32 *) (buf + 0x48) = (f32) *(s16 *) ((char *) arg0 + 0x4);
+
+    obj = func_15149130(300, -1, 0x31, -1, 0, 0x2A, (struct37 *) 0x54, 0xFF, 0);
+
+    if (obj != 0) {
+        memcpy((char *) obj + 0x28, buf, 0x54);
+    }
+
+    return 1;
+}
 // s32 func_15014F6C(void *arg0) {
 //     u8 buf[0x54];
 //     s32 flag;

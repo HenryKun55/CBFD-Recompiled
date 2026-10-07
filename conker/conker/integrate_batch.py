@@ -41,6 +41,22 @@ def rodata_size(obj):
     return int(m.group(1), 16) if m else 0
 
 
+def rodata_matches_rom(obj, start, end):
+    # A migrated file's rodata against the ROM: same bytes, words with relocations aside.
+    rom = open('conker.us.bin', 'rb').read()[start:end]
+    dump = run(['mips-linux-gnu-objdump', '-s', '-j', '.rodata', obj]).stdout
+    data = bytearray()
+    for line in dump.splitlines():
+        m = re.match(r'^ [0-9a-f]{4,} ((?:[0-9a-f]{2,8} ){1,4})', line + ' ')
+        if m:
+            data += bytes.fromhex(m.group(1).replace(' ', ''))
+    rel = run(['mips-linux-gnu-objdump', '-r', '-j', '.rodata', obj]).stdout
+    relocs = {int(x, 16) for x in re.findall(r'^([0-9a-f]{8}) R_MIPS', rel, re.M)}
+    if len(data) != len(rom):
+        return False
+    return all(i in relocs or data[i:i + 4] == rom[i:i + 4] for i in range(0, len(rom), 4))
+
+
 def data_sizes(obj):
     # .data and .bss: no file's are migrated yet, so they must not change.
     out = run(['mips-linux-gnu-objdump', '-h', obj]).stdout
@@ -79,7 +95,7 @@ def main():
     for f, ok, why in checked:
         if not ok:
             report.append(f'{f}\tnot a match\t{why}')
-    migrated = {l.split()[0]: int(l.split()[2], 16) - int(l.split()[1], 16) for l in open('rodata_migrated.txt') if l.strip()}
+    migrated = {l.split()[0]: (int(l.split()[1], 16), int(l.split()[2], 16)) for l in open('rodata_migrated.txt') if l.strip()}
     by_file = {}
     for f in good:
         p = source_of(f)
@@ -100,8 +116,9 @@ def main():
         ok, log = build_obj(path)
         def rodata_ok():
             # A migrated file's rodata must still fill its range exactly.
-            size = rodata_size(f'build/{path}.o')
-            return size == migrated[fileid] if fileid in migrated else size == base_rodata
+            if fileid in migrated:
+                return rodata_matches_rom(f'build/{path}.o', *migrated[fileid])
+            return rodata_size(f'build/{path}.o') == base_rodata
         if ok and rodata_ok() and data_sizes(f'build/{path}.o') == base_data:
             done += fs
             report += [f'{f}\tin\t{path}' for f in fs]

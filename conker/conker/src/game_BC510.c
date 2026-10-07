@@ -73,7 +73,30 @@ void func_1508F9C4(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_BC510/func_150911F4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_BC510/func_15091534.s")
+extern u8 D_D16[];
+s32 func_1510D0EC(s32, void *, s32, s32);
+
+Gfx *func_15091534(Gfx *arg0, s32 arg1, u8 *arg2) {
+    s32 temp_v0;
+
+    *arg2 = 0;
+    temp_v0 = func_1510D0EC(arg1 + (s32)D_D16, 0, 3, 0);
+    if (temp_v0 != 0x80000000) {
+        gDPSetTextureImage(arg0++, G_IM_FMT_CI, G_IM_SIZ_16b, 1, temp_v0);
+        gDPSetTile(arg0++, G_IM_FMT_CI, G_IM_SIZ_16b, 0, 0x0000, G_TX_LOADTILE, 0, G_TX_NOMIRROR | G_TX_CLAMP, 6, G_TX_NOLOD, G_TX_NOMIRROR | G_TX_CLAMP, 6, G_TX_NOLOD);
+        gDPLoadSync(arg0++);
+        gDPLoadBlock(arg0++, G_TX_LOADTILE, 0, 0, 1023, 0);
+        gDPPipeSync(arg0++);
+        gDPSetTile(arg0++, G_IM_FMT_CI, G_IM_SIZ_4b, 4, 0x0000, G_TX_RENDERTILE, 0, G_TX_NOMIRROR | G_TX_CLAMP, 6, G_TX_NOLOD, G_TX_NOMIRROR | G_TX_CLAMP, 6, G_TX_NOLOD);
+        gDPSetTileSize(arg0++, G_TX_RENDERTILE, 0, 0, 63 << 2, 63 << 2);
+        gDPSetTextureImage(arg0++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 1, temp_v0 + 0x800);
+        gDPLoadSync(arg0++);
+        gDPLoadTLUTCmd(arg0++, 6, 15);
+        gDPSetOtherMode(arg0++, 0xEF00AC3F & 0xFFFFFF, 0x504244);
+        *arg2 = 1;
+    }
+    return arg0;
+}
 // NON-MATCHING: needs some love
 // Gfx* func_15091534(Gfx* arg0, struct257 *arg1, u8 *arg2) {
 //     u32 temp_v0;

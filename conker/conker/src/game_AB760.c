@@ -5,7 +5,52 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AB760/func_1507E2B0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AB760/func_1507E3C0.s")
+struct func_1507E3C0_s {
+    u8 pad0[4];
+    u8 unk4;
+    u8 pad5[0x6C - 5];
+    u8 unk6C[0x94 - 0x6C];
+    u32 unk94;
+};
+
+void func_1507E3C0(struct func_1507E3C0_s *arg0) {
+    s32 pad;
+    s32 sp14[2];
+    s32 i;
+
+    if ((arg0->unk4 == 0xF) || (arg0->unk4 == 0x46) || (arg0->unk4 == 0x4C)) {
+        for (i = 0; i < 2; i++) {
+            sp14[i] = arg0->unk6C[i];
+            if (sp14[i] >= 10) {
+                sp14[i] -= 10;
+                if (sp14[i] == 5) {
+                    sp14[i] = 0;
+                } else if (sp14[i] == 1) {
+                    sp14[i] = 1;
+                } else {
+                    sp14[i] = 2;
+                }
+            } else if (sp14[i] < 2) {
+                sp14[i]++;
+            }
+        }
+        arg0->unk94 |= 0x7E;
+        if (sp14[0] == 0) {
+            arg0->unk94 &= ~8;
+        } else if (sp14[0] == 1) {
+            arg0->unk94 &= ~0x10;
+        } else {
+            arg0->unk94 &= ~4;
+        }
+        if (sp14[1] == 0) {
+            arg0->unk94 &= ~0x20;
+        } else if (sp14[1] == 1) {
+            arg0->unk94 &= ~0x40;
+        } else {
+            arg0->unk94 &= ~2;
+        }
+    }
+}
 
 struct func_1507E500_s {
     u8 pad0[0x6F];

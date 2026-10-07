@@ -754,7 +754,48 @@ void func_1505959C(struct127 *arg0, s32 arg1) {
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_150597FC.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_150599C8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15059B54.s")
+u8 func_15059B54(struct127 *arg0, u16 arg1) {
+    s16 diff;
+    s16 sign;
+    s16 phi_a2;
+    s16 hi;
+    s16 lo;
+    s32 temp_lo;
+
+    diff = arg0->unk78 - arg0->unk76;
+    phi_a2 = diff;
+    if (phi_a2 < 0) {
+        phi_a2 ^= 0xFFFF;
+    }
+    if (arg0->unk1EA != 0) {
+        temp_lo = (s32) (arg0->unk1EA * D_800CC264) / 100;
+        hi = arg0->unk1EC + temp_lo;
+        lo = arg0->unk1EC - temp_lo;
+        if (hi < diff) {
+            diff = hi;
+        }
+        if (diff < lo) {
+            diff = lo;
+        }
+    }
+    sign = diff;
+    if (diff < 0) {
+        diff ^= 0xFFFF;
+    }
+    if (diff < arg1) {
+        arg1 = diff;
+    }
+    if ((arg0->unkF4 & 1) == 0) {
+        if (sign < 0) {
+            arg0->unk76 -= arg1;
+            arg0->unk1EC = -arg1;
+        } else {
+            arg0->unk76 += arg1;
+            arg0->unk1EC = arg1;
+        }
+    }
+    return phi_a2 >> 8;
+}
 // NON-MATCHING: 90% there, missing an s16 cast
 // u8 func_15059B54(struct127 *arg0, u16 arg1) {
 //     s16 temp_t8;
@@ -868,7 +909,45 @@ void func_1505A184(s32 arg0, f32 arg1, f32 arg2, f32 *arg3, f32 *arg4, f32 *arg5
 //     *arg3 = s2 * half1;
 //     *arg4 = -c2 * half1;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505A250.s")
+void func_1505A250(f32 arg0, f32 arg1, f32 arg2, f32 *arg3, f32 *arg4) {
+    f32 dx;
+    f32 dy;
+    f32 dist;
+    f32 stepx;
+    f32 stepy;
+
+    dx = arg0 - *arg3;
+    dy = arg1 - *arg4;
+    if (dx == 0.0f && dy == 0.0f) {
+        return;
+    }
+    dist = sqrtf(dx * dx + dy * dy);
+    arg2 *= D_800D1550[0];
+    stepx = fabsf(dx / dist * arg2);
+    stepy = fabsf(dy / dist * arg2);
+    if (dx >= 0.0f) {
+        *arg3 += stepx;
+        if (arg0 < *arg3) {
+            *arg3 = arg0;
+        }
+    } else {
+        *arg3 -= stepx;
+        if (*arg3 < arg0) {
+            *arg3 = arg0;
+        }
+    }
+    if (dy >= 0.0f) {
+        *arg4 += stepy;
+        if (arg1 < *arg4) {
+            *arg4 = arg1;
+        }
+    } else {
+        *arg4 -= stepy;
+        if (*arg4 < arg1) {
+            *arg4 = arg1;
+        }
+    }
+}
 
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505A3A8.s")
@@ -1579,7 +1658,50 @@ s32 func_15060BA4(u8 *arg0, s32 arg1) {
 //     }
 //     return 1;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15060BE0.s")
+extern u8 D_800C3E90;
+
+void func_15060BE0(struct127 *arg0) {
+    s32 done;
+    f32 *mtx;
+    struct124 *def;
+    f32 scale;
+    f32 z;
+    f32 x, y;
+    f32 len;
+    f32 dx, dy, dz;
+
+    done = 0;
+    if (arg0->id != 0xFF) {
+        if ((arg0->unk1D4 != 0) && (D_800C3E90 == 0)) {
+            def = D_800D1C90[arg0->id];
+            mtx = ((f32 (*)[16])arg0->unk1D4)[((u8 *)def)[0x27]];
+            scale = *(s16 *)((u8 *)def + 0x14) * arg0->y_scale;
+            if (scale != 0.0f) {
+                dx = mtx[4];
+                dy = mtx[5];
+                dz = mtx[6];
+                len = sqrtf(dx * dx + dy * dy + dz * dz);
+                if (len != 0.0f) {
+                    len = scale / len;
+                }
+                x = dx * len;
+                y = dy * len;
+                z = dz * len;
+            } else {
+                x = y = z = 0.0;
+            }
+            done = 1;
+            *(s16 *)((u8 *)arg0 + 0x1BC) = mtx[12] + x;
+            *(s16 *)((u8 *)arg0 + 0x1BE) = mtx[13] + y;
+            *(s16 *)((u8 *)arg0 + 0x1C0) = mtx[14] + z;
+        }
+    }
+    if (!done) {
+        *(s16 *)((u8 *)arg0 + 0x1BC) = arg0->x_position;
+        *(s16 *)((u8 *)arg0 + 0x1BE) = arg0->y_position;
+        *(s16 *)((u8 *)arg0 + 0x1C0) = arg0->z_position;
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15060D54.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15060F28.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_150611E8.s")

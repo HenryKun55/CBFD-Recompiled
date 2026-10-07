@@ -143,4 +143,45 @@ void func_150EA904(s32 arg0, s32 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_117490/func_150EAB10.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_117490/func_150EAE24.s")
+s32 func_15046C80(f32 *, s32, f32, void *);
+
+struct func_150EAE24_s {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+};
+
+struct func_150EAE24_s2 {
+    u8 pad0[0x14];
+    s16 *unk14;
+    struct func_150EAE24_s unk18;
+};
+
+s32 func_150EAE24(struct func_150EAE24_s2 *arg0) {
+    struct func_150EAE24_s *p;
+    f32 sp28[3];
+
+    arg0->unk18.unk0 += arg0->unk18.unk8 * D_800BE9A4;
+    arg0->unk18.unk4 += arg0->unk18.unkC * D_800BE9A4;
+    sp28[0] = arg0->unk18.unk0;
+    sp28[1] = arg0->unk18.unk10;
+    sp28[2] = arg0->unk18.unk4;
+    arg0->unk14[7] = arg0->unk18.unk0;
+    arg0->unk14[9] = arg0->unk18.unk4;
+    p = &arg0->unk18;
+    if (func_15046C80(sp28, 0, arg0->unk18.unk14, &arg0->unk18.unk1C)) {
+        arg0->unk14[8] = p->unk1C;
+    } else {
+        arg0->unk14[8] = p->unk10;
+    }
+    p->unk18 -= D_800BE9A4;
+    if (p->unk18 <= 0.0f) {
+        return 0;
+    }
+    return 1;
+}

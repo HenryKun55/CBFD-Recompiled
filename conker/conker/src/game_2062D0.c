@@ -346,7 +346,31 @@ s32 func_151DA6A8(struct210 *arg0) {
 //     return 1;
 // }
 #pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DA6F8.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DA938.s")
+extern f32 D_800AB49C;
+void func_151DAB58(u8 arg0, f32 arg1, u8 arg2, void *arg3, s32 arg4, u8 arg5, u8 arg6);
+struct func_151DA938_s { f32 x; f32 y; f32 z; s32 pad[2]; };
+struct func_151DA938_sub { f32 unk0; s32 unk4; u8 unk8; };
+struct func_151DA938_rec { f32 unk0; u8 pad4[0x17]; u8 unk1B; u8 pad1C[4]; u8 unk20; u8 pad21[0x27]; struct func_151DA938_sub unk48; };
+s32 func_151DA938(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4, s32 arg5) {
+    struct func_151DA938_rec *rec;
+    struct func_151DA938_s *base;
+    f32 vec[3];
+    struct func_151DA938_sub *sub;
+
+    base = *(struct func_151DA938_s **) (arg0 + 0x94);
+    rec = *(struct func_151DA938_rec **) (arg0 + 0x98);
+    vec[0] = base[*(s8 *) (arg0 + 0x2D)].x;
+    vec[1] = arg4 + 2.0f;
+    vec[2] = base[*(s8 *) (arg0 + 0x2D)].z;
+    sub = &rec->unk48;
+    if (func_150ADA20() & 1) {
+        func_151D9B8C(sub->unk8, rec->unk0 * 3.0f * sub->unk0, rec->unk1B, (void *) arg5, vec, 100, 0, 1, 0, arg0[0xC], arg0[0x1]);
+    } else {
+        func_151DAB58(sub->unk8, rec->unk0 * D_800AB49C * sub->unk0, rec->unk1B, vec, 1, arg0[0xC], arg0[0x1]);
+    }
+    rec->unk20 = 4;
+    return 1;
+}
 // NON-MATCHING: reads a 20-byte-stride record from a table at
 // arg0->unk94 (indexed by the signed byte at arg0->unk2D, read twice -
 // target's own genuine double-read, reproduced with a volatile second
@@ -573,9 +597,116 @@ void func_151DB4CC(struct218 *arg0) {
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DB5D0.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DB97C.s")
+struct func_151DB97C_sub {
+    u8 unk0;
+    u8 pad1[3];
+    s32 unk4;
+    u8 unk8;
+    u8 unk9;
+    u8 unkA;
+    u8 unkB;
+    u8 unkC;
+    u8 unkD;
+    u8 padE[2];
+    f32 unk10;
+    f32 unk14;
+    f32 unk18;
+};
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DBAA8.s")
+struct func_151DB97C_s {
+    u8 pad0[0x4C];
+    f32 unk4C;
+    f32 unk50;
+    f32 unk54;
+    u8 unk58[0xA8 - 0x58];
+    struct func_151DB97C_sub unkA8;
+};
+
+void func_15131918(void *, s32);
+
+s32 func_151DB97C(struct func_151DB97C_s *arg0, void *arg1) {
+    struct func_151DB97C_sub *sub;
+    f32 z;
+    f32 y;
+    f32 x;
+
+    sub = &arg0->unkA8;
+    if (sub->unk0 & 2) {
+        func_15131918(arg0->unk58, sub->unk4);
+    }
+    if (sub->unk0 & 1) {
+        sub->unk8 += sub->unkB * D_800BE9E4;
+        sub->unk9 += sub->unkC * D_800BE9E4;
+        sub->unkA += sub->unkD * D_800BE9E4;
+        x = func_151423D8(sub->unk8 - 0x40);
+        y = func_151423D8(sub->unk9 - 0x40);
+        z = func_151423D8(sub->unkA - 0x40);
+        arg0->unk4C = sub->unk10 * x;
+        arg0->unk50 = sub->unk14 * y;
+        arg0->unk54 = sub->unk18 * z;
+    }
+    return 1;
+}
+
+struct func_151DBAA8_v { s32 x, y, z; };
+struct func_151DBAA8_s {
+    s16 unk0;
+    s16 unk2;
+    s16 unk4;
+    s16 unk6;
+    struct func_151DBAA8_v unk8;
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    f32 unk20;
+    f32 unk24;
+    f32 unk28;
+    s16 unk2C;
+    s16 unk2E;
+    s16 unk30;
+    s16 unk32;
+    s16 unk34;
+    s16 unk36;
+    s16 unk38;
+    s16 unk3A;
+    u8  unk3C;
+    f32 unk40;
+    s16 unk44;
+    s16 unk46;
+    s32 unk48;
+};
+
+void func_15153F18(void *, void *, s32, u8, s32);
+
+void func_151DBAA8(struct func_151DBAA8_v *arg0, s32 arg1, u8 arg2, u8 arg3, s32 arg4) {
+    struct func_151DBAA8_s tmp;
+
+    tmp.unk8 = *arg0;
+    tmp.unk14 = 5.5f;
+    tmp.unk2C = arg1;
+    tmp.unk2 = 0xFF;
+    tmp.unk4 = -0x40;
+    tmp.unk6 = 0x2E;
+    tmp.unk18 = D_800AB4C0;
+    tmp.unk1C = D_800AB4C4;
+    tmp.unk20 = D_800AB4C8;
+    tmp.unk24 = 10.0f;
+    tmp.unk28 = D_800AB4CC;
+    tmp.unk2E = 0;
+    tmp.unk0 = 0;
+    tmp.unk30 = 3;
+    tmp.unk32 = 2;
+    tmp.unk34 = 0x1E;
+    tmp.unk36 = 0x1E;
+    tmp.unk38 = 0x9B;
+    tmp.unk3A = 0x64;
+    tmp.unk44 = 0x10;
+    tmp.unk46 = 0xF;
+    tmp.unk48 = 0;
+    tmp.unk40 = 0.5f;
+    tmp.unk3C = arg2;
+    func_15153F18(&tmp, &tmp.unk8, 0, arg3, arg4);
+}
 
 // typedef struct {
 //     s16 unk0; // sp24

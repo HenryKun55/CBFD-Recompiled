@@ -5,7 +5,84 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502BAD0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502BD84.s")
+struct func_1502BD84_s {
+    s32 unk0;
+    u8 unk4;
+    u8 unk5;
+    u8 pad6[0xA4 - 0x6];
+    u8 unkA4;
+    u8 padA5[0xF8 - 0xA5];
+    s32 unkF8;
+    u8 padFC[0x134 - 0xFC];
+    u8 unk134;
+    u8 unk135;
+    u8 pad136[0x1C9 - 0x136];
+    u8 unk1C9;
+    u8 pad1CA[0x1D4 - 0x1CA];
+    s32 unk1D4;
+    u8 pad1D8[0x1FC - 0x1D8];
+    u8 unk1FC;
+    u8 pad1FD[0x260 - 0x1FD];
+    s32 unk260;
+};
+
+void func_1502DF38(s32, s32);
+void func_1502C608(s32);
+void func_1502FBE8(struct func_1502BD84_s *);
+void func_1502E4C4(s32);
+void func_1503A08C(struct func_1502BD84_s *);
+void func_150345E4(s32);
+void func_1503A830(struct func_1502BD84_s *);
+void func_1502EEF4(s32);
+void func_1502F264(s32);
+void func_1502EAFC(struct func_1502BD84_s *);
+void func_150A4B04(struct func_1502BD84_s *);
+
+void func_1502BD84(struct func_1502BD84_s *arg0, s32 arg1) {
+    arg0->unk1D4 = 0;
+    if (arg0->unk5 == 5) {
+        func_1502DF38(arg1, 1);
+        return;
+    }
+    if (arg0->unk4 == 0xFF) {
+        return;
+    }
+    if (arg0->unk5 == 3) {
+        return;
+    }
+    if (arg0->unk5 == 2) {
+        func_1502C608(arg1);
+        return;
+    }
+    if (arg0->unk1C9 != 0) {
+        func_1502FBE8(arg0);
+    }
+    func_1502E4C4(arg1);
+    func_1502DF38(arg1, 0);
+    func_1503A08C(arg0);
+    if (arg0->unk1D4 == 0) {
+        arg0->unk1FC = 2;
+    } else {
+        func_150345E4(arg1);
+        func_1503A830(arg0);
+    }
+    if (D_800C6660[arg1].unkF != 0) {
+        func_1503DF48(arg1);
+    }
+    if (arg0->unk0 != 0) {
+        func_1502EEF4(arg1);
+        func_1502F264(arg1);
+        if (arg0->unkA4 != 0) {
+            func_1502EAFC(arg0);
+        }
+        if (arg0->unkF8 & 0x4000) {
+            func_150A4B04(arg0);
+        }
+        if (arg0->unk260 != 0) {
+            func_1517AD00(arg0->unk134, arg0->unk135, arg1);
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502BEE4.s")
 
@@ -198,7 +275,59 @@ s32 func_1502EE8C(s32 arg0, s32 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502F01C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502F264.s")
+struct func_1502F264_s {
+    u8 pad0[0x30];
+    f32 x;
+    f32 y;
+    f32 z;
+    u8 pad3C[4];
+};
+
+void func_1502F264(s32 arg0) {
+    struct127 *obj = &gObjects[arg0];
+    struct127 *parent;
+    struct func_1502F264_s *m;
+    s32 i;
+
+    if (obj->unk65 == 0) {
+        return;
+    }
+    parent = &gObjects[obj->unk65 - 1];
+    if ((obj->unk101 & 2) == 2) {
+        return;
+    }
+    m = (struct func_1502F264_s *)parent->unk1D4;
+    if (m == NULL) {
+        obj->x_position = parent->x_position;
+        obj->y_position = parent->y_position;
+        obj->z_position = parent->z_position;
+    } else {
+        m += obj->unk5C;
+        obj->x_position = m->x;
+        obj->y_position = m->y;
+        obj->z_position = m->z;
+    }
+    obj->unk180 = parent->unk180;
+    obj->y_velocity = -4.0f;
+    if (!(obj->unk101 & 0x20)) {
+        obj->unk76 = parent->unk76;
+        obj->xz_velocity = parent->xz_velocity;
+        obj->unk40 = parent->unk40;
+        obj->unk76 = parent->unk76;
+        obj->unk7A = parent->unk7A;
+        obj->unk78 = parent->unk78;
+    }
+    if (!(obj->unk101 & 0x40)) {
+        obj->unk7 = parent->unk7;
+        obj->unk8 = parent->unk8;
+        obj->unk9 = parent->unk9;
+        obj->unkA = parent->unkA;
+        obj->unkE.ub[1] = parent->unkE.ub[1];
+        for (i = 0; i <= D_80082FA0; i++) {
+            (&obj->unkB)[i] = (&parent->unkB)[i];
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502F3C8.s")
 

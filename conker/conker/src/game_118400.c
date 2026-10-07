@@ -42,4 +42,15 @@ s32 func_150EB030(s32 arg0, s32 arg1) {
     return -1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_118400/func_150EB090.s")
+extern f32 D_800A1470;
+extern f32 D_800A1474;
+void func_15141F78(s32, f32 *, f32, u8, f32 *, u8);
+
+void func_150EB090(s32 arg0, s32 arg1, s32 arg2) {
+    f32 sp4C[3];
+    f32 sp28[9];
+
+    if ((*(s32 *)(arg0 + 0x1D4) != 0) && (func_150EAF50(sp4C, arg0, (s32)sp28, arg1) != 0)) {
+        func_15141F78(10, sp28, arg2 * D_800A1470, *(f32 *)(arg0 + 0x40) * D_800A1474, sp4C, arg1);
+    }
+}

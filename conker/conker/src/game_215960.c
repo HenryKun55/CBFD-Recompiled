@@ -3,7 +3,47 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_215960/func_151E84B0.s")
+extern Gfx *(*D_8008FFF4[])();
+extern u8 D_800BE740;
+extern s8 D_800E0BD3;
+extern void *D_800E0BD8;
+void func_15042D94(s32 arg0, s32 arg1, u8 arg2, s32 arg3, ...);
+Gfx *func_151ED1E0(Gfx *gfx);
+
+Gfx *func_151E84B0(Gfx *gfx) {
+    s32 idx = 0;
+    Gfx *(*fn)();
+
+    D_8003C8E0 = 0x09000001;
+    gfx = func_151ED1E0(gfx);
+    fn = D_8008FFF4[D_800E0B94];
+    if (fn != NULL) {
+        gfx = fn(gfx);
+    }
+    if (D_80000300) {
+        if (D_800BE616 && D_8008FD90 >= 2) {
+            if (!(D_800BE740 & 0xF)) {
+                if (D_800E0BD3 == 1) {
+                    idx = 0x33;
+                } else if (D_800E0BD3 == 2) {
+                    idx = 0x16;
+                }
+            }
+        } else if (!(D_800BE740 & 1)) {
+            if (D_800E0BD3 == 1) {
+                idx = 0x32;
+            } else if (D_800E0BD3 == 2) {
+                idx = 0x15;
+            }
+        }
+    }
+    if (idx) {
+        func_1504332C(0xFF, 0xFF, 0xFF, 0xFF);
+        func_15042D94(0x94, 0xC8, 0x81, ((s32 *)D_800E0BD8)[idx]);
+    }
+    D_8003C8E0 = 0;
+    return gfx;
+}
 
 extern Gfx *(*D_8008FFC0[])();
 extern s32 D_80090058;
@@ -85,7 +125,29 @@ s32 func_151EC178(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_215960/func_151EC648.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_215960/func_151ED09C.s")
+extern Gfx D_80090028[];
+extern u8 D_800E0B97;
+extern u8 D_8009181C[];
+extern u8 D_80091828[];
+Gfx *func_151ED430(Gfx *gfx, void *arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, f32 arg6, s32 arg7);
+Gfx *func_15096934(Gfx *gfx);
+
+Gfx *func_151ED09C(Gfx *gfx) {
+    s32 alpha;
+
+    gSPDisplayList(gfx++, D_80090028);
+    alpha = D_800E0A90 * 4;
+    if (alpha >= 0x100) {
+        alpha = 0xFF;
+    }
+    gDPSetEnvColor(gfx++, 0xFF, 0xFF, 0xFF, alpha);
+    gfx = func_151ED430(gfx, D_8009181C, 0x92, 0x6C, 8, 3, 1.0f, 0);
+    gDPPipeSync(gfx++);
+    gDPSetCombineLERP(gfx++, 0, 0, 0, ENVIRONMENT, ENVIRONMENT, 0, TEXEL0, 0, 0, 0, 0, ENVIRONMENT, ENVIRONMENT, 0, TEXEL0, 0);
+    gDPSetEnvColor(gfx++, 0xFF, 0x80, 0x20, (D_800E0B97 * (alpha + 1)) >> 8);
+    gfx = func_151ED430(gfx, D_80091828, 0x92, 0x6C, 8, 3, 1.0f, 0);
+    return func_15096934(gfx);
+}
 
 extern u8 D_800E0B96;
 Gfx *func_1501A6CC(Gfx *arg0, s32 a, s32 b, s32 c, s32 d);

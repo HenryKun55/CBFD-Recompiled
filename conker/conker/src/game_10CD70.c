@@ -45,7 +45,44 @@ void func_150DFDA4(void *arg0) {
     *(f32 *)(temp_v0 + 0x38) = *(f32 *)((char *)arg0 + 0x1C);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_10CD70/func_150DFDD0.s")
+struct func_150DFDD0_s {
+    u32 w0;
+    u32 w1;
+};
+
+s32 func_150DFDD0(u8 *arg0, u8 *arg1) {
+    f32 f;
+    struct func_150DFDD0_s *v0;
+    s32 i;
+    s32 t;
+    struct func_150DFDD0_s *p;
+
+    if (*(s32 *)(arg1 + 0x2EC) != 0) {
+        arg0[0x13] = 2;
+        *(f32 *)(arg1 + 0x2D8) -= D_800BE9A4;
+        if (*(f32 *)(arg1 + 0x2D8) < 0.0f) {
+            *(s32 *)(arg1 + 0x2EC) = 0;
+            return 1;
+        }
+        f = 1.0f - *(f32 *)(arg1 + 0x2D8) * *(f32 *)(arg1 + 0x2DC);
+    } else {
+        f = 0.0f;
+        arg0[0x13] = 0;
+    }
+    v0 = **(struct func_150DFDD0_s ***)(arg0 + 0x24);
+    if (v0 != NULL) {
+        for (i = 0; *(s8 *)&v0[i] != -14; i++) {
+        }
+        p = (struct func_150DFDD0_s *)((u8 *)v0 + i * 8);
+        arg0 = (u8 *)p->w0;
+        t = 2 - (s32)(((u32)arg0 >> 12) & 0xFFF) / 3;
+        while (t < 0) {
+            t += 64;
+        }
+        p->w0 = 0xF2000000 | (((s32)(500.0f * f + 2.0f) & 0xFFF) << 12) | (t & 0xFFF);
+    }
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_10CD70/func_150DFEFC.s")
 

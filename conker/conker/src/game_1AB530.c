@@ -99,6 +99,43 @@ Gfx *func_1517EA4C(Gfx *gfx) {
     return gfx;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1AB530/func_1517EAAC.s")
+void func_15110360(s32 arg0, void *arg1, f32 arg2, f32 arg3, f32 arg4);
+void func_150A7A00(void *arg0, f32 arg1, f32 arg2, s32 arg3, f32 *arg4, f32 *arg5, f32 *arg6, f32 *arg7);
+
+s32 func_1517EAAC(f32 arg0, f32 arg1, s32 arg2, f32 *arg3, f32 *arg4) {
+    f32 temp_f0;
+    f32 nx;
+    f32 nz;
+    f32 ny;
+    f32 sp84;
+    f32 sp80;
+    f32 sp7C;
+    f32 sp78;
+    Mtx sp38;
+    f32 x;
+    f32 y;
+    char *temp_v0;
+
+    temp_v0 = (char *)D_800DBFF0 + D_80082FA4 * 0x9A0;
+    nx = -*(f32 *)(temp_v0 + 0x388);
+    ny = -*(f32 *)(temp_v0 + 0x380);
+    nz = *(f32 *)(temp_v0 + 0x5EC);
+    func_15110360(D_80082FA4, &sp38, nx, ny, nz);
+    temp_v0 = (char *)D_800BE628 + D_80082FA4 * 0x180;
+    x = *(f32 *)(temp_v0 + 0xC);
+    y = *(f32 *)(temp_v0 + 0x10);
+    func_150A7A00(&sp38, arg0, arg1, arg2, &sp84, &sp80, &sp7C, &sp78);
+    if (sp78 > 10.0f) {
+        temp_f0 = 1.0f / sp78;
+        sp84 = sp84 * x * temp_f0;
+        sp80 = sp80 * y * temp_f0;
+        *arg3 = x + sp84;
+        *arg4 = y - sp80;
+        return 1;
+    }
+    *arg3 = 0.0f;
+    *arg4 = 0.0f;
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1AB530/func_1517EC1C.s")
