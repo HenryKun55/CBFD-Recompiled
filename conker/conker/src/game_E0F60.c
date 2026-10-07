@@ -40,4 +40,63 @@ void func_150B3AB0(u8 *arg0, volatile u8 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_E0F60/func_150B3C0C.s")
+void func_151429E0(s32, u8 *, u8 *, u8 *);
+void *func_15156190(void *arg0, u8 arg1, s32 arg2, s32 arg3, s32 arg4);
+void func_15156388(void *, s32, s32);
+extern f32 D_8009FBCC;
+extern f32 D_8009FBD0;
+extern f32 D_8009FBD4;
+extern f32 D_8009FBD8;
+extern f32 D_8009FBDC;
+extern f32 D_8009FBE0;
+
+struct func_150B3C0C_s {
+    f32 pos[3];
+    f32 vel[3];
+    f32 unk18;
+    f32 unk1C;
+    u8 col1[4];
+    u8 col2[4];
+    u8 unk28;
+    s16 unk2A;
+    s16 unk2C;
+    f32 unk30;
+    u8 unk34;
+    s16 unk36;
+    s16 unk38;
+};
+
+s32 func_150B3C0C(s32 arg0, s32 arg1, f32 arg2, f32 arg3, f32 arg4, s32 arg5, s32 arg6, s32 arg7, s32 arg8, s32 arg9, s32 argA, s32 argB, s32 argC, s32 argD, u8 argE) {
+    f32 sp6C;
+    f32 sp68;
+    f32 sp64;
+    f32 temp;
+    struct func_150B3C0C_s p;
+
+    sp6C = func_151423D8(arg9 - 0x40);
+    sp68 = func_151423D8(arg9);
+    sp64 = func_151423D8(arg8 - 0x40);
+    temp = func_151423D8(arg8);
+    p.pos[0] = arg2;
+    p.pos[1] = arg3;
+    p.pos[2] = arg4;
+    p.vel[0] = 10.0f * temp * sp6C;
+    p.vel[1] = -10.0f * sp64;
+    p.vel[2] = 10.0f * temp * sp68;
+    p.unk18 = (func_150ADA68() * D_8009FBCC) + D_8009FBD0;
+    p.unk1C = (func_150ADA68() * D_8009FBD4) + D_8009FBD8;
+    func_151429E0(8, &p.col1[0], &p.col1[1], &p.col1[2]);
+    func_151429E0(8, &p.col2[0], &p.col2[1], &p.col2[2]);
+    p.col1[3] = 0xFF;
+    p.col2[3] = 0xFF;
+    p.unk28 = 9;
+    p.unk2A = (func_150ADA20() & 0xF) + 0xF;
+    p.unk30 = (func_150ADA68() * D_8009FBDC) + D_8009FBE0;
+    p.unk2C = 0x1601;
+    p.unk34 = 0xFF;
+    p.unk36 = 0xA;
+    p.unk38 = 0x19;
+    func_15156190(&p, 1, 0, argE, 1);
+    func_15156388(&p, 1, 0);
+    return 1;
+}

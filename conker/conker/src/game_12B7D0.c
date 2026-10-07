@@ -48,7 +48,33 @@ void func_150FE49C(u8 *arg0, u8 arg1, s32 arg2, func_150FE49C_s *arg3, func_150F
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_12B7D0/func_150FE604.s")
+extern s32 D_800A1FE0;
+extern f32 D_800A1FF0;
+extern f32 D_800A1FF4;
+void func_15102B38(void *, u8, void *, void *, f32 *, s32, s32, f32, void *, u8, s32, s32, u8, s32);
+
+void func_150FE604(void *arg0, void *arg1, u8 arg2, s32 arg3) {
+    f32 sp60[2];
+    u8 mask;
+    u8 *p;
+    u32 b;
+    u32 a;
+
+    if (*(s32 *)((u8 *)arg0 + 0x1D4) != 0 && (*((u8 *)arg0 + 0x74) & 0xF) != 0xF) {
+        sp60[1] = func_150ADA68() * (f32)2 + D_800A1FF0;
+        sp60[0] = func_150ADA68() * 15.0f + 35.0f;
+        if (*(u8 **)((u8 *)arg0 + 0x31C) != NULL && (*(u8 **)((u8 *)arg0 + 0x31C))[0x197] != 0 &&
+            *(u8 **)((u8 *)arg0 + 0x318) != NULL) {
+            mask = ~(1 << (*(u8 **)((u8 *)arg0 + 0x318))[0x23D]) & 0xFF;
+        } else {
+            mask = 0xFF;
+        }
+        a = func_150ADA20();
+        b = func_150ADA20();
+        func_15102B38(arg0, D_80088B94, &D_800A1FC8, &D_800A1FE0, sp60, a % 3 + 4, b % 56 + 200,
+                      func_150ADA68() * D_800A1FF4 + 500.0f, arg1, mask, 0, -1, arg2, arg3);
+    }
+}
 
 extern u8 D_80088B94;
 extern s32 D_800A1FC8;

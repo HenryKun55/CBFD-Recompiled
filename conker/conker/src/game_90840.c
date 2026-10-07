@@ -168,7 +168,48 @@ void func_150649A0(s32 arg0, s32 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_90840/func_15064A14.s")
+void func_15064A14(struct127 *arg0) {
+    struct127 *obj = &gObjects[arg0->unk65 - 1];
+    s32 flag;
+    s32 snd = 0xF;
+
+    if (obj->id == 0xC) {
+        snd = 0x5A;
+        if (obj->unk84.uh == 0xC) {
+            snd = 0x5B;
+        } else if (obj->unk84.uh == 0xD) {
+            snd = 0x5C;
+        }
+    } else if (obj->id == 0x53) {
+        snd = 0x8C;
+        if (obj->unk84.uh == 0xB) {
+            snd = 0xA2;
+        } else if (obj->unk84.uh == 0xD) {
+            snd = 0xA3;
+        }
+    } else if (obj->id == 0x21) {
+        snd = 0x169;
+    } else if (obj->id == 0x8A) {
+        if (arg0->unk31C != NULL && *((u8 *)arg0->unk31C + 0x1B2) != 0) {
+            flag = 1;
+        } else {
+            flag = 0;
+        }
+        if (obj->unk232 == 4) {
+            if (flag) {
+                snd = 0x350;
+            } else {
+                snd = 0x1A4;
+            }
+        } else if (flag) {
+            snd = 0x34F;
+        } else {
+            snd = 0x1A1;
+        }
+    }
+    func_1505E650(arg0, snd, 1.0f, 6.0f, 0.0f, 0.0f, 0);
+    func_150649A0(arg0->unk65 - 1, gCurrentObjectIndex);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_90840/func_15064B94.s")
 

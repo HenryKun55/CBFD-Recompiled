@@ -1752,7 +1752,51 @@ s32 func_1506196C(struct func_1506196C_s *arg0, s32 arg1) {
 //     return (v1 != 0xFE01) ? (v1 >> 8) : 0xFF;
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_150619A8.s")
+void func_150617BC(struct127 *arg0);
+s32 func_150623F4(struct127 *arg0);
+
+void func_150619A8(void) {
+    s32 i;
+    s32 j;
+    u8 list[25];
+    s32 count;
+    struct127 *obj;
+    struct127 *other;
+    u8 idx;
+
+    count = 0;
+    for (i = 0; i < 25; i++) {
+        if (gObjects[i].interaction_state != 0) {
+            if (gObjects[i].pad2FC[1] != 0) {
+                gObjects[i].pad2FC[1]--;
+            }
+            func_150617BC(&gObjects[i]);
+            if (func_150623F4(&gObjects[i]) != 0) {
+                gObjects[i].unk2FA |= 1;
+            } else {
+                gObjects[i].unk2FA &= ~1;
+                if (((u8 *)&gObjects[i])[0x20B] || gObjects[i].pad20C[0] || gObjects[i].pad20C[1] || gObjects[i].pad20C[2]) {
+                    list[count++] = i;
+                }
+            }
+        }
+    }
+    if (count != 0) {
+        for (i = 0; i < count; i++) {
+            idx = list[i];
+            obj = &gObjects[idx];
+            for (j = 0; j < 4; j++) {
+                if (((u8 *)obj)[0x20B + j] != 0) {
+                    other = func_15083E90(((u8 *)obj)[0x20B + j]);
+                    if (other != NULL && (other->unk2FA & 1)) {
+                        obj->unk2FA |= 1;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15061B4C.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_150623F4.s")
 // NON-MATCHING: scans the full gObjects[25] array; for each live
@@ -1915,8 +1959,91 @@ extern s32 D_800C4488;
 //     }
 //     *(s32 *) ((char *) elem + 0) = (a2 & 0xFF000000) | (v1 & 0xFFF) | ((v0 & 0xFFF) << 12);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15062E24.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15062FC0.s")
+struct func_15062E24_s {
+    u8 pad[8];
+    u16 unk8;
+    u16 unkA;
+};
+extern struct func_15062E24_s *D_800C5338[];
+void func_15094AB8(void *arg0, void *arg1, s32 arg2, f32 arg3, s32 arg4, s32 arg5);
+
+void func_15062E24(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6) {
+    s32 i;
+    s32 w;
+    s32 h;
+    char *p;
+
+    if (D_800C6360[arg0] == 0) {
+        return;
+    }
+    for (i = 0; i < 25; i++) {
+        if (gObjects[i].interaction_state == 0 || arg0 != gObjects[i].id || gObjects[i].unk2FA == 0) continue;
+        {
+            h = D_800C5338[arg0][arg5].unk8;
+            w = D_800C5338[arg0][arg5].unkA;
+            if (arg6 != 0) {
+                h *= 2;
+                w *= 2;
+            }
+            p = ((char **)((char *)&gObjects[i] + 0x28C))[D_800BE9C0];
+            if (p != NULL) {
+                p += arg1 * 16;
+                func_15094AB8(p, (char *)D_800C6360[arg0] + arg3 * 4, arg2, arg4, w, h);
+            }
+        }
+    }
+}
+extern s32 *D_800C4020[];
+
+struct func_15062FC0_v {
+    s16 ob[3];
+    u16 flag;
+    s16 tc[2];
+    u8 cn[4];
+};
+
+struct func_15062FC0_s {
+    u8 pad0[4];
+    u8 unk4;
+    u8 pad5[0x1C8 - 5];
+    u8 unk1C8;
+    u8 pad1C9[0x28C - 0x1C9];
+    struct func_15062FC0_v *unk28C[4][2];
+};
+
+void func_15062FC0(struct func_15062FC0_s *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6, s32 arg7) {
+    struct func_15062FC0_v *dst;
+    struct func_15062FC0_v *src;
+    s32 i;
+
+    dst = arg0->unk28C[arg0->unk1C8][D_800BE9C0];
+    src = arg0->unk28C[arg0->unk1C8][!D_800BE9C0];
+    if (dst == NULL) {
+        return;
+    }
+    if (arg1 != -1) {
+        dst += D_800C4020[arg0->unk4][arg1];
+        src += D_800C4020[arg0->unk4][arg1];
+    }
+    if (arg6 != 0) {
+        if (arg3 < dst->tc[0]) {
+            arg6 -= arg3;
+        } else if (dst->tc[0] < 0) {
+            arg6 += arg3;
+        }
+    }
+    if (arg7 != 0) {
+        if (arg4 < dst->tc[1]) {
+            arg7 -= arg4;
+        } else if (dst->tc[1] < 0) {
+            arg7 += arg4;
+        }
+    }
+    for (i = 0; i < arg5; i++) {
+        dst[i].tc[0] = src[i].tc[0] + arg6;
+        dst[i].tc[1] = src[i].tc[1] + arg7;
+    }
+}
 // NON-MATCHING: notifies every other live-flagged gObjects entry
 // (excluding arg0's own recovered index) whose unk31C sub-object
 // hasn't already reacted (unk1AC == 0), calling

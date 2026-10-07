@@ -190,7 +190,71 @@ void func_15188AD0(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B5CC0/func_15188B74.s")
+struct func_15188B74_s {
+    u8 unk0;
+    u8 unk1;
+    u8 unk2;
+    u8 unk3;
+    s8 unk4;
+    u8 pad5;
+    s16 unk6;
+    void *unk8;
+    struct func_15188B74_s *unkC;
+};
+
+extern void (*D_8008D580[])(struct func_15188B74_s *);
+extern void (*D_8008D588[])(struct func_15188B74_s *);
+
+void func_15188B74(s32 arg0) {
+    struct func_15188B74_s **head;
+    struct func_15188B74_s *p;
+    struct func_15188B74_s *next;
+    struct func_15188B74_s *prev;
+    s32 v;
+
+    head = (struct func_15188B74_s **)&D_800DF7C8[arg0];
+    p = *head;
+    prev = NULL;
+    while (p != NULL) {
+        next = p->unkC;
+        if (p->unk6 != 0) {
+            p->unk6 -= D_800BE9E4;
+        }
+        if (p->unk6 < 0) {
+            p->unk6 = 0;
+        }
+        D_8008D580[p->unk0](p);
+        v = p->unk3;
+        if (p->unk6 != 0) {
+            if (v != 0xFF) {
+                v += D_800BE9E4 * 16;
+                if (v >= 0x100) {
+                    v = 0xFF;
+                }
+                p->unk3 = v;
+            }
+            prev = p;
+        } else if (v != 0) {
+            v -= D_800BE9E4 * 8;
+            if (v < 0) {
+                v = 0;
+            }
+            if (v == 0) {
+                if (prev == NULL) {
+                    *head = next;
+                } else {
+                    prev->unkC = next;
+                }
+                D_8008D588[p->unk0](p);
+                func_10004074(p);
+            } else {
+                p->unk3 = v;
+                prev = p;
+            }
+        }
+        p = next;
+    }
+}
 
 struct func_15188D00_s {
     u8 unk0;
@@ -241,7 +305,65 @@ void func_151895CC(void **arg0) {
     func_100043B4(arg0[2], 2);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B5CC0/func_151895F4.s")
+struct func_151895F4_s {
+    u8 unk0;
+    u8 unk1;
+    u8 unk2;
+    u8 unk3;
+    s32 unk4;
+    s32 unk8;
+    s32 unkC;
+    u8 *unk10;
+    s32 unk14;
+};
+
+extern s32 func_1502C974(s32, s32, s16, s32, s32);
+extern s32 func_1503DA9C(u8 *, s32, s32, s32);
+extern u8 func_150849CC(u8 *, s32 *);
+extern s32 D_800DF7C0;
+extern u8 D_800DF7C4;
+s32 func_151895F4(s32 arg0, struct func_151895F4_s *arg1, s16 arg2) {
+    s32 pad0; // unused locals pad0-pad2 size the -g3 frame (stack homes)
+    s32 pad1;
+    s32 n;
+    s32 pad2;
+    s32 i;
+    s32 m;
+    s32 k;
+    s32 t;
+    s32 step;
+    s32 idx;
+    s32 sp64;
+    s32 start;
+    s32 *p;
+    s32 saved;
+
+    saved = arg1->unk2;
+    if (saved == 0) {
+        return arg0;
+    }
+    func_1503DA9C(arg1->unk10, func_150849CC(arg1->unk10, &sp64), sp64, 1);
+    k = arg1->unk1;
+    m = arg1->unk3;
+    step = func_1502DB20(arg1->unk10[4]);
+    n = arg1->unk2;
+    start = D_800BE9C0 * step * k;
+    idx = (struct127 *)arg1->unk10 - gObjects;
+    if (idx < 0 || idx >= 25) {
+        return arg0;
+    }
+    saved = *(s32 *)(arg1->unk10 + 0x94);
+    *(s32 *)(arg1->unk10 + 0x94) = arg1->unk14;
+    p = &D_800DF7C0;
+    for (i = 0; i < n; i++) {
+        t = (m * 96 + i * m * 32) >> 8;
+        *p = arg1->unk8 + ((start + i * step) << 6);
+        D_800DF7C4 = t;
+        arg0 = func_1502C974(arg0, idx, arg2, 4, 1);
+    }
+    *(s32 *)(arg1->unk10 + 0x94) = saved;
+    return arg0;
+}
 
 struct func_151897A4_s {
     u8 unk0;

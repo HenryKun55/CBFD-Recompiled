@@ -163,7 +163,43 @@ Gfx *func_151ED1E0(Gfx *gfx) {
     return func_1501A6CC(gfx, 0, 0, D_800BE620, D_800BE624);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_215960/func_151ED29C.s")
+extern u8 D_8009DEB0[];
+extern u8 D_8009DEB4[];
+extern u8 D_8009DEB8[];
+extern u8 D_8009DEBC[];
+
+struct func_151ED29C_s {
+    u8 pad0[6];
+    u16 width;
+    u16 height;
+    u8 fmt;
+    u8 siz;
+};
+
+Gfx *func_151ED29C(Gfx *gfx, struct func_151ED29C_s *tex, s32 *size) {
+    s32 i;
+    s32 masks;
+    s32 maskt;
+    s32 fmt;
+    s32 len;
+
+    len = D_8009DEB0[tex->siz] + tex->width * tex->height;
+    len >>= D_8009DEB4[tex->siz];
+    *size = len;
+    for (masks = 1, i = 2; i < tex->width; i *= 2) {
+        masks++;
+    }
+    for (maskt = 1, i = 2; i < tex->height; i *= 2) {
+        maskt++;
+    }
+    fmt = tex->fmt;
+    gDPPipeSync(gfx++);
+    gDPSetTile(gfx++, fmt, D_8009DEBC[tex->siz], 0, 0, G_TX_LOADTILE, 0, 0, 0, 0, 0, 0, 0);
+    gDPSetTile(gfx++, fmt, tex->siz, ((D_8009DEB8[tex->siz] * tex->width) + 7) >> 3, 0, G_TX_RENDERTILE, 0,
+               G_TX_CLAMP, maskt, 0, G_TX_CLAMP, masks, 0);
+    gDPSetTileSize(gfx++, G_TX_RENDERTILE, 0, 0, (tex->width - 1) << G_TEXTURE_IMAGE_FRAC, (tex->height - 1) << G_TEXTURE_IMAGE_FRAC);
+    return gfx;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_215960/func_151ED430.s")
 

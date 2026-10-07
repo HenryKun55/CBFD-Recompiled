@@ -306,7 +306,78 @@ void *func_15167D84(void *arg0, s32 arg1, s32 arg2, s8 arg3, u8 arg4, s32 arg5) 
 }
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15167E0C.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15168118.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_1516865C.s")
+extern u16 *D_8008CA4C[];
+
+struct func_1516865C_s {
+    struct {
+        s16 ob[3];
+        u16 flag;
+        s16 tc[2];
+        u8 cn[4];
+    } v[8];
+    s16 unk80[4];
+    s16 unk88;
+    s16 unk8A[7];
+    u16 unk98;
+    s16 unk9A;
+    s16 unk9C;
+    s16 unk9E;
+    u8 unkA0;
+};
+
+void func_1516865C(struct func_1516865C_s *arg0, u8 r, u8 g, u8 b, u8 a) {
+    s32 i;
+    s16 t1;
+    s16 v0;
+    s16 t2;
+    s16 v1;
+
+    v0 = 0x2000;
+    v1 = (D_8008CA4C[arg0->unkA0][4] + 0x100) << 5;
+    t1 = 0x2000;
+    t2 = (D_8008CA4C[arg0->unkA0][3] + 0x100) << 5;
+    for (i = 0; i < 2; i++) {
+        arg0->v[i * 4 + 1].flag = 0;
+        arg0->v[i * 4 + 1].cn[0] = r;
+        arg0->v[i * 4 + 1].cn[1] = g;
+        arg0->v[i * 4 + 1].cn[2] = b;
+        arg0->v[i * 4 + 1].cn[3] = a;
+        arg0->v[i * 4 + 2].flag = 0;
+        arg0->v[i * 4 + 2].cn[0] = r;
+        arg0->v[i * 4 + 2].cn[1] = g;
+        arg0->v[i * 4 + 2].cn[2] = b;
+        arg0->v[i * 4 + 2].cn[3] = a;
+        arg0->v[i * 4 + 3].flag = 0;
+        arg0->v[i * 4 + 3].cn[0] = r;
+        arg0->v[i * 4 + 3].cn[1] = g;
+        arg0->v[i * 4 + 3].cn[2] = b;
+        arg0->v[i * 4 + 3].cn[3] = a;
+        arg0->v[i * 4 + 0].flag = 0;
+        arg0->v[i * 4 + 0].cn[0] = r;
+        arg0->v[i * 4 + 0].cn[1] = g;
+        arg0->v[i * 4 + 0].cn[2] = b;
+        arg0->v[i * 4 + 0].cn[3] = a;
+    }
+    if (arg0->unk98 & 0x80) {
+        v1 = 0x2000;
+        v0 = (D_8008CA4C[arg0->unkA0][4] + 0x100) << 5;
+    }
+    if (arg0->unk98 & 0x100) {
+        t2 = 0x2000;
+        t1 = (D_8008CA4C[arg0->unkA0][3] + 0x100) << 5;
+    }
+    arg0->v[6].tc[0] = t1;
+    arg0->v[7].tc[1] = v0;
+    arg0->v[7].tc[0] = t2;
+    arg0->v[5].tc[1] = v1;
+    arg0->unk88 = 0;
+    arg0->unk9C = 0;
+    arg0->unk9E = 0;
+    arg0->v[1].tc[0] = arg0->v[5].tc[0] = arg0->v[2].tc[0] = arg0->v[6].tc[0];
+    arg0->v[2].tc[1] = arg0->v[6].tc[1] = arg0->v[3].tc[1] = arg0->v[7].tc[1];
+    arg0->v[0].tc[0] = arg0->v[4].tc[0] = arg0->v[3].tc[0] = arg0->v[7].tc[0];
+    arg0->v[0].tc[1] = arg0->v[4].tc[1] = arg0->v[1].tc[1] = arg0->v[5].tc[1];
+}
 void *func_15168800(void *arg0, u8 arg1, s32 arg2) {
     void *v1 = func_15167A68(0xE, arg2, 0xB8, 1, arg1, 1);
 
@@ -637,7 +708,38 @@ void func_15169040(void *arg0, u8 arg1) {
 // }
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15169070.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15169260.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_1516944C.s")
+void func_1516968C(struct102 *arg0, u8 *arg1, u8 arg2);
+void func_1516944C(s32 arg0, void *arg1, u8 arg2) {
+    s32 i;
+    struct102 *p;
+    void (*fn)(struct102 *, void *, u8);
+
+    if (arg0 >= 0x68) {
+        arg0 = 0x67;
+    }
+    for (i = 0; i < 2; i++) {
+        if (*(void **) ((u8 *) &D_8008B4A8[arg0] + 0x1C) != NULL) {
+            p = ((struct102 *(*)[0x68]) D_800DCE50)[i][arg0];
+            D_800DD190++;
+            while (p != NULL) {
+                ((struct102 **) D_800DD198)[D_800DD190] = ((struct102 **) p)[2];
+                func_1516968C(p, (u8 *) arg1, arg2);
+                (*(void (**)(struct102 *, void *, u8)) ((u8 *) &D_8008B4A8[arg0] + 0x1C))(p, arg1, arg2);
+                p = ((struct102 **) D_800DD198)[D_800DD190];
+            }
+            D_800DD190--;
+        } else {
+            p = ((struct102 *(*)[0x68]) D_800DCE50)[i][arg0];
+            D_800DD190++;
+            while (p != NULL) {
+                ((struct102 **) D_800DD198)[D_800DD190] = ((struct102 **) p)[2];
+                func_1516968C(p, (u8 *) arg1, arg2);
+                p = ((struct102 **) D_800DD198)[D_800DD190];
+            }
+            D_800DD190--;
+        }
+    }
+}
 // NON-MATCHING: mips_to_c reconstruction, hand-typed. Bundles arg0 and
 // its unique_id byte into a local struct (same pattern as
 // func_150717E0 above, to keep the dead-looking byte write) and

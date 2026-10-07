@@ -153,7 +153,79 @@ s32 func_151B76CC(struct func_151B76CC_s *arg0, f32 *arg1) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E37D0/func_151B77F4.s")
+typedef struct func_151B77F4_v { f32 x, y, z; } func_151B77F4_v;
+struct func_151B77F4_e {
+    func_151B77F4_v pos;
+    f32 unkC;
+    u8 unk10;
+};
+struct func_151B77F4_o {
+    u8 pad0[0x40];
+    func_151B77F4_v unk40;
+};
+struct func_151B77F4_d {
+    struct func_151B77F4_o *unk0;
+    u8 pad4[4];
+    u8 unk8;
+};
+struct func_151B77F4_s {
+    u8 pad0[0x10];
+    func_151B77F4_v pos;
+    u8 pad1C[0x25 - 0x1C];
+    u8 unk25;
+    u8 pad26[0x2C - 0x26];
+    s8 unk2C;
+    s8 unk2D;
+    s8 unk2E;
+    u8 pad2F[0x94 - 0x2F];
+    struct func_151B77F4_e *unk94;
+    struct func_151B77F4_d *unk98;
+};
+extern s32 (*D_8008FB90[])(struct func_151B77F4_s *, func_151B77F4_v *);
+extern f32 func_15143E64(func_151B77F4_v *);
+
+s32 func_151B77F4(struct func_151B77F4_s *arg0) {
+    struct func_151B77F4_d *d;
+    struct func_151B77F4_e *entries;
+    func_151B77F4_v prev;
+    func_151B77F4_v diff;
+    f32 dist;
+
+    d = arg0->unk98;
+    entries = arg0->unk94;
+    if (D_800BE9E4 > 0) {
+        prev = arg0->pos;
+        if (D_8008FB90[d->unk8](arg0, &arg0->pos) == 0) {
+            return 0;
+        }
+        if (d->unk0 != NULL) {
+            d->unk0->unk40 = arg0->pos;
+        }
+        diff.x = arg0->pos.x - prev.x;
+        diff.y = arg0->pos.y - prev.y;
+        diff.z = arg0->pos.z - prev.z;
+        dist = func_15143E64(&diff);
+        {
+            struct func_151B77F4_e *e = &entries[arg0->unk2E];
+            e->pos = arg0->pos;
+            e->unkC = dist;
+            e->unk10 = 0xFF;
+        }
+        arg0->unk2E++;
+        if (arg0->unk2E == arg0->unk25) {
+            arg0->unk2E = 0;
+        }
+        arg0->unk2C++;
+        if (arg0->unk2E == arg0->unk2D) {
+            arg0->unk2D++;
+            if (arg0->unk2D == arg0->unk25) {
+                arg0->unk2D = 0;
+            }
+            arg0->unk2C--;
+        }
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E37D0/func_151B7998.s")
 

@@ -108,7 +108,45 @@ s32 func_15149C58(struct func_15149C58_s *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_176A00/func_15149D18.s")
+struct func_15149D18_s {
+    u8 pad0[0x2C];
+    f32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+    u8 pad40[0xC0 - 0x40];
+    u8 unkC0[0x40];
+    Vtx *unk100[1];
+};
+
+Vtx *func_15149D18(struct func_15149D18_s *arg0, s16 arg1) {
+    Vtx *vtx;
+    Vtx *ret;
+    f32 sz;
+    f32 sx;
+    u8 flag;
+
+    func_151D5D60(arg0->unk100, arg1, 0x40, &vtx, &flag);
+    ret = vtx;
+    if (ret != NULL) {
+        if (flag) {
+            memcpy(arg0->unk100[arg1], arg0->unkC0, 0x40);
+            memcpy((u8 *)arg0->unk100[arg1] + 0x40, arg0->unkC0, 0x40);
+        }
+    } else {
+        return NULL;
+    }
+    sz = D_800DD1D8[arg1] * arg0->unk2C;
+    sx = D_800DD1E8[arg1] * arg0->unk2C;
+    vtx[0].v.ob[0] = vtx[3].v.ob[0] = arg0->unk34 + sx;
+    vtx[0].v.ob[1] = vtx[1].v.ob[1] = arg0->unk38;
+    vtx[0].v.ob[2] = vtx[3].v.ob[2] = arg0->unk3C - sz;
+    vtx[1].v.ob[0] = vtx[2].v.ob[0] = arg0->unk34 - sx;
+    vtx[2].v.ob[1] = vtx[3].v.ob[1] = arg0->unk38 + arg0->unk30;
+    vtx[1].v.ob[2] = vtx[2].v.ob[2] = arg0->unk3C + sz;
+    return ret;
+}
 
 typedef struct {
     f32 x, y, z;
@@ -420,7 +458,30 @@ s32 func_1514C2B8(struct func_1514C2B8_s *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_176A00/func_1514C2F0.s")
+typedef s32 (*func_1514C2F0_fn)(s32, s16, f32, f32, f32, f32, f32, f32, s32, s32, f32, s32, f32, s32, s32);
+extern func_1514C2F0_fn D_8008AA00[];
+
+void func_1514C2F0(f32 arg0, f32 arg1, f32 arg2, f32 arg3, u8 arg4, s8 arg5, s16 arg6, u8 arg7, s32 arg8, f32 arg9, s32 arg10, u8 arg11) {
+    s16 i;
+    u8 angle;
+    f32 s;
+    f32 c;
+    f32 y;
+    f32 a1;
+    f32 a0;
+
+    a1 = arg1; a0 = arg0; angle = arg4;
+    for (i = 0; i < arg6; i++, angle += arg5) {
+        s = func_151423D8(angle - 0x40);
+        c = func_151423D8(angle);
+        y = arg3 * c + arg2;
+        if (D_8008AA00[arg7] != NULL) {
+            if (!D_8008AA00[arg7](1, i, arg3 * s + a0, a1, y, a0, a1, arg2, angle, arg4, arg3, arg8, arg9, arg10, arg11)) {
+                return;
+            }
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_176A00/func_1514C470.s")
 

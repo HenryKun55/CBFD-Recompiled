@@ -75,4 +75,47 @@ void func_150D7120(struct func_150D7120_v *arg0, u8 arg1, s32 arg2) {
     func_1514FCE8(&s, arg1, arg2);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1045D0/func_150D728C.s")
+struct func_150D728C_c { s16 h[9]; };
+struct func_150D728C_a {
+    f32 x, y, z;
+    struct func_150D728C_c unkC;
+    f32 unk20;
+    f32 unk24[2];
+    struct func_150D7120_v unk2C;
+    u8 pad38[0x40];
+};
+struct func_150D728C_b {
+    f32 x, y, z;
+    f32 unkC;
+    f32 unk10[2];
+    struct func_150D7120_v unk18;
+    u8 pad24[0x40];
+};
+extern void func_151BFC40(f32 *, f32 *);
+extern void func_1514FBFC(struct func_150D728C_a *, u8, s32);
+extern void func_1514FB98(struct func_150D728C_b *, u8, s32);
+
+void func_150D728C(struct func_150D728C_c *arg0, struct func_150D7120_v *arg1, f32 *arg2, u8 arg3, s32 arg4) {
+    struct func_150D728C_a a;
+    struct func_150D728C_b b;
+
+    func_151C04F8(arg1, arg3, arg4);
+    func_151C05A4(arg1, arg3, arg4);
+    func_151C05F0(arg1, arg3, arg4);
+    if (arg0 != NULL) {
+        a.x = -arg2[0];
+        a.y = -arg2[1];
+        a.z = -arg2[2];
+        a.unkC = *arg0;
+        a.unk2C = *arg1;
+        func_151BFC40(a.unk24, &a.unk20);
+        func_1514FBFC(&a, arg3, arg4);
+    } else {
+        b.x = -arg2[0];
+        b.y = -arg2[1];
+        b.z = -arg2[2];
+        func_151BFC40(b.unk10, &b.unkC);
+        b.unk18 = *arg1;
+        func_1514FB98(&b, arg3, arg4);
+    }
+}

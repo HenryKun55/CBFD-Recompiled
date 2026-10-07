@@ -93,7 +93,81 @@ void func_151152A8(struct func_151152A8_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_142560/func_15115368.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_142560/func_151155C0.s")
+struct func_151155C0_s {
+    u8 pad0[0x12];
+    s16 unk12;
+    u8 pad14[0x3C - 0x14];
+    s32 unk3C;
+    u8 pad40[0x4F - 0x40];
+    u8 unk4F;
+    u8 pad50[0x5C - 0x50];
+    s16 unk5C;
+    u8 pad5E[0x7C - 0x5E];
+    s32 unk7C;
+    s32 unk80;
+};
+
+void func_151155C0(struct func_151155C0_s *arg0) {
+    s32 speed = (u8)(arg0->unk3C >> 16);
+    s32 count = (u8)(arg0->unk3C >> 24) + 1;
+    s32 target = (s16)arg0->unk3C;
+    s32 flag = 0;
+    s32 reached = 0;
+    s32 orig = arg0->unk12;
+    s32 cur;
+    s32 step;
+
+    if ((arg0->unk4F & 4) == 4) {
+        flag = 1;
+    }
+    if (arg0->unk7C == 0) {
+        arg0->unk7C = arg0->unk12;
+    }
+    step = (target - arg0->unk7C) / speed;
+    if (arg0->unk80 == 0) {
+        if (arg0->unk12 == arg0->unk7C) {
+            if (flag) {
+                arg0->unk80 = count;
+            }
+        } else {
+            cur = (s16)(arg0->unk12 - step);
+            if (arg0->unk7C < target) {
+                if (arg0->unk7C < cur) {
+                    reached = 1;
+                }
+            } else if (cur < arg0->unk7C) {
+                reached = 1;
+            }
+            if (reached) {
+                arg0->unk12 = cur;
+            } else {
+                arg0->unk12 = arg0->unk7C;
+                arg0->unk80 = -count;
+            }
+        }
+    }
+    if (arg0->unk80 > 0) {
+        cur = (s16)(arg0->unk12 + step);
+        if (arg0->unk7C < target) {
+            if (cur < target) {
+                reached = 1;
+            }
+        } else if (target < cur) {
+            reached = 1;
+        }
+        if (reached) {
+            arg0->unk12 = cur;
+            arg0->unk80 = count;
+        } else {
+            arg0->unk12 = target;
+            arg0->unk80 = arg0->unk80 - 1;
+        }
+    }
+    if (arg0->unk80 < 0) {
+        arg0->unk80 = arg0->unk80 + 1;
+    }
+    arg0->unk5C = arg0->unk12 - orig;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_142560/func_1511575C.s")
 
@@ -736,7 +810,57 @@ void func_1511EC50(struct func_1511EC50_s *arg0) {
     arg0->unk7C = 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_142560/func_1511ED84.s")
+struct func_1511ED84_s {
+    u8 pad0[0x14];
+    s16 unk14;
+    u8 pad16[0x72 - 0x16];
+    u8 unk72;
+    u8 pad73[0x7C - 0x73];
+    s32 unk7C;
+    s32 unk80;
+    f32 unk84;
+};
+
+void func_1511ED84(struct func_1511ED84_s *arg0) {
+    s32 one = 1;
+    s32 dir;
+    f32 step;
+    f32 lim;
+
+    if (arg0->unk7C == 0) {
+        arg0->unk84 = arg0->unk14;
+    }
+    step = D_800BE9E4 * 4.0f;
+    dir = one - (arg0->unk72 & 1);
+    if (arg0->unk80 != 0) {
+        if (dir & 1) {
+            arg0->unk14 = arg0->unk14 + step;
+            if (arg0->unk84 < arg0->unk14) {
+                arg0->unk14 = arg0->unk84;
+            }
+        } else {
+            arg0->unk14 = arg0->unk14 - step;
+            if (arg0->unk14 < arg0->unk84) {
+                arg0->unk14 = arg0->unk84;
+            }
+        }
+    } else {
+        if (dir & 1) {
+            arg0->unk14 = arg0->unk14 - step;
+            lim = arg0->unk84 - 350.0f;
+            if (arg0->unk14 < lim) {
+                arg0->unk14 = lim;
+            }
+        } else {
+            arg0->unk14 = arg0->unk14 + step;
+            lim = arg0->unk84 + 350.0f;
+            if (lim < arg0->unk14) {
+                arg0->unk14 = lim;
+            }
+        }
+    }
+    arg0->unk7C = one;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_142560/func_1511EF40.s")
 
@@ -826,6 +950,49 @@ void func_1511F768(struct func_1511F768_s *arg0, s32 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_142560/func_1511F788.s")
+struct func_1511F788_s {
+    u8 pad0[0x12];
+    s16 unk12;
+    u8 pad14[0x18 - 0x14];
+    f32 unk18;
+    u8 pad1C[0x3C - 0x1C];
+    s32 unk3C;
+    u8 pad40[0x5C - 0x40];
+    s16 unk5C;
+    u8 pad5E[0x6E - 0x5E];
+    u8 unk6E;
+    u8 pad6F[0x7C - 0x6F];
+    s32 unk7C;
+    s32 unk80;
+    s32 unk84;
+};
+
+void func_1511F788(struct func_1511F788_s *arg0) {
+    s32 pad1;
+    s32 pad2;
+    s32 limit;
+    s32 fps = 60;
+    s16 prev;
+
+    prev = arg0->unk12 + arg0->unk18;
+    limit = arg0->unk3C; limit = (limit * fps) / fps;
+    if (D_800BE9B4) {
+        arg0->unk7C = func_150ADA20() & 0xFFFF;
+    }
+    arg0->unk18 = cosf(arg0->unk7C * 0.0054931640625f) * 25.0f;
+    arg0->unk7C += D_800BE9E4 * 10;
+    if (arg0->unk80 == 1) {
+        arg0->unk84 += D_800BE9E4;
+        if (limit < arg0->unk84) {
+            arg0->unk80 = 2;
+        }
+    } else if (arg0->unk80 == 2) {
+        arg0->unk12 -= D_800BE9E4;
+        if (arg0->unk12 < -10000) {
+            arg0->unk6E = 1;
+        }
+    }
+    arg0->unk5C = (arg0->unk12 + arg0->unk18) - prev;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_142560/func_1511F92C.s")

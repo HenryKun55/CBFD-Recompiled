@@ -3,7 +3,88 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151B9F00.s")
+struct func_151B9F00_s {
+    u8 unk0;
+    s8 unk1;
+    u8 unk2;
+    u8 pad3;
+    s16 unk4;
+    s16 pad6;
+    s32 unk8;
+    s32 unkC;
+    s32 unk10;
+    s32 unk14;
+    s32 unk18;
+    s32 unk1C;
+    s32 unk20;
+    u8 unk24;
+    u8 unk25;
+    u8 pad26[0xA];
+    s32 unk30;
+    s32 unk34;
+    u8 unk38;
+    u8 unk39;
+};
+struct func_151B9F00_t {
+    void *obj;
+    u8 unk4;
+};
+struct func_151B9F00_r {
+    u8 pad0[0x50];
+    s32 unk50;
+    u8 pad54[0xA4];
+    u8 unkF8[1];
+};
+extern void *func_1513B5E0(struct func_151B9F00_s *, s32, s32, u8, s32);
+extern s8 D_800E0BCE[];
+
+void *func_151B9F00(struct127 *arg0, u8 arg1, s32 arg2) {
+    void *v0;
+    struct func_151B9F00_s st;
+    struct func_151B9F00_t data;
+    s32 idx;
+
+    if (arg0 == NULL) {
+        return NULL;
+    }
+    data.obj = arg0;
+    data.unk4 = ((u8 *)arg0)[0x3B];
+    st.unk0 = 2;
+    st.unk1 = -1;
+    st.unk2 = 3;
+    st.unk4 = 0x12C;
+    st.unk30 = 9;
+    st.unk34 = 0x1AD;
+    st.unk39 = 0xFF;
+lbl:
+    idx = arg0 - gObjects;
+    if ((idx < 2) && (D_800E0BCE[idx] != 0)) {
+        if (D_8008FD90 == 2) {
+            st.unk39 = 0xFD;
+        } else if (D_8008FD90 == 4) {
+            if (idx == 0) {
+                st.unk39 = 0xFB;
+            } else {
+                st.unk39 = 0xF7;
+            }
+        }
+    }
+    st.unk8 = 1;
+    st.unkC = 0x200205;
+    st.unk10 = 0x60600;
+    st.unk24 = 0;
+    st.unk25 = 0;
+    st.unk14 = 1;
+    st.unk18 = 0x36;
+    st.unk1C = 0x80;
+    st.unk20 = 0x20;
+    st.unk38 = 2;
+    v0 = func_1513B5E0(&st, 1, 8, arg1, arg2);
+    if (v0 != NULL) {
+        memcpy(&((struct func_151B9F00_r *)v0)->unkF8[((struct func_151B9F00_r *)v0)->unk50], &data, 8);
+    }
+    return v0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BA084.s")
 

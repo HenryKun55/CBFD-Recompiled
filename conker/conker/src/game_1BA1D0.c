@@ -469,7 +469,63 @@ void func_1518FC84(u8 *arg0, f32 *arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1BA1D0/func_1519003C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1BA1D0/func_1519021C.s")
+extern f32 D_800A8004;
+struct225 *func_151602C0();
+
+struct func_1519021C_s {
+    u8 pad0[0x14];
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    u8 pad20[0x1B];
+    u8 unk3B;
+};
+
+struct func_1519021C_tmp {
+    struct func_1519021C_s *unk0;
+    u8 unk4;
+};
+
+struct225 *func_1519021C(s32 arg0, struct func_1519021C_s *arg1, u8 arg2, s16 arg3, u8 arg4, s32 arg5) {
+    struct225 *temp_v0;
+    Header header;
+    struct func_1519021C_tmp tmp;
+    f32 data[8];
+    s32 tmp2;
+    Header2 header2;
+
+    if (arg2 >= 24) {
+        return NULL;
+    }
+    tmp2 = arg0;
+    data[0] = D_800A67C0[arg2];
+    data[1] = D_800A6760[arg2];
+    data[2] = D_800A6820[arg2];
+    data[3] = 1.0f;
+    data[4] = 0.0f;
+    data[5] = 5.0f;
+    data[6] = D_800A8004;
+    data[7] = 0.0f;
+
+    header.unk0 = ((arg3 == -1) ? 0 : 1) | 2;
+    header.unk1 = 0x12;
+    header.unk2 = (arg3 == -1) ? 300 : arg3;
+    header.unk4 = 0x25;
+
+    tmp.unk0 = arg1;
+    tmp.unk4 = arg1->unk3B;
+    header2.unk0 = arg1->unk14;
+    header2.unk4 = arg1->unk18;
+    header2.unk8 = arg1->unk1C;
+
+    temp_v0 = func_151602C0(&header, &header2, 0, 0xFF, 0xD1, 0, 0xFF, 0, 0x30, arg4, arg5);
+    if (temp_v0 != NULL) {
+        memcpy((u8 *)temp_v0 + 0x18, &tmp, sizeof(tmp));
+        memcpy((u8 *)temp_v0 + 0x20, data, sizeof(data));
+        memcpy((u8 *)temp_v0 + 0x40, &tmp2, sizeof(tmp2));
+    }
+    return temp_v0;
+}
 
 void func_15163DEC(void *, void *);
 void func_15163F50(void *, void *);

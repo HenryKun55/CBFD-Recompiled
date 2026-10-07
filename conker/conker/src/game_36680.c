@@ -576,9 +576,83 @@ void func_1500AC14(void) {
     }
 }
 // GOTO hell
-#pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500AD84.s")
+struct func_1500AD84_s { u8 unk0; u8 unk1; u8 pad2[2]; s16 unk4; s16 unk6; u8 pad8[2]; };
+extern u8 D_800DDBD0[];
+extern u8 D_800DDBE0[];
+extern u8 D_800DDBF0[];
+extern u8 D_800DDBC0[];
+extern u8 D_800DDC80[];
+extern struct func_1500AC14_s3 D_800BE438[];
+extern u8 D_80095CC4[];
+extern u8 D_800DDC20[][2];
+
+void func_1500AD84(s32 arg0, s32 arg1, s32 arg2) {
+    s32 flags;
+
+    if (arg1 != 0xFF) {
+        D_800DDBD0[arg0] = ((struct func_1500AD84_s *)D_80095CE0)[arg1].unk1;
+        flags = ((struct func_1500AD84_s *)D_80095CE0)[arg1].unk0;
+        if (flags & 0x10) {
+            D_800DDBD0[arg0]--;
+            D_800DDBE0[arg0] = D_800DDBD0[arg0];
+        } else {
+            D_800DDBE0[arg0] = 0;
+        }
+        if (flags & 0x80) {
+            D_800DDBF0[arg0] = 2;
+        } else {
+            D_800DDBF0[arg0] = 1;
+        }
+        D_800BE438[arg0].unk0 = ((struct func_1500AD84_s *)D_80095CE0)[arg1].unk4;
+        D_800BE438[arg0].unk2 = ((struct func_1500AD84_s *)D_80095CE0)[arg1].unk6;
+        D_800DDBC0[arg0] = arg1;
+        D_800DDC80[arg0] = arg2 & 0xFF7F;
+        if (arg2 & 0x80) {
+            D_800DDC00 |= 1 << arg0;
+        }
+        if (flags & 1) {
+            D_800DDC04 |= 1 << arg0;
+        }
+        if (flags & 8) {
+            D_800DDC08 |= 1 << arg0;
+        }
+    } else {
+        D_800DDBD0[arg0] = 0;
+    }
+    arg1 = D_80095CC4[arg0];
+    D_800BE478[arg0] = 0;
+    D_800DDC20[arg0][0] = arg1;
+    D_800DDC20[arg0][1] = arg1;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500AF08.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500B1F4.s")
+extern f32 D_80095C64[][2];
+s32 func_1500AF08(s32 arg0, s32 arg1, s32 arg2, s16 x, s16 y, s16 z, s32 arg6, u8 arg7, s32 arg8);
+
+#define A(c, t) (arg5[0][c] + (t) * (arg5[1][c] - arg5[0][c]))
+#define LERP2(c, t, u) (A(c, t) + (u) * (arg5[2][c] - A(c, t)))
+
+s32 func_1500B1F4(s16 count, u8 arg1, s32 arg2, s32 arg3, s32 arg4, s16 **arg5) {
+    s32 i;
+    s32 n;
+    f32 *t;
+    s32 r;
+
+    i = 0;
+    n = count;
+    if (n != 0) {
+        t = D_80095C64[0];
+        do {
+            r = func_1500AF08(arg4, arg2, arg3,
+                LERP2(0, t[0], t[1]),
+                LERP2(1, t[0], t[1]),
+                LERP2(2, t[0], t[1]),
+                0x80, arg1, arg4);
+            t += 2;
+            arg4 = r;
+        } while (++i != n);
+    }
+    return arg4;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500B3B0.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500B714.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500B8F4.s")

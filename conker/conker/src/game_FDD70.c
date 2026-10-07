@@ -70,4 +70,35 @@ s32 func_150D11B4(void *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_FDD70/func_150D1204.s")
+extern f32 D_800A0898;
+extern f32 D_800A089C;
+extern f32 D_800A08A0;
+extern f32 D_800A08A4;
+void func_151DB5D0(s32, f32 *, f32 *, f32, f32, f32, f32, s32, s32, s32, s32, s32, s32, s32);
+
+void func_150D1204(f32 *arg0, f32 *arg1, f32 *arg2, f32 *arg3, f32 arg4, u8 *arg5) {
+    f32 sp6C[3];
+    f32 x, y, z;
+    f32 sp54[3];
+    u32 sp50;
+    u32 sp4C;
+    f32 sp48;
+    f32 sp44;
+
+    sp6C[0] = arg2[0] * arg4 + arg0[0];
+    sp6C[1] = arg2[1] * arg4 + arg0[1];
+    sp6C[2] = arg2[2] * arg4 + arg0[2];
+    x = arg3[0] * arg4 + arg1[0];
+    y = arg3[1] * arg4 + arg1[1];
+    z = arg3[2] * arg4 + arg1[2];
+    sp54[0] = *(f32 *)(arg5 + 0x74) * (x - sp6C[0]);
+    sp54[1] = *(f32 *)(arg5 + 0x74) * (y - sp6C[1]);
+    sp54[2] = *(f32 *)(arg5 + 0x74) * (z - sp6C[2]);
+    sp44 = func_150ADA68();
+    sp48 = func_150ADA68();
+    sp4C = func_150ADA20();
+    sp50 = func_150ADA20();
+    func_151DB5D0(0, sp6C, sp54, sp44 * 61.0f + 60.0f, D_800A0898, D_800A089C,
+                  sp48 * D_800A08A0 + D_800A08A4, (sp4C & 0xF) + 0x23,
+                  sp50 % 156 + 100, 30, 8, 0, arg5[0xC], arg5[1]);
+}

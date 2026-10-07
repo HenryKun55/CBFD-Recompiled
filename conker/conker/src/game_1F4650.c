@@ -274,7 +274,102 @@ void func_151CAACC(struct func_151CAACC_s *arg0, s32 *arg1, u8 arg2) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1F4650/func_151CAB78.s")
+struct func_151CAB78_s {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    u8 unk10;
+    s16 unk12;
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    u8 unk1A;
+    u8 unk1B;
+    u8 unk1C;
+    u8 unk1D;
+    u8 unk1E;
+    u8 unk1F;
+    u8 unk20;
+    u8 unk21;
+    u8 unk22;
+    u8 unk23;
+    s32 unk24;
+    s32 unk28;
+    s32 unk2C;
+    s32 unk30;
+    s32 unk34;
+    s32 unk38;
+    s32 unk3C;
+    u8 unk40;
+    u8 unk41;
+    u8 pad42[2];
+    u8 unk44;
+    u8 pad45[0x58 - 0x45];
+};
+
+struct func_151CAB78_t {
+    u8 *unk0;
+    f32 unk4;
+    f32 unk8;
+    u8 unkC;
+    u8 unkD;
+    u8 pad[0x5C - 0xE];
+    struct func_151CAB78_s unk5C;
+};
+
+void *func_1515548C();
+void *memcpy(void *, const void *, size_t);
+
+void func_151CAB78(u8 *arg0, u8 arg1) {
+    struct func_151CAB78_t sp34;
+    u8 *ret;
+    f32 scale;
+
+    sp34.unk0 = arg0;
+    sp34.unk4 = 0.0f;
+    sp34.unk8 = 130.0f;
+    sp34.unkD = 0;
+    sp34.unkC = 0;
+    if (D_80082FA0 > 0) {
+        scale = 2.0f;
+    } else {
+        scale = 1.0f;
+    }
+    sp34.unk5C.unk10 = 100;
+    sp34.unk5C.unk12 = 300;
+    sp34.unk5C.unkC = scale * 12.0f;
+    sp34.unk5C.unk8 = sp34.unk5C.unkC;
+    sp34.unk5C.unk14 = (1 << (arg0[0x23D] + 11)) | 0x50;
+    sp34.unk5C.unk16 = 1;
+    sp34.unk5C.unk18 = 0xFF;
+    sp34.unk5C.unk1A = 7;
+    sp34.unk5C.unk1B = 0xFF;
+    sp34.unk5C.unk1C = 0xC8;
+    sp34.unk5C.unk1D = 0;
+    sp34.unk5C.unk1E = 0x82;
+    sp34.unk5C.unk1F = 0xFF;
+    sp34.unk5C.unk20 = 0xFF;
+    sp34.unk5C.unk21 = 0xFF;
+    sp34.unk5C.unk22 = 0xFF;
+    sp34.unk5C.unk23 = 0xFF;
+    sp34.unk5C.unk24 = 0;
+    sp34.unk5C.unk28 = 0x200004;
+    sp34.unk5C.unk2C = 0x1F0601;
+    sp34.unk5C.unk30 = 8;
+    sp34.unk5C.unk34 = 0x44;
+    sp34.unk5C.unk38 = 0x80;
+    sp34.unk5C.unk3C = 0x20;
+    sp34.unk5C.unk40 = 0;
+    sp34.unk5C.unk41 = 10;
+    sp34.unk5C.unk0 = 0.0f;
+    sp34.unk5C.unk4 = 0.0f;
+    sp34.unk5C.unk44 = arg0[0x23D];
+    ret = func_1515548C(&sp34.unk5C, (u8)(arg1 ? 4 : 0), 0, 0, 0x58, 0xFF, 1);
+    if (ret != NULL) {
+        memcpy(ret + 0x70, &sp34, 0x58);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1F4650/func_151CAD28.s")
 

@@ -732,7 +732,44 @@ void func_15136AE4(f32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 arg4, f32 arg5, u
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_1513783C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15137C64.s")
+struct func_15137C64_s {
+    f32 x, y, z;
+};
+
+s32 func_15145128(struct func_15137C64_s *, struct func_15137C64_s *, f32 *, f32 *);
+s32 func_15146078(struct func_15137C64_s *, s32, s32);
+
+s32 func_15137C64(struct func_15137C64_s *arg0, struct func_15137C64_s *arg1, struct func_15137C64_s *arg2, s32 arg3, s32 arg4, struct func_15137C64_s *arg5, struct func_15137C64_s *arg6, struct func_15137C64_s *arg7) {
+    f32 sp2C;
+    f32 sp28;
+
+    if (arg5 != NULL && arg6 != NULL) {
+        *arg0 = *arg5;
+        *arg1 = *arg6;
+    } else if (arg5 != NULL) {
+        *arg0 = *arg5;
+        *arg1 = *arg5;
+    } else if (arg6 != NULL) {
+        *arg0 = *arg6;
+        *arg1 = *arg6;
+    } else {
+        return 0;
+    }
+    if (arg7 == NULL) {
+        arg2->x = arg1->x - arg0->x;
+        arg2->y = arg1->y - arg0->y;
+        arg2->z = arg1->z - arg0->z;
+        if (!func_15145128(arg2, arg2, &sp2C, &sp28)) {
+            return 0;
+        }
+    } else {
+        *arg2 = *arg7;
+    }
+    if (!func_15146078(arg2, arg3, arg4)) {
+        return 2;
+    }
+    return 1;
+}
 
 // randomizes a timer/duration field (arg0->unk74) into roughly [580, 630),
 // scaled by a global time factor. func_150ADA68 is a confirmed random-float-
@@ -764,7 +801,22 @@ void func_15137E60(s32 arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4, u8 *arg5) {
     func_151D9014(sp6C, sp54, 0, sp50, sp4E, sp4D, sp48, 0, 1.0f, 1.0f, 1, 0, 1, 0, arg5[0xC], arg5[1]);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15137F30.s")
+extern f32 D_800A482C;
+void func_15137F30(s32 arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4, u8 *arg5, f32 *arg6, f32 *arg7, f32 *arg8, f32 *arg9, s16 *argA, u8 *argB, f32 *argC) {
+    arg6[0] = (((f32 *)arg2)[0] * arg4) + ((f32 *)arg0)[0];
+    arg6[1] = (((f32 *)arg2)[1] * arg4) + ((f32 *)arg0)[1];
+    arg6[2] = (((f32 *)arg2)[2] * arg4) + ((f32 *)arg0)[2];
+    arg7[0] = (((f32 *)arg3)[0] * arg4) + ((f32 *)arg1)[0];
+    arg7[1] = (((f32 *)arg3)[1] * arg4) + ((f32 *)arg1)[1];
+    arg7[2] = (((f32 *)arg3)[2] * arg4) + ((f32 *)arg1)[2];
+    arg8[0] = *(f32 *)(arg5 + 0x74) * (arg7[0] - arg6[0]);
+    arg8[1] = *(f32 *)(arg5 + 0x74) * (arg7[1] - arg6[1]);
+    arg8[2] = *(f32 *)(arg5 + 0x74) * (arg7[2] - arg6[2]);
+    *arg9 = D_800A482C * ((func_150ADA68() * 217.0f) + -456.0f);
+    *argA = ((u32)func_150ADA20() % 31) + 30;
+    *argB = ((u32)func_150ADA20() % 156) + 100;
+    *argC = (func_150ADA68() * 35.0f) + 40.0f;
+}
 
 // Struct unidentified here (sibling func_15137E10 above also uses raw
 // casts) - raw offset casts. Fails if arg0->unk1D4 is 0, or if the low

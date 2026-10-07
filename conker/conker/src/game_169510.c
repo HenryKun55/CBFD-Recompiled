@@ -7,7 +7,60 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_169510/func_1513C060.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_169510/func_1513C350.s")
+struct func_1513C350_s {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+};
+struct func_151400D0_d;
+struct func_151400D0_s;
+void func_1513FFF4(s16 *arg0, u8 arg1, u8 arg2);
+void func_151400D0(struct func_151400D0_d *arg0, struct func_151400D0_s *arg1);
+struct210 *func_15167A68(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, s32 arg5);
+s32 func_1515D480(s32 arg0);
+s32 func_1515D440(void);
+
+struct210 *func_1513C350(struct210 *arg0, s32 arg1, u8 arg2, u8 arg3, u8 arg4, s32 arg5, s32 arg6, struct167 *arg7, s32 arg8, u8 arg9, s32 argA) {
+    struct210 *temp_v0;
+    u8 phi_v0;
+    s32 i;
+
+    if (arg1 == 0) {
+        arg1 = (s32)&D_800A4AA0;
+    }
+    if (arg0->unk0 & 0x40000) {
+        phi_v0 = 0x4A;
+    } else {
+        phi_v0 = 0x1B;
+    }
+    temp_v0 = func_15167A68(phi_v0, argA, arg8 + 0xB0, 1, arg9, 1);
+    if (temp_v0 == 0) {
+        return NULL;
+    }
+    memcpy(&temp_v0->unk18, arg0, 0x28);
+    func_1513FFF4((s16 *)&temp_v0->unk40, temp_v0->unk1E, arg4);
+    func_151400D0((struct func_151400D0_d *)&temp_v0->unk40, (struct func_151400D0_s *)arg1);
+    temp_v0->unk80 = arg2;
+    temp_v0->unk81 = arg3;
+    temp_v0->unk84 = arg5;
+    temp_v0->unk10 = 1;
+    temp_v0->unk14 = 0;
+    temp_v0->unkA0 = arg6;
+    for (i = 0; i < 4; i++) {
+        temp_v0->unk8C[i] = 0;
+    }
+    temp_v0->unk9C = 0;
+    if (arg5) {
+        for (i = 0; i <= D_80082FA0; i++) {
+            temp_v0->unk8C[i] = func_1515D480(arg5);
+        }
+        temp_v0->unk9C = func_1515D440();
+    }
+    if (arg7) {
+        *(struct func_1513C350_s *)temp_v0->unkA4 = *(struct func_1513C350_s *)arg7;
+    }
+    return temp_v0;
+}
 // NON-MATCHING: JUSTREG: final 3 lines :(
 // struct210 *func_1513C350(struct210 *arg0, s32 arg1, u8 arg2, u8 arg3, u8 arg4, s32 arg5, s32 arg6, struct167 *arg7, s32 arg8, u8 arg9, s32 argA) {
 //     struct210 *temp_v0;

@@ -87,7 +87,36 @@ struct func_15039A54_s *func_15039A54(s32 arg0, s32 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_15039CC8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_15039ED0.s")
+void func_15039A78(f32 *arg0, f32 *arg1, f32 *arg2, f32 *arg3, f32 arg4, f32 arg5, s32 arg6);
+
+void func_15039ED0(s32 arg0, f32 *arg1, f32 *arg2, f32 *arg3, f32 *arg4, f32 arg5, f32 arg6, s32 arg7) {
+    f32 *p;
+
+    if (arg0 == 0) {
+        func_15039A78(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+        return;
+    }
+    p = (f32 *)func_15039A54(arg7, arg0);
+    if ((p[0] + p[4] < *arg1) || (*arg1 < p[1] - p[4])) {
+        *arg1 = arg5;
+        *arg2 = arg6;
+        if (arg3 != NULL) {
+            *arg3 = *arg1;
+            *arg4 = *arg2;
+        }
+        return;
+    }
+    if (arg3 != NULL) {
+        *arg3 = *arg1;
+        *arg4 = *arg2;
+    }
+    *arg1 = (*arg1 < p[1]) ? p[1] : ((p[0] < *arg1) ? p[0] : *arg1);
+    if ((p[2] + p[5] < *arg2) || (*arg2 < p[3] - p[5])) {
+        *arg2 = arg6;
+        return;
+    }
+    *arg2 = (*arg2 < p[3]) ? p[3] : ((p[2] < *arg2) ? p[2] : *arg2);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_1503A08C.s")
 

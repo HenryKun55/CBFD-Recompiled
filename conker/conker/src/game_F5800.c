@@ -3,7 +3,59 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_F5800/func_150C8350.s")
+struct func_150C8350_s {
+    u8 pad0[2];
+    s8 dir;
+    u8 pad3;
+    s16 pos;
+    s16 vel;
+    s16 tgt;
+};
+
+#define E(i) (&((struct func_150C8350_s *)D_800BE4E0)[i])
+
+void func_150C8350(void) {
+    s32 diff;
+    s32 step;
+    s32 tgt2;
+    s32 i;
+
+    for (i = 0; i < 10; i++) {
+        if (E(i)->vel != E(i)->tgt) {
+            tgt2 = E(i)->tgt;
+            if (E(i)->vel < 0) {
+                tgt2 = -E(i)->tgt;
+            }
+            diff = tgt2 - E(i)->vel;
+            step = D_800BE9E4 << 4;
+            if (((diff < 0) ? -diff : diff) < step) {
+                E(i)->vel = tgt2;
+            } else {
+                if (diff < 0) {
+                    diff = -1;
+                } else {
+                    diff = 1;
+                }
+                E(i)->vel += step * diff;
+            }
+        }
+        E(i)->pos += E(i)->vel * E(i)->dir * D_800BE9A0;
+        if (E(i)->pos >= 0x500) {
+            E(i)->pos -= 0x500;
+            E(i)->pos = 0x500 - E(i)->pos;
+            E(i)->dir = -E(i)->dir;
+            if (E(i)->pos >= 0x500) {
+                E(i)->pos = 0x4FF;
+            }
+        } else if (E(i)->pos < 0) {
+            E(i)->pos = -E(i)->pos;
+            E(i)->dir = -E(i)->dir;
+            if (E(i)->pos < 0) {
+                E(i)->pos = 0;
+            }
+        }
+    }
+}
 
 void func_150C84F4(s32 arg0) {
     if (arg0 == 0) {
@@ -129,7 +181,25 @@ s32 func_150CA9D0(struct func_150CA9D0_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_F5800/func_150CAA04.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_F5800/func_150CAC28.s")
+struct func_150CAC28_s {
+    u8 pad0[0x58];
+    f32 unk58;
+    u8 pad5C[4];
+    f32 unk60;
+    u8 pad64[0xA8 - 0x64];
+    f32 unkA8;
+};
+
+s32 func_150CAC28(struct func_150CAC28_s *arg0, s32 arg1) {
+    s32 i;
+    f32 *p = &arg0->unkA8;
+
+    for (i = D_800BE9E4; i != 0; i--) {
+        arg0->unk58 *= *p;
+        arg0->unk60 *= *p;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_F5800/func_150CADD0.s")
 

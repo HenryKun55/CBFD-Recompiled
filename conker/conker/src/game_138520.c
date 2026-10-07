@@ -56,7 +56,27 @@ void func_1510B690(void) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_138520/func_1510B7B4.s")
+extern Mtx D_80089470;
+
+struct func_1510B7B4_s {
+    u8 pad0[0xB8];
+    u16 unkB8;
+    u8 padBA[0x100 - 0xBA];
+    Mtx mtx[2];
+};
+
+Gfx *func_1510B7B4(Gfx *gdl, s32 arg1) {
+    gDPPipeSync(gdl++);
+    gDPSetBlendColor(gdl++, 0, 0, 0, 1);
+    gSPMatrix(gdl++, &D_80089470, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPPerspNormalize(gdl++, ((struct func_1510B7B4_s *) D_800BE628)[arg1].unkB8);
+    gSPClipRatio(gdl++, FRUSTRATIO_3);
+    gSPClearGeometryMode(gdl++, 0x100000);
+    gSPMatrix(gdl++, &((struct func_1510B7B4_s *) D_800BE628)[arg1].mtx[D_800BE9C0], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    gSPMatrix(gdl++, &((Mtx **) &D_800DC2A0)[D_800BE9C0][arg1], G_MTX_NOPUSH | G_MTX_MUL | G_MTX_PROJECTION);
+    gDPSetOtherMode(gdl++, 0xEF082C3F & 0xFFFFFF, 0x552230);
+    return gdl;
+}
 
 // Sets the view-space x and y scales that the clip-space culls (func_1510AEE0,
 // func_150A6210, func_150A5378, func_150A50C0) multiply a point's x and y by

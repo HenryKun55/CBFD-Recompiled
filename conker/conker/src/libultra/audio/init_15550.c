@@ -86,7 +86,51 @@ void func_10016F00(struct154 *arg0) {
     n_alEvtqPostEvent(&D_8002BA2C->evtq, &event, 33333, 2);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/libultra/audio/init_15550/func_10016F80.s")
+int func_10016F80(evtq, voice, type)
+    ALEventQueue *evtq;
+    N_ALUnknownStruct1 *voice;
+    u16 type;
+{
+    ALLink *thisNode;
+    ALLink *nextNode;
+    N_ALEventListItem *thisItem;
+    N_ALEventListItem *nextItem;
+    N_ALEvent *thisEvent;
+    s32 mask;
+
+    mask = osSetIntMask(1);
+
+    thisNode = evtq->allocList.next;
+    while (thisNode != 0) {
+        nextNode = thisNode->next;
+        thisItem = (N_ALEventListItem *)thisNode;
+        nextItem = (N_ALEventListItem *)nextNode;
+        thisEvent = &thisItem->evt;
+        if (((N_ALUnknownStruct1 *)thisEvent->msg.vol.voice == voice) && ((u16)thisEvent->type & type)) {
+            if (nextItem)
+                nextItem->delta += thisItem->delta;
+            {
+                ALLink *ln = thisNode;
+                if (ln->next)
+                    ln->next->prev = ln->prev;
+                if (ln->prev)
+                    ln->prev->next = ln->next;
+            }
+            {
+                ALLink *ln = thisNode;
+                ALLink *to = &evtq->freeList;
+                ln->next = to->next;
+                ln->prev = to;
+                if (to->next)
+                    to->next->prev = ln;
+                to->next = ln;
+            }
+        }
+        thisNode = nextNode;
+    }
+
+    osSetIntMask(mask);
+}
 // void func_10016F80(void *arg0, s32 arg1, u16 arg2) {
 //     void *sp3C;
 //     void *sp38;

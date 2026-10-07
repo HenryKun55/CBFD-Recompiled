@@ -13,7 +13,42 @@ void func_151D6970(s32 arg0, s32 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_203E20/func_151D6BFC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_203E20/func_151D6E60.s")
+extern f32 func_15144AA8(s32);
+extern f32 D_800AB278;
+
+struct func_151D6E60_s1 {
+    u8 pad0[0x14];
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+};
+
+struct func_151D6E60_s {
+    u8 pad0[0x4C];
+    struct func_151D6E60_s1 *unk4C;
+    u8 pad50[0x2C];
+    f32 unk7C[2][4][4];
+};
+
+s32 func_151D6E60(struct func_151D6E60_s *arg0) {
+    f32 scale;
+
+    func_150A8050(arg0->unk7C[D_800BE9C0], 0.0f, func_15144AA8(0) + 25.0f, 0.0f);
+    scale = D_800AB278;
+    arg0->unk7C[D_800BE9C0][3][0] = arg0->unk4C->unk14;
+    arg0->unk7C[D_800BE9C0][3][1] = arg0->unk4C->unk18 + 120.0f;
+    arg0->unk7C[D_800BE9C0][3][2] = arg0->unk4C->unk1C;
+    arg0->unk7C[D_800BE9C0][0][0] *= scale;
+    arg0->unk7C[D_800BE9C0][0][1] *= scale;
+    arg0->unk7C[D_800BE9C0][0][2] *= scale;
+    arg0->unk7C[D_800BE9C0][1][0] *= scale;
+    arg0->unk7C[D_800BE9C0][1][1] *= scale;
+    arg0->unk7C[D_800BE9C0][1][2] *= scale;
+    arg0->unk7C[D_800BE9C0][2][0] *= scale;
+    arg0->unk7C[D_800BE9C0][2][1] *= scale;
+    arg0->unk7C[D_800BE9C0][2][2] *= scale;
+    return 1;
+}
 
 struct func_151D7000_s2 {
     s32 unk0;

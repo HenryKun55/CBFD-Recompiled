@@ -219,7 +219,38 @@ void *func_15157898(void *arg0, void *arg1, s32 arg2, f32 arg3, s32 arg4, s32 ar
     return temp_v0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157918.s")
+typedef struct {
+    f32 x, y, z;
+    f32 scale;
+} func_15157918_rs;
+
+struct func_15157918_s {
+    u8 pad0[0x54];
+    f32 pos[3];      /* 0x54 */
+    u8 pad60[0x1C];
+    f32 mtx[2][4][4]; /* 0x7C */
+    u8 padFC[0x24];
+    func_15157918_rs r; /* 0x120 */
+};
+
+s32 func_15157918(struct func_15157918_s *arg0) {
+    func_15157918_rs *r = &arg0->r;
+
+    func_150A8050(arg0->mtx[D_800BE9C0], r->x, r->y, r->z);
+    arg0->mtx[D_800BE9C0][3][0] = arg0->pos[0];
+    arg0->mtx[D_800BE9C0][3][1] = arg0->pos[1];
+    arg0->mtx[D_800BE9C0][3][2] = arg0->pos[2];
+    arg0->mtx[D_800BE9C0][0][0] *= r->scale;
+    arg0->mtx[D_800BE9C0][0][1] *= r->scale;
+    arg0->mtx[D_800BE9C0][0][2] *= r->scale;
+    arg0->mtx[D_800BE9C0][1][0] *= r->scale;
+    arg0->mtx[D_800BE9C0][1][1] *= r->scale;
+    arg0->mtx[D_800BE9C0][1][2] *= r->scale;
+    arg0->mtx[D_800BE9C0][2][0] *= r->scale;
+    arg0->mtx[D_800BE9C0][2][1] *= r->scale;
+    arg0->mtx[D_800BE9C0][2][2] *= r->scale;
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157AA8.s")
 
@@ -232,7 +263,28 @@ s32 func_15157DC8(u8 *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157DEC.s")
+struct func_15157DEC_s {
+    u8 pad0[0x54];
+    f32 pos[3];          /* 0x54 */
+    u8 pad60[0x1C];
+    f32 mf[2][4][4];     /* 0x7C */
+};
+
+int func_15157DEC(struct func_15157DEC_s *arg0, f32 *arg1) {
+    func_150A8050(arg0->mf[D_800BE9C0], arg1[0], arg1[1], arg1[2]);
+    arg0->mf[D_800BE9C0][3][0] = arg0->pos[0];
+    arg0->mf[D_800BE9C0][3][1] = arg0->pos[1];
+    arg0->mf[D_800BE9C0][3][2] = arg0->pos[2];
+    arg0->mf[D_800BE9C0][0][0] *= arg1[3];
+    arg0->mf[D_800BE9C0][0][1] *= arg1[3];
+    arg0->mf[D_800BE9C0][0][2] *= arg1[3];
+    arg0->mf[D_800BE9C0][1][0] *= arg1[4];
+    arg0->mf[D_800BE9C0][1][1] *= arg1[4];
+    arg0->mf[D_800BE9C0][1][2] *= arg1[4];
+    arg0->mf[D_800BE9C0][2][0] *= arg1[3];
+    arg0->mf[D_800BE9C0][2][1] *= arg1[3];
+    arg0->mf[D_800BE9C0][2][2] *= arg1[3];
+}
 
 extern Mtx D_80089470;
 

@@ -47,7 +47,25 @@ s32 func_150CC638(struct func_150CC638_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_F9430/func_150CC6B8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_F9430/func_150CC8D4.s")
+struct func_150CC8D4_s {
+    u8 pad0[0x58];
+    f32 unk58;
+    u8 pad5C[0x60 - 0x5C];
+    f32 unk60;
+    u8 pad64[0xA8 - 0x64];
+    f32 unkA8;
+};
+
+s32 func_150CC8D4(struct func_150CC8D4_s *arg0, s32 arg1) {
+    s32 i;
+    f32 *p = &arg0->unkA8;
+
+    for (i = D_800BE9E4; i != 0; i--) {
+        arg0->unk58 *= *p;
+        arg0->unk60 *= *p;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_F9430/func_150CCA7C.s")
 

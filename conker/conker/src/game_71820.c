@@ -9,7 +9,52 @@ void func_15044370(void) {
     D_800CBD9C = 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15044380.s")
+struct func_15044380_s {
+    u8 pad0[0xF8];
+    s32 unkF8;
+    u8 padFC[0x275 - 0xFC];
+    u8 unk275;
+};
+extern f32 D_800CBDF4;
+extern f32 D_800CBDF8;
+extern u8 D_800CBDD3;
+extern u8 D_80089120[];
+void func_15044660(struct func_15044380_s *, f32, f32, f32);
+s32 func_150AB1F0(f32, f32, f32, struct func_15044380_s *, s32);
+void func_150AC3E4(f32, f32, f32, struct func_15044380_s *, s32);
+
+s32 func_15044380(f32 arg0, f32 arg1, f32 arg2, struct func_15044380_s *arg3, s32 arg4, s32 arg5) {
+    s32 i;
+    s32 sum;
+    s32 saved;
+
+    D_800CBDF4 = -32768.0f;
+    D_800CBDF8 = -32768.0f;
+    sum = 0;
+    arg3->unk275 = 0;
+    func_15044660(arg3, arg0, arg1, arg2);
+    saved = D_800CBDD3;
+    for (i = 3; i >= 0; i--) {
+        if (D_80089120[i] != 1) continue;
+        if ((i == 3) && (arg3->unkF8 & 0x200)) continue;
+        func_1510F800(i);
+        if (D_800DBE62) {
+            sum += func_150AB1F0(arg0, arg1, arg2, arg3, arg4);
+        }
+    }
+    if (arg5) {
+        for (i = 0; i < 3; i++) {
+            if (D_80089120[i] != 1) continue;
+            func_1510F800(i);
+            if (D_800DBE62) {
+                func_150AC3E4(arg0, arg1, arg2, arg3, 0);
+            }
+        }
+    }
+    func_1510F800(0);
+    D_800CBDD3 = saved;
+    return sum;
+}
 
 void func_1504452C(u8 **arg0, f32 *arg1, f32 arg2, f32 arg3, f32 arg4, f32 arg5, f32 arg6, s32 arg7) {
     s32 i;

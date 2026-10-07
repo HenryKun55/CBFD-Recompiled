@@ -158,7 +158,71 @@ s32 func_150C251C(void *arg0) {
     }
     return 1;
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C2558.s")
+extern f32 D_800A0270;
+
+struct func_150C2558_s {
+    f32 f18, f1C, f20, f24, f28, f2C, f30, f34, f38;
+    s16 h3C, h3E, h40, h42, h44, h46, h48, h4A, h4C, h4E;
+    s8 b50, b51, b52;
+    s32 w54, w58, w5C, w60, w64, w68;
+    u8 b6C, b6D, b6E;
+    s32 w70, w74, w78, w7C, w80, w84, w88, w8C, w90;
+    u8 b94, b95;
+    s16 pad96;
+    s16 h98, h9A;
+    s32 w9C;
+};
+
+s32 func_150C2558(s32 arg0, s32 arg1, f32 arg2, f32 arg3, f32 arg4, s32 arg5, s32 arg6, s32 arg7, s32 arg8, s32 arg9, s32 argA, s32 argB, s32 argC, s32 argD, u8 argE) {
+    struct func_150C2558_s sp18;
+
+    sp18.f18 = arg2;
+    sp18.f1C = arg3;
+    sp18.f20 = (arg4 + 15.0f) - (func_150ADA68() * 30.0f);
+    sp18.h3C = 1;
+    sp18.h3E = 0;
+    sp18.h40 = (s32) (sp18.f20 * D_800A0270) - 0x40;
+    sp18.h42 = 9;
+    sp18.h44 = 0;
+    sp18.h46 = 0;
+    sp18.h48 = 3;
+    sp18.h4A = 3;
+    sp18.h4C = 0x28;
+    sp18.h4E = 0x15;
+    sp18.f34 = 200.0f;
+    sp18.f38 = 150.0f;
+    sp18.f24 = 22.0f;
+    sp18.f2C = 0.0f;
+    sp18.f30 = 0.0f;
+    sp18.f28 = 44.0f;
+    sp18.b50 = 0xB;
+    sp18.b51 = 1;
+    sp18.b52 = 0x28;
+    sp18.w54 = 1;
+    sp18.w58 = 4;
+    sp18.w5C = 0;
+    sp18.w60 = 0;
+    sp18.w64 = 0;
+    sp18.w68 = 0;
+    sp18.b6C = 0xFF;
+    sp18.b6D = 0xFF;
+    sp18.b6E = 0;
+    sp18.w70 = 3;
+    sp18.w74 = 0xFF;
+    sp18.w78 = 0;
+    sp18.w7C = 0x220005;
+    sp18.w80 = 0x1D0600;
+    sp18.w84 = 1;
+    sp18.w88 = 0x3B;
+    sp18.w8C = 0x80;
+    sp18.w90 = 0x20;
+    sp18.b94 = 0;
+    sp18.b95 = 7;
+    sp18.h98 = 0xC;
+    sp18.h9A = 0x15;
+    func_15151A38(&sp18, argE, 1);
+    return 1;
+}
 void func_15150178();
 extern f32 D_800A0274;
 extern f32 D_800A0278;

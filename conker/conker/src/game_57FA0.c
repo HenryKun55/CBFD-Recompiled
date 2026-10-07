@@ -11,7 +11,33 @@ void func_1502AAF0(void) {
 void func_1502AAF8(s32 arg0) {
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502AB04.s")
+typedef struct {
+    s32 a;
+    s32 b;
+} func_1502AB04_pair;
+
+struct func_1502AB04_s {
+    s32 x;
+    s32 y;
+    func_1502AB04_pair z;
+};
+
+extern struct func_1502AB04_s D_800C3D68[16];
+
+void func_1502AB04(s32 n, func_1502AB04_pair *src, s32 arg2, s32 arg3) {
+    u32 i;
+    s32 m = n;
+
+    if (m != 0) {
+        bcopy(&D_800C3D68[m], &D_800C3D68[0], (16 - m) * sizeof(struct func_1502AB04_s));
+    }
+    for (i = 16U - m; i < 16; i++) {
+        D_800C3D68[i].z = *src++;
+        D_800C3D68[i].y = arg2;
+        D_800C3D68[i].x = arg3;
+        arg3 += 8;
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502AC88.s")
 // NON-MATCHING: 70 vs target's 71 instructions. Target keeps the loop's
 // base pointer in a callee-saved $s2 (extra save/restore pair) and caches

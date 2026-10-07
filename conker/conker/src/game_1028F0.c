@@ -171,7 +171,45 @@ void func_150D6C98(f32 *arg0, f32 *arg1) {
     arg1[2] = arg0[7];
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1028F0/func_150D6CC4.s")
+struct func_150D6CC4_v { f32 x, y, z; };
+struct func_150D6CC4_t {
+    u8 *unk0;
+    u8 unk4;
+    s32 unk8;
+};
+struct func_150D6CC4_s {
+    u8 pad0[0x40];
+    struct func_150D6CC4_v unk40;
+    struct func_150D6CC4_v unk4C;
+    struct func_150D6CC4_v unk58;
+    f32 unk64;
+    u8 pad68[0xA8 - 0x68];
+    struct func_150D6CC4_t unkA8;
+};
+void func_15131958(struct func_150D6CC4_v *, s32);
+
+s32 func_150D6CC4(struct func_150D6CC4_s *arg0, s32 arg1) {
+    u8 *p = arg0->unkA8.unk0;
+    struct func_150D6CC4_t *t = &arg0->unkA8;
+
+    if (*(s32 *)p == 0 || t->unk4 != p[0x3B]) {
+        return 0;
+    }
+    func_150D6C98((f32 *)p, (f32 *)&arg0->unk40);
+    {
+    struct func_150D6CC4_v old = arg0->unk58;
+    f32 dx, dy, dz;
+    arg0->unk58.y += arg0->unk64 * D_800BE9A4;
+    func_15131958(&arg0->unk58, t->unk8);
+    dx = (arg0->unk58.x - old.x) * D_800BE9A8;
+    dy = (arg0->unk58.y - old.y) * D_800BE9A8;
+    dz = (arg0->unk58.z - old.z) * D_800BE9A8;
+    arg0->unk4C.x += old.x * D_800BE9A4 + dx * D_800BE9A4 * D_800BE9A4 * 0.5f;
+    arg0->unk4C.y += old.y * D_800BE9A4 + dy * D_800BE9A4 * D_800BE9A4 * 0.5f;
+    arg0->unk4C.z += old.z * D_800BE9A4 + dz * D_800BE9A4 * D_800BE9A4 * 0.5f;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1028F0/func_150D6E60.s")
 

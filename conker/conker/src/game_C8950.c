@@ -267,7 +267,48 @@ int func_1509B950(struct248 *arg0) {
     return (int)newBuf;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C8950/func_1509BA04.s")
+void func_1509C228(void);
+s32 func_150ADAF0(struct249 *, s32);
+extern u8 D_800D2E69;
+
+void func_1509BA04(s32 arg0) {
+    s32 mask = 0xFFFF03FF;
+    s32 i;
+    s32 length;
+    struct249 *next;
+    struct249 *cur;
+    s32 bit;
+    s32 byte;
+    s32 id;
+
+    cur = D_800D2F48.unk4;
+    length = D_800D2F48.length;
+    if (D_800D2E69 != 0) {
+        func_1509C228();
+        D_800D2E69 = 0;
+    }
+    for (i = 0; i < length; i++) {
+        id = cur->unk0 & mask;
+        byte = id >> 3;
+        bit = 1 << (id & 7);
+        next = cur->next;
+        if ((*(u8 *)(byte + (u32)D_800D2E4C) & bit) && (arg0 == 0)) {
+            func_1509B764(cur);
+            ((u8 *)&D_800D2E70)[id] = 3;
+        } else if ((arg0 != 0) || (cur->unk0 & 0x8000) || ((cur->unk0 & 0x1000) && (D_800BE9F0 != *(u16 *)((u8 *)cur + 2)))) {
+            D_8003C8E0 = 0x06000001;
+            func_150ADAF0(cur, 3);
+            D_8003C8E0 = 0;
+            func_1509B764(cur);
+            if (!(*(u8 *)(byte + (u32)D_800D2E4C) & bit)) {
+                ((u8 *)&D_800D2E70)[id] = 0;
+            } else {
+                ((u8 *)&D_800D2E70)[id] = 3;
+            }
+        }
+        cur = next;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C8950/func_1509BBA0.s")
 

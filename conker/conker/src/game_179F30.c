@@ -5,7 +5,60 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514CA80.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514D15C.s")
+extern void *func_15155FD4(s32 arg0);
+extern void func_15155780(s32 arg0, s32 arg1);
+extern u8 func_1514CA80(struct127 *arg0, s32 *arg1, s32 *arg2, s32 *arg3);
+extern void (*D_8008AACC)(struct127 *);
+extern void (*D_8008AA70[])(struct127 *);
+extern u8 D_800A5ED8[];
+extern u8 D_800A5EC0[];
+extern u8 *D_8008AB90[];
+
+s32 func_1514D15C(struct127 *arg0) {
+    s32 sp44 = -1;
+    s32 sp40 = -1;
+    s32 sp3C = -1;
+    u8 flags;
+    s32 idx;
+    void *p;
+    void (*fn)(struct127 *);
+
+    idx = arg0 - gObjects;
+    if (*(s32 *)((u8 *)arg0 + 0x2F4) != 0) {
+        return 0;
+    }
+    do {
+        p = func_15155FD4(idx);
+        if (p != NULL) {
+            func_1516972C(p);
+        }
+    } while (p != NULL);
+    if (idx == 0 && D_800BE616 == 0) {
+        func_15155780(idx, 0xFF);
+    }
+    D_8008AACC(arg0);
+    flags = func_1514CA80(arg0, &sp44, &sp40, &sp3C);
+    if (flags == 0) {
+        return 0;
+    }
+    if (flags & 4) {
+        if (D_800A5ED8[sp3C] != 0) {
+            D_8008AA70[D_800A5ED8[sp3C]](arg0);
+        }
+    }
+    if (flags & 2) {
+        if (D_800A5EC0[sp40] != 0) {
+            D_8008AA70[D_800A5EC0[sp40]](arg0);
+        }
+    }
+    if ((flags & 2) && (flags & 1)) {
+        fn = D_8008AA70[D_8008AB90[sp40][sp44]];
+        if (fn != NULL) {
+            fn(arg0);
+        }
+    }
+    return 1;
+}
 
 struct func_1514D310_s {
     u8 pad0[0x10];
@@ -240,7 +293,120 @@ void func_1514DFD0(struct func_1514DFD0_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514E00C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514E194.s")
+s32 func_15189FF0(void *arg0, void *arg1, void *arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6);
+void func_151D74B0(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
+extern f32 D_800A5E10;
+extern f32 D_800A5E14;
+
+struct func_1514E194_a {
+    u8 unk0;
+    u8 pad1;
+    s16 unk2;
+    s16 unk4;
+    u8 pad6[2];
+    s32 unk8;
+    s32 unkC;
+    u8 unk10;
+    u8 unk11;
+    u8 unk12;
+    u8 unk13;
+    u8 pad14[8];
+    f32 unk1C;
+    f32 unk20;
+    f32 unk24;
+    f32 unk28;
+    f32 unk2C;
+    f32 unk30;
+    u8 pad34[0xC];
+    s32 unk40;
+    u8 pad44;
+    u8 unk45;
+    u8 pad46[0x12];
+};
+
+struct func_1514E194_b {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    f32 unk20;
+    u8 pad24[0x24];
+    f32 unk48;
+    u8 pad4C[8];
+    u8 unk54;
+    u8 unk55;
+    u8 unk56;
+    u8 unk57;
+    s32 unk58;
+};
+
+struct func_1514E194_c {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    s32 unk18;
+    u8 unk1C;
+    u8 unk1D;
+    s8 unk1E;
+    u8 pad1F;
+};
+
+void func_1514E194(s32 arg0) {
+    struct func_1514E194_b b;
+    struct func_1514E194_a a;
+    struct func_1514E194_c c;
+
+    a.unk0 = 3;
+    a.unk8 = 0;
+    a.unkC = 0;
+    a.unk40 = 0x12002;
+    a.unk4 = 0;
+    a.unk45 = 0xFF;
+    a.unk10 = 0xFF;
+    a.unk11 = 0x8E;
+    a.unk12 = 0x19;
+    a.unk13 = 0xFF;
+    a.unk2 = 0x401;
+    a.unk1C = 0.0f;
+    a.unk20 = 0.0f;
+    a.unk24 = 0.0f;
+    a.unk28 = 0.0f;
+    a.unk2C = 0.0f;
+    a.unk30 = 0.0f;
+    b.unk0 = 16.0f;
+    b.unk4 = 16.0f;
+    b.unk8 = 16.0f;
+    b.unkC = 16.0f;
+    b.unk10 = 0.0f;
+    b.unk14 = 0.0f;
+    b.unk18 = 0.5f;
+    b.unk1C = 0.5f;
+    b.unk20 = D_800A5E10;
+    c.unk1D = ((u8 *)arg0)[0x3B];
+    c.unk8 = 59.0f;
+    c.unk14 = D_800A5E14;
+    c.unk18 = arg0;
+    b.unk48 = 1.0f;
+    c.unk0 = 35.0f;
+    c.unk4 = 27.0f;
+    c.unkC = 35.0f;
+    c.unk10 = 27.0f;
+    c.unk1C = 6;
+    b.unk54 = 0;
+    b.unk55 = 0;
+    b.unk56 = 0;
+    b.unk57 = 0;
+    c.unk1E = -1;
+    func_1514EC1C(func_15189FF0(&a, &b, &c, 2, 0, 0, 0), arg0, 6);
+    func_151D74B0((void *)arg0, 5, -1, 0xFF, 1);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514E31C.s")
 

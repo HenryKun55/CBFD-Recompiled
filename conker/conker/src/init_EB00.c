@@ -344,7 +344,74 @@ void func_1000F9D4( u16 arg0, s16 arg1, s16 arg2, s16 arg3) {
     func_1000F85C(arg0, 256, tmp & 0x80);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000FA64.s")
+struct func_1000FA64_s {
+    u16 unk0;
+    s16 unk2;
+    s16 unk4;
+    s16 unk6;
+    u16 unk8;
+    s16 unkA;
+    s32 unkC;
+    s32 unk10;
+    s32 unk14;
+    s32 unk18;
+    s32 unk1C;
+    s16 unk20;
+    u8 unk22;
+    u8 unk23;
+    u16 unk24;
+    s16 unk26;
+    s16 unk28;
+    f32 unk2C;
+};
+
+void func_10011624(struct func_1000FA64_s *, s32 *, s32, s32);
+
+u16 func_1000FA64(u16 arg0, s16 arg1, s16 arg2, s16 arg3, s32 arg4, u16 arg5, s16 arg6, s32 arg7, s32 arg8, s32 arg9, s32 arg10, s32 arg11) {
+    s32 count;
+    s32 idx;
+
+    if (D_80042760 < 32) {
+        idx = D_80042760++;
+    } else {
+        return 0;
+    }
+    if (arg7 != 0) {
+        ((struct func_1000FA64_s *)D_80041FE0)[idx].unk10 = arg10 | 0x12;
+    } else {
+        ((struct func_1000FA64_s *)D_80041FE0)[idx].unk10 = (arg10 & 0x108) | 2;
+    }
+    if (arg10 & 0x40) {
+        arg2 = func_15083E0C((u8)arg1);
+        if (arg2 == -1) {
+            return 0;
+        }
+    }
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk24 = 0;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk23 = 0;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk22 = 0;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk0 = arg0;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk2 = arg1;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk4 = arg2;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk6 = arg3;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk8 = arg5;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unkA = arg6;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unkC = arg4;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk14 = arg7;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk18 = arg8;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk1C = arg9;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk2C = alCents2Ratio(arg11);
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk26 = 0;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk28 = 0;
+    ((struct func_1000FA64_s *)D_80041FE0)[idx].unk20 = arg11;
+    count = D_80042760;
+    func_10011624((struct func_1000FA64_s *)D_80041FE0, &D_80042760, idx, idx + 1);
+    if (count == D_80042760) {
+        ((struct func_1000FA64_s *)D_80041FE0)[idx].unk10 |= 0x1000;
+        return ((struct func_1000FA64_s *)D_80041FE0)[idx].unk24;
+    }
+    return 0;
+}
 struct func_1000FC18_s {
     u16 unk0;
     s16 unk2;

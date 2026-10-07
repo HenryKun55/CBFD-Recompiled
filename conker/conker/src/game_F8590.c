@@ -89,7 +89,16 @@ s32 func_150CBA30(struct func_150CBA30_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_F8590/func_150CBABC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_F8590/func_150CBCE0.s")
+s32 func_150CBCE0(f32 *arg0, s32 arg1) {
+    s32 i;
+    f32 *p = &arg0[0xA8 / 4];
+
+    for (i = D_800BE9E4; i != 0; i--) {
+        arg0[0x58 / 4] *= *p;
+        arg0[0x60 / 4] *= *p;
+    }
+    return 1;
+}
 
 struct func_150CBE88_s {
     u8 pad0[0x20];

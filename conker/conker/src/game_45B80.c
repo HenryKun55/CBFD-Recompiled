@@ -168,7 +168,30 @@ void func_15019414(void) {
 //     func_151674F8(temp_v0, 4, sp2A, 1);
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_45B80/func_15019CC8.s")
+Gfx *func_1502BAD0(Gfx *, s32, s16);
+extern Mtx D_80089470;
+
+struct func_15019CC8_s {
+    u8 pad0[0x40];
+    Vp vp[12];
+    Mtx mtx[2];
+};
+
+Gfx *func_15019CC8(Gfx *arg0, s32 arg1) {
+
+    gSPViewport(arg0++, &((struct func_15019CC8_s *)D_800BE628)[arg1].vp[D_800BE9C0]);
+    arg0 = func_1501A490(arg0, (s16)arg1, 0, 0, 0, 0);
+    gSPMatrix(arg0++, &D_80089470, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(arg0++, &((struct func_15019CC8_s *)D_800BE628)[arg1].mtx[D_800BE9C0], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    if (D_800BE9F0 == 0x1D) {
+        arg0 = func_1502BAD0(arg0, 6, (s16)arg1);
+    }
+    arg0 = func_151674F8(arg0, 5, 0, 0);
+    arg0 = func_151674F8(arg0, 5, 0, 1);
+    gSPMatrix(arg0++, &((struct func_15019CC8_s *)D_800BE628)[arg1].mtx[D_800BE9C0], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    gSPMatrix(arg0++, (s32)(&D_800DC2A0)[D_800BE9C0] + (arg1 << 6), G_MTX_NOPUSH | G_MTX_MUL | G_MTX_PROJECTION);
+    return arg0;
+}
 
 void func_15019E60(Gfx *arg0) {
     if (D_80082FA0 != 0) {

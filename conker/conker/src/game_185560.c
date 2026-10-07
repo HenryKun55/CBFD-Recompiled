@@ -516,7 +516,64 @@ s32 func_1515A60C(void *arg0, void *arg1) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_185560/func_1515A78C.s")
+struct func_1515A78C_s {
+    u8 unk0;
+    u8 unk1;
+    u8 pad2[0xA];
+    u8 unkC;
+    u8 padD[0x1E];
+    u8 unk2B;
+    u8 pad2C[0x14];
+    f32 unk40;
+    union { s32 i; f32 f; } unk44;
+    f32 unk48;
+    f32 unk4C;
+    u8 pad50[4];
+    f32 unk54;
+    u8 pad58[4];
+    f32 unk5C;
+    u8 pad60[0x20];
+    f32 unk80;
+    u8 unk84[0x19];
+    u8 unk9D;
+    u8 pad9E[0xA];
+    f32 unkA8[9];
+};
+
+extern f32 D_800A6408;
+extern f32 D_800A640C;
+extern f32 D_800A6410;
+s32 func_1515A60C(void *arg0, void *arg1);
+
+u8 func_1515A78C(struct func_1515A78C_s *arg0, f32 *arg1) {
+    f32 *s = (f32 *)((u8 *)arg0 + 0xA8);
+    volatile u8 ret = 1;
+    f32 vec[3];
+
+    func_1515A60C(arg0, arg1);
+    if (arg0->unk5C < 0.0f) {
+        return 1;
+    }
+    vec[0] = arg0->unk40 + arg0->unk4C;
+    vec[1] = arg1[1];
+    vec[2] = arg0->unk48 + arg0->unk54;
+    if (D_800A6408 == s[8]) {
+        if (!func_1514672C(vec)) {
+            return 0;
+        }
+        if (func_15046C00(vec, 0, arg0->unk44.i, &arg0->unk80)) {
+            vec[1] = arg0->unk80;
+            ret = 0;
+        }
+    } else if (s[8] <= arg0->unk44.f) {
+        vec[1] = s[8];
+        ret = 0;
+    }
+    if (ret == 0 && func_150ADA68() < D_800A640C && arg0->unk9D == 3) {
+        func_151DBCBC(func_151D8E20(), *s * D_800A6410, arg0->unk2B, arg0->unk84, vec, arg0->unkC, arg0->unk1);
+    }
+    return ret;
+}
 
 extern s32 func_1514ECE0();
 

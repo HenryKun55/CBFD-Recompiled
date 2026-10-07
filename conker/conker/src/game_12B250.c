@@ -54,7 +54,35 @@ void func_150FDF38(struct func_150FDF38_s *arg0, u8 arg1, s32 arg2, func_150FDF3
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_12B250/func_150FE0B8.s")
+extern s32 D_800A1F7C;
+extern f32 D_800A1F9C;
+extern f32 D_800A1FA0;
+extern f32 D_800A1FA4;
+void func_15102B38(struct func_150FDF38_s *, u8, s32 *, s32 *, f32 *, s32, s32, f32, func_150FDF38_v *, u8, s32, s32, u8, s32);
+
+void func_150FE0B8(struct func_150FDF38_s *arg0, func_150FDF38_v *arg1, u8 arg2, s32 arg3) {
+    f32 sp60[2];
+    u8 sp5F;
+    s32 pad;
+    u32 sp54;
+    u32 sp50;
+    u8 *temp_v0;
+
+    if (arg0->unk1D4 != NULL && (*((u8 *)arg0 + 0x74) & 0xF) != 0xF) {
+        sp60[1] = (func_150ADA68() * 1.5f) + 2.0f;
+        sp60[0] = (func_150ADA68() * D_800A1F9C) + D_800A1FA0;
+        if ((temp_v0 = *(u8 **)((u8 *)arg0 + 0x31C)) != NULL && temp_v0[0x197] != 0
+            && (temp_v0 = *(u8 **)((u8 *)arg0 + 0x318)) != NULL) {
+            sp5F = ~(1 << temp_v0[0x23D]) & 0xFF;
+        } else {
+            sp5F = 0xFF;
+        }
+        sp50 = func_150ADA20();
+        sp54 = func_150ADA20();
+        func_15102B38(arg0, D_80088B80, &D_800A1F70, &D_800A1F7C, sp60, (sp50 % 5) + 6, (sp54 % 101) + 0x9B,
+                      (func_150ADA68() * 199.0f) + D_800A1FA4, arg1, sp5F, 0, -1, arg2, arg3);
+    }
+}
 
 extern u8 D_80088B80;
 extern s32 D_800A1F70;

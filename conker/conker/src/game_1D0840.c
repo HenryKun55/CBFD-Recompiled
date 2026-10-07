@@ -68,7 +68,84 @@ void func_151A3390(u8 *arg0, u8 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D0840/func_151A3504.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D0840/func_151A361C.s")
+struct func_151A361C_vec { f32 x, y, z; };
+struct func_151A361C_e {
+    struct func_151A361C_vec pos;
+    f32 unkC;
+    s16 unk10;
+    s16 unk12;
+    u8 unk14;
+    u8 pad15[3];
+};
+struct func_151A361C_o {
+    u8 pad0[0x1C];
+    s16 unk1C;
+    u8 pad1E[6];
+    f32 unk24;
+    u8 pad28[2];
+    s8 unk2A;
+    u8 pad2B[5];
+    u8 unk30;
+    u8 pad31[0x1B];
+    u8 unk4C;
+};
+struct func_151A361C_s {
+    u8 pad0[0x25];
+    u8 unk25;
+    u8 pad26[6];
+    s8 unk2C;
+    s8 unk2D;
+    s8 unk2E;
+    u8 pad2F[0x25];
+    struct func_151A361C_vec unk54;
+    u8 pad60[0x34];
+    struct func_151A361C_e *unk94;
+    struct func_151A361C_o *unk98;
+};
+
+s32 func_151A361C(struct func_151A361C_s *arg0) {
+    struct func_151A361C_o *o = arg0->unk98;
+    struct func_151A361C_e *e = arg0->unk94;
+    s32 i;
+    struct func_151A361C_e *p;
+
+    if (arg0->unk2C < 2 && (o->unk30 & 1)) {
+        return 0;
+    }
+    o->unk4C += o->unk2A * D_800BE9E4;
+    i = arg0->unk2E;
+    while (i != arg0->unk2D) {
+        i--;
+        if (i < 0) {
+            i = arg0->unk25 - 1;
+        }
+        p = &e[i];
+        if (p->unk12 > 0) {
+            p->unk12 -= D_800BE9E4;
+        } else {
+            p->unk10 -= D_800BE9E4 * o->unk1C;
+        }
+        p->unk14 = 0xFF;
+        p->unkC += D_800BE9A4 * o->unk24;
+        if (p->unk10 < 0) {
+            o->unk30 &= ~2;
+            while (i != arg0->unk2D) {
+                arg0->unk2D++;
+                if (arg0->unk2D == arg0->unk25) {
+                    arg0->unk2D = 0;
+                }
+                arg0->unk2C--;
+            }
+            e[arg0->unk2D].unk10 = 0;
+        }
+    }
+    if (arg0->unk2C > 0) {
+        arg0->unk54 = e[arg0->unk2D].pos;
+    } else {
+        arg0->unk54.x = 0.0f; arg0->unk54.y = 0.0f; arg0->unk54.z = 0.0f;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D0840/func_151A37C0.s")
 

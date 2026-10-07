@@ -3,7 +3,73 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_193430/func_15165F80.s")
+struct func_15165F80_s {
+    u8 pad0[0x10];
+    Vtx vtx[2][4];
+    s8 unk90;
+    s8 unk91;
+    u8 unk92;
+    u8 unk93;
+    u8 unk94;
+    u8 unk95;
+    s16 unk96;
+    s16 unk98;
+    s16 unk9A;
+    s16 unk9C;
+    s16 unk9E;
+};
+
+extern f32 D_800A6C94;
+struct func_15166118_s;
+extern struct func_15166118_s *func_15167A68(s32, s32, s32, s32, s32, s32);
+void func_1517E05C(s32 arg0, s32 arg1, s32 arg2);
+
+void func_15165F80(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6, u8 arg7, s32 arg8) {
+    s32 i;
+    struct func_15165F80_s *p;
+    f32 angle;
+
+    p = (struct func_15165F80_s *)func_15167A68(4, arg8, 0xA8, 1, arg7, 1);
+    if (p != NULL) {
+        if (arg0 == -1) {
+            for (i = 0; i < 2; i++) {
+                p->vtx[i][0].v.ob[1] = arg2;
+                p->vtx[i][1].v.ob[1] = arg2;
+                p->vtx[i][2].v.ob[1] = arg2;
+                p->vtx[i][3].v.ob[1] = arg2;
+                p->vtx[i][0].v.flag = 0;
+                p->vtx[i][1].v.flag = 0;
+                p->vtx[i][2].v.flag = 0;
+                p->vtx[i][3].v.flag = 0;
+            }
+            p->unk95 = 0;
+        } else {
+            angle = arg0 * D_800A6C94;
+            p->unk91 = sinf(angle) * 127.0f;
+            p->unk90 = -cosf(angle) * 127.0f;
+            p->unk95 = 1;
+        }
+        for (i = 0; i < 2; i++) {
+            p->vtx[i][0].v.tc[0] = 0x2000;
+            p->vtx[i][0].v.tc[1] = 0x2000;
+            p->vtx[i][1].v.tc[0] = 0x2800;
+            p->vtx[i][1].v.tc[1] = 0x2000;
+            p->vtx[i][2].v.tc[0] = 0x2800;
+            p->vtx[i][2].v.tc[1] = 0x2800;
+            p->vtx[i][3].v.tc[0] = 0x2000;
+            p->vtx[i][3].v.tc[1] = 0x2800;
+        }
+        p->unk9A = arg2;
+        p->unk9E = 1;
+        p->unk92 = arg5;
+        p->unk93 = arg5;
+        p->unk98 = arg1;
+        p->unk9C = arg3;
+        p->unk96 = arg4;
+        p->unk94 = arg6;
+        func_1517E05C(arg1, arg2, arg3);
+    }
+}
 
 struct func_15166118_s {
     u8 pad0[0x10];

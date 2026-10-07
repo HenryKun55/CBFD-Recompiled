@@ -117,7 +117,53 @@ void func_1001AAE0(N_ALSeqPlayer *seqp, N_ALVoice *voice) {
 //     n_alEvtqPostEvent(arg0 + 0x48, &sp38, arg2, 0);
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/func_1001ADA4.s")
+u8 func_1001ADA4(N_ALSeqPlayer *seqp, N_ALVoice *voice, ALMicroTime time) {
+    ALLink *thisNode;
+    ALLink *nextNode;
+    N_ALEventListItem *thisItem;
+    ALMicroTime itemTime = 0;
+    u8 ret = 1;
+
+    thisNode = seqp->evtq.allocList.next;
+    while (thisNode != 0) {
+        nextNode = thisNode->next;
+        thisItem = (N_ALEventListItem *)thisNode;
+        itemTime += thisItem->delta;
+        if (thisItem->evt.type == 5) {
+        if (thisItem->evt.msg.note.voice == voice) {
+            if (itemTime > time) {
+                if (nextNode != 0) {
+                    ((N_ALEventListItem *)nextNode)->delta += thisItem->delta;
+                }
+                {
+                    ALLink *ln = thisNode;
+                    if (ln->next) {
+                        ln->next->prev = ln->prev;
+                    }
+                    if (ln->prev) {
+                        ln->prev->next = ln->next;
+                    }
+                }
+                {
+                    ALLink *element = thisNode;
+                    ALLink *after = &seqp->evtq.freeList;
+                    element->next = after->next;
+                    element->prev = after;
+                    if (after->next) {
+                        after->next->prev = element;
+                    }
+                    after->next = element;
+                }
+            } else {
+                ret = 0;
+            }
+            break;
+        }
+        }
+        thisNode = nextNode;
+    }
+    return ret;
+}
 
 N_ALVoiceState *__n_mapVoice(N_ALSeqPlayer *seqp, u8 key, u8 vel, u8 channel)
 {
@@ -164,7 +210,34 @@ N_ALVoiceState *func_1001AFEC(N_ALSeqPlayer *seqp, u8 key, u8 channel)
     return 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/func_1001B07C.s")
+ALSound *func_1001B07C(N_ALSeqPlayer *seqp, u8 key, u8 vel, u8 chan)
+{
+    ALInstrument *inst = seqp->chanState[chan].instrument;
+    s32 l = 1;
+    s32 r;
+    s32 i;
+    ALKeyMap *keymap;
+
+    if (inst == 0) {
+        return 0;
+    }
+    r = inst->soundCount;
+
+    while (r >= l) {
+        i = (l+r)/2;
+        keymap = inst->soundArray[i-1]->keyMap;
+        if ((key >= keymap->keyMin) && (key <= keymap->keyMax) &&
+            (vel >= keymap->velocityMin) && (vel <= keymap->velocityMax)) {
+            return inst->soundArray[i-1];
+        } else if ((key < keymap->keyMin) ||
+                   ((vel < keymap->velocityMin) && (key <= keymap->keyMax))) {
+            r = i - 1;
+        } else {
+            l = i + 1;
+        }
+    }
+    return 0;
+}
 
 s16 __n_vsVol(N_ALVoiceState *vs, N_ALSeqPlayer *seqp)
 {

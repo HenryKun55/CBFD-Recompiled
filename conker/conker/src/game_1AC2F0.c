@@ -118,7 +118,38 @@ s32 func_1517F4D8(s32 arg0, s32 arg1) {
     return func_1517F08C(arg0, D_800DDD9C[arg1], p[0], p[1], p[2], arg1);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1AC2F0/func_1517F564.s")
+extern u8 D_800DDD89;
+extern u8 D_800DDD8A;
+extern u8 D_800DDD8B;
+extern u8 D_800DDD8C;
+extern u8 D_8008D010[][6];
+
+s32 func_1517F564(s32 arg0) {
+    s32 pad[3]; f32 t;
+    s32 v;
+    u8 *p;
+    f32 s;
+    s32 r, g, b;
+
+    if (D_800DDE08 == 0) {
+        return arg0;
+    }
+    if (D_800DDD8B == 0) {
+        return arg0;
+    }
+    if (D_800DDD8C) {
+        s = (func_15048A40(D_800DDD89) + 1.0f) * 0.5f;
+        v = D_800DDD8B * s;
+        t = 0.0f;
+    } else {
+        v = D_800DDD8B;
+    }
+    p = D_8008D010[D_800DDD8A];
+    r = p[0] + (p[3] - p[0]) * t;
+    g = p[1] + (p[4] - p[1]) * t;
+    b = p[2] + (p[5] - p[2]) * t;
+    return func_1517F08C(arg0, v, r, g, b, 0);
+}
 
 extern u8 D_800DDD88;
 extern u8 D_800DDD89;
@@ -154,7 +185,42 @@ void func_1517F7B4(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1AC2F0/func_1517F814.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1AC2F0/func_1517F9F4.s")
+Gfx *func_1517F9F4(Gfx *gfx, s32 x0, s32 y0, s32 x1, s32 y1, s32 cam) {
+    s32 t;
+    s32 tmp;
+    s32 left;
+    s32 top;
+    s32 right;
+    s32 bottom;
+
+    if (x1 < x0) {
+        tmp = x0;
+        x0 = x1;
+        x1 = tmp;
+    }
+    if (y1 < y0) {
+        tmp = y0;
+        y0 = y1;
+        y1 = tmp;
+    }
+    left = ((f32 *)((char *)D_800BE628 + cam * 0x180))[0x2C / 4];
+    top = ((f32 *)((char *)D_800BE628 + cam * 0x180))[0x24 / 4];
+    right = ((f32 *)((char *)D_800BE628 + cam * 0x180))[0x30 / 4];
+    bottom = ((f32 *)((char *)D_800BE628 + cam * 0x180))[0x28 / 4];
+    if (!((y0 < bottom) && (top < y1) && (x0 < right) && (left < x1))) {
+        return gfx;
+    }
+    t = (x0 < left) ? left : ((right < x0) ? right : x0);
+    x0 = t;
+    t = (y0 < top) ? top : ((bottom < y0) ? bottom : y0);
+    y0 = t;
+    t = (x1 < left) ? left : ((right < x1) ? right : x1);
+    x1 = t;
+    t = (y1 < top) ? top : ((bottom < y1) ? bottom : y1);
+    y1 = t;
+    gDPFillRectangle(gfx++, x0, y0, x1, y1);
+    return gfx;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1AC2F0/func_1517FB9C.s")
 

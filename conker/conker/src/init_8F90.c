@@ -160,7 +160,62 @@ void func_100093CC(void) {
 }
 
 // audio thread
-#pragma GLOBAL_ASM("asm/nonmatchings/init_8F90/func_10009400.s")
+struct func_10009400_s {
+    s16 unk0;
+    s16 pad2;
+    s32 unk4;
+};
+
+void func_10009400(s32 arg0) {
+    u32 count;
+    s32 phi_s5;
+    struct func_10009400_s *msg;
+    s32 sp4C[4];
+    s32 first;
+    u32 done;
+
+    done = 0;
+    msg = NULL;
+    phi_s5 = 0;
+    count = 0;
+    first = 1;
+    sp4C[2] = 0;
+    func_100051C8(sp4C, &D_8003E5D0);
+    while (done == 0) {
+        osRecvMesg(&D_8003E5D0, &msg, 1);
+        if (D_8002AC5C != 0) {
+            msg->unk0 = 4;
+        }
+        switch (msg->unk0) {
+        case 1:
+            if (count >= 2) {
+                count = 0;
+            }
+            if (count == 0) {
+                if (func_100095A0(D_8003E390[D_8002AE44 % 3], phi_s5) != 0) {
+                    if (first == 0) {
+                        osRecvMesg(&D_8003E608, &msg, 1);
+                        phi_s5 = msg->unk4;
+                    }
+                    first = 0;
+                }
+            }
+            count++;
+            break;
+        case 4:
+            done = 1;
+            break;
+        case 10:
+            done = 1;
+            break;
+        }
+    }
+
+    n_alClose(&D_8003E640);
+    for (;;) {
+        osRecvMesg(&D_8003E5D0, &msg, 1);
+    }
+}
 // NON-MATCHING: a long way to go
 // void func_10009400(s32 arg0) {
 //     OSMesg *msg;
@@ -282,7 +337,81 @@ void func_100093CC(void) {
 //     return 1;
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_8F90/func_100097CC.s")
+struct func_100097CC_s {
+    struct func_100097CC_s *next;
+    struct func_100097CC_s *prev;
+    u32 startAddr;
+    u32 lastFrame;
+    char *ptr;
+};
+
+typedef struct {
+    u8 initialized;
+    struct func_100097CC_s *firstUsed;
+    struct func_100097CC_s *firstFree;
+} func_100097CC_state;
+
+s32 func_100097CC(s32 addr, s32 len, void *state) {
+    void *foundBuffer;
+    s32 delta, addrEnd, buffEnd;
+    struct func_100097CC_s *dmaPtr, *lastDmaPtr;
+
+    lastDmaPtr = 0;
+    dmaPtr = ((func_100097CC_state *)&D_80040F78)->firstUsed;
+    addrEnd = addr + len;
+
+    while (dmaPtr) {
+        buffEnd = dmaPtr->startAddr + 0x800;
+        if (dmaPtr->startAddr > addr) {
+            break;
+        } else if (addrEnd <= buffEnd) {
+            dmaPtr->lastFrame = D_8002AE44;
+            foundBuffer = dmaPtr->ptr + addr - dmaPtr->startAddr;
+            return (s32)osVirtualToPhysical(foundBuffer);
+        }
+        lastDmaPtr = dmaPtr;
+        dmaPtr = dmaPtr->next;
+    }
+
+    dmaPtr = ((func_100097CC_state *)&D_80040F78)->firstFree;
+    if (!dmaPtr || (u32)D_8002AE48 >= 0x20) {
+        return 0;
+    }
+    ((func_100097CC_state *)&D_80040F78)->firstFree = dmaPtr->next;
+    if (dmaPtr->next) {
+        dmaPtr->next->prev = dmaPtr->prev;
+    }
+    if (dmaPtr->prev) {
+        dmaPtr->prev->next = dmaPtr->next;
+    }
+    if (lastDmaPtr) {
+        struct func_100097CC_s *a = dmaPtr, *b = lastDmaPtr;
+        a->next = b->next;
+        a->prev = b;
+        if (b->next) {
+            b->next->prev = a;
+        }
+        b->next = a;
+
+    } else if (((func_100097CC_state *)&D_80040F78)->firstUsed) {
+        lastDmaPtr = ((func_100097CC_state *)&D_80040F78)->firstUsed;
+        ((func_100097CC_state *)&D_80040F78)->firstUsed = dmaPtr;
+        dmaPtr->next = lastDmaPtr;
+        dmaPtr->prev = 0;
+        lastDmaPtr->prev = dmaPtr;
+    } else {
+        ((func_100097CC_state *)&D_80040F78)->firstUsed = dmaPtr;
+        dmaPtr->next = 0;
+        dmaPtr->prev = 0;
+    }
+    foundBuffer = dmaPtr->ptr;
+    delta = addr & 1;
+    addr -= delta;
+    dmaPtr->startAddr = addr;
+    dmaPtr->lastFrame = D_8002AE44;
+    osPiStartDma(&D_80040F98[D_8002AE48++], 1, 0, addr, foundBuffer, 0x800, &D_80041298);
+    return (s32)osVirtualToPhysical(foundBuffer) + delta;
+}
 // NON-MATCHING: another horrible function
 // s32 func_100097CC(u32 arg0, s32 arg1, s32 arg2) {
 //     s32 sp2C;

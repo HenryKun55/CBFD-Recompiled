@@ -823,7 +823,49 @@ void func_1506DE04(void) {
 #pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_1506DE84.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_1506E0EC.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_1506E2CC.s")
+void func_150A7960(void *mtx, f32 x, f32 y, f32 z, f32 *outX, f32 *outY, f32 *outZ);
+void func_151700D8(f32 *arg0, f32 arg1, f32 arg2, s32 arg3, f32 arg4, s32 arg5, s32 arg6, s32 arg7, u8 arg8, s32 arg9);
+
+void func_1506E2CC(void) {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 d;
+    f32 e;
+    f32 px;
+    f32 pz;
+    f32 pts[4][3];
+    s32 i;
+    f32 h;
+
+    if (gCurrentObject->unk1D4 != NULL) {
+        d = 100.0f;
+        e = 100.0f;
+        h = gCurrentObject->unk180;
+        x = d;
+        z = d;
+        for (i = 0; i < 4; i++) {
+            y = 0.0f;
+            func_150A7960(gCurrentObject->unk1D4, x, y, z, &x, &y, &z);
+            pts[i][0] = x;
+            pts[i][1] = h;
+            pts[i][2] = z;
+            if (i == 0) {
+                x = -d;
+                z = d;
+            } else if (i == 1) {
+                x = -d;
+                z = -e;
+            } else if (i == 2) {
+                x = d;
+                z = -d;
+            }
+        }
+        px = gCurrentObject->x_position;
+        pz = gCurrentObject->z_position;
+        func_151700D8(pts[0], px, pz, 5, gCurrentObject->xz_scale * 0.5f, 0, 4, 4, 0xFF, 0);
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_1506E46C.s")
 
 void func_1506E5FC(void) {

@@ -326,7 +326,69 @@ s32 func_150882E4(s32 arg0, s32 arg1) {
     return 0x10;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_150883B0.s")
+extern f32 D_8009DA00;
+
+struct func_150883B0_s {
+    f32 unk0;
+    u8 pad4[0xC - 0x4];
+    f32 unkC;
+    f32 unk10;
+    u8 pad14[0x2F - 0x14];
+    s8 unk2F;
+    s8 unk30;
+    s8 unk31;
+    u8 pad32[0x84 - 0x32];
+};
+
+struct127 *func_150883B0(s32 arg0, s32 arg1, f32 *arg2, s32 *arg3) {
+    struct func_150883B0_s *self;
+    struct127 *result;
+    f32 sign;
+    f32 dx;
+    f32 dz;
+    f32 best;
+    f32 d;
+    s32 kind;
+    s8 skip;
+    f32 base;
+    f32 x;
+    f32 z;
+    s32 i;
+
+    if (D_800872A0 == NULL) {
+        return NULL;
+    }
+    self = (struct func_150883B0_s *)(arg0 * 0x84 + (char *)D_800872A0);
+    if (arg1 >= 0) {
+        sign = -1.0f;
+    } else {
+        sign = 1.0f;
+    }
+    x = gObjects[self->unk31].x_position;
+    z = gObjects[self->unk31].z_position;
+    dx = self->unkC * sign;
+    dz = self->unk10 * sign;
+    kind = self->unk2F;
+    skip = gObjects[self->unk31].unk124 - 1;
+    result = NULL;
+    base = -(dx * x + dz * z);
+    best = D_8009DA00;
+    for (i = 0; i < D_800D2398; i++) {
+        self = (struct func_150883B0_s *)(i * 0x84 + (char *)D_800872A0);
+        if (skip != self->unk31 && (kind == 0 || kind == self->unk2F)) {
+            x = gObjects[self->unk31].x_position;
+            z = gObjects[self->unk31].z_position;
+            d = dx * x + dz * z + base;
+            if (d > 0.0f && d < best) {
+                best = d;
+                *arg2 = self->unk0;
+                *arg3 = self->unk2F;
+                result = &gObjects[self->unk31];
+            }
+        }
+    }
+    return result;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_1508855C.s")
 

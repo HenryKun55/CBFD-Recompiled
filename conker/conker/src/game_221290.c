@@ -1501,7 +1501,64 @@ void *func_151F85C4(s32 arg0, s32 arg1, s32 arg2) {
 //     comparison materializes a boolean via sltu+move before branching
 //   - `u8 buf[]` not `char buf[]`, since target reads it with `lbu`
 //     (this codebase compiles with -signed, so plain char gives `lb`)
-#pragma GLOBAL_ASM("asm/nonmatchings/game_221290/func_151F86B0.s")
+struct func_151F86B0_s {
+    void *handle;
+    s32 (*read)(void *, u8 *, s32, s32);
+    u8 pad8[0x2070 - 0x8];
+    u8 slots[6][0x488];
+    s32 idx; /* 3BA0 */
+    u8 pad3BA4[0x3BC8 - 0x3BA4];
+    s32 flag; /* 3BC8 */
+    u8 pad3BCC[0x3F8C - 0x3BCC];
+    s32 unk3F8C;
+    u8 pad3F90[0x8474 - 0x3F90];
+    s32 unk8474;
+    s32 (*cb)(void *);
+};
+
+s32 func_151F86B0(void *arg0, void *arg1, void *arg2) {
+    struct func_151F86B0_s *obj;
+    s32 ret;
+    u8 buf[0x100];
+    s32 i;
+
+    obj = arg0;
+    obj->idx += 1;
+    if (obj->idx >= 6) {
+        obj->idx = 0;
+    }
+
+    if (func_151F8088(obj, obj->unk8474) == 0) {
+        D_800E0E04 = 3;
+        return 0;
+    }
+
+    obj->unk8474 = -1;
+    ret = obj->cb(obj);
+
+    if (ret == 0) {
+        goto end;
+    }
+
+    *(u8 **) arg1 = obj->slots[obj->idx];
+    *(s32 *) arg2 = obj->unk3F8C;
+
+    if (obj->flag != 0) {
+        i = 0;
+        do {
+            if (obj->read(obj->handle, &buf[i], 1, -1) == 0) {
+                break;
+            }
+        } while (buf[i++]);
+
+        if (D_800E0E00 != 0) {
+            ((void (*)(s32, char *, s32)) D_800E0E00)(0, (char *) buf, strlen((char *) buf) + 1);
+        }
+    }
+
+end:
+    return ret;
+}
 // s32 func_151F86B0(void *arg0, void *arg1, void *arg2) {
 //     void *obj;
 //     s32 ret;

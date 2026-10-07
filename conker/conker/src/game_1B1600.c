@@ -7,7 +7,38 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_15184368.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_15184DF0.s")
+s32 func_150AD9A0(s32, s32, s32);
+s32 func_15184150(s32, f32 *, f32 *, f32 *);
+extern f32 D_800A7378;
+extern f32 D_800D3688;
+extern f32 D_800D368C;
+
+s32 func_15184DF0(s32 arg0, s32 arg1, f32 *arg2, f32 *arg3, f32 *arg4) {
+    f32 x, y, z;
+    s32 dist;
+    f32 scale;
+
+    x = gObjects[arg0].x_position;
+    y = gObjects[arg0].y_position;
+    z = gObjects[arg0].z_position;
+    dist = func_150AD9A0(x - D_800DBFF0[arg1].unk2F8, y - D_800DBFF0[arg1].unk2FC, z - D_800DBFF0[arg1].unk300);
+    if (dist > 2000) {
+        D_800D3688 = 0.0f;
+        D_800D368C = D_800D3688;
+        return 0;
+    }
+    func_15184150(arg0, arg2, arg3, arg4);
+    scale = D_800A7378;
+    *arg2 *= scale;
+    *arg3 *= scale;
+    *arg4 *= scale;
+    if ((*arg2 == 0.0f) || (*arg3 == 0.0f) || (*arg4 == 0.0f)) {
+        D_800D3688 = 0.0f;
+        D_800D368C = D_800D3688;
+        return 0;
+    }
+    return dist;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_15184FA4.s")
 
