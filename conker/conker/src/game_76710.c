@@ -72,4 +72,26 @@ void func_150492CC(f32 arg0, f32 arg1, f32 arg2) {
 //     D_800CC218 = cz;
 //     D_800CC21C = cx * *(f32 *) &arg0 + cy * *(f32 *) &arg1 + cz * *(f32 *) &arg2;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_76710/func_15049350.s")
+struct func_15049350_s {
+    f32 x, y, z;
+};
+
+void func_15049350(struct func_15049350_s a, struct func_15049350_s b, struct func_15049350_s c) {
+    f32 d1[3], d2[3], unused[3];
+    f32 cx, cy, cz;
+
+    d1[0] = a.x - b.x;
+    d1[1] = a.y - b.y;
+    d1[2] = a.z - b.z;
+    d2[0] = a.x - c.x;
+    d2[1] = a.y - c.y;
+    d2[2] = a.z - c.z;
+
+    cx = d1[1] * d2[2] - d2[1] * d1[2];
+    D_800CC210 = cx;
+    cy = d1[2] * d2[0] + d2[2] * -d1[0];
+    D_800CC214 = cy;
+    cz = d1[0] * d2[1] - d2[0] * d1[1];
+    D_800CC218 = cz;
+    D_800CC21C = a.z * cz + (cx * a.x + cy * a.y);
+}

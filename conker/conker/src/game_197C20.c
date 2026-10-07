@@ -21,7 +21,38 @@ s32 func_1516A770(u8 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_197C20/func_1516B6BC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_197C20/func_1516C878.s")
+struct func_1516C878_s {
+    u8 *str;
+    s32 pad;
+};
+extern struct func_1516C878_s *D_800DD254;
+extern struct func_1516C878_s *D_800DD258;
+
+u8 *func_1516C878(s32 *arg0, s32 arg1, s16 arg2) {
+    s32 i;
+    u8 *s;
+
+    switch (arg2) {
+    case 0:
+        s = D_800DD254[arg0[1]].str;
+        break;
+    case 1:
+        s = D_800DD258[arg0[1]].str;
+        break;
+    case 2:
+        s = (u8 *)arg0[1];
+        break;
+    }
+    for (i = 0; i < arg1; i++) {
+        while (*s != 0) {
+            s++;
+        }
+        while (*s == 0) {
+            s++;
+        }
+    }
+    return s;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_197C20/func_1516C934.s")
 

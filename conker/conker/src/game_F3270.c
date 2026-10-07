@@ -12,7 +12,39 @@ void func_150C5DC0(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_F3270/func_150C5E0C.s")
+struct func_150C5E0C_s {
+    u8 pad0[4];
+    u8 unk4;
+    u8 pad5[3];
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    u8 pad1A[2];
+    f32 unk1C;
+};
+
+s8 func_150C5E0C(u8 *arg0) {
+    s8 ret;
+    struct func_150C5E0C_s *s;
+
+    ret = 1;
+    s = (struct func_150C5E0C_s *)(arg0 + 0xB0);
+
+    if (s->unk4 == 0) {
+        ret = 0;
+    }
+    s->unk4 = 0;
+    s->unk14 -= D_800BE9E4;
+    if (s->unk14 < 0) {
+        s->unk14 = ((u32)func_150ADA20() % (s->unk18 + 1)) + s->unk16;
+        s->unk10 = func_150ADA68() * s->unkC + s->unk8;
+    }
+    *(s32 *)(arg0 + 0x24) += (s32)((s->unk10 - *(s32 *)(arg0 + 0x24)) * s->unk1C);
+    return ret;
+}
 
 struct func_150C5EFC_s {
     u8 pad0[0x18];

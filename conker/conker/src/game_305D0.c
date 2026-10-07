@@ -5,7 +5,26 @@
 
 
 // what is this loop doing?
-#pragma GLOBAL_ASM("asm/nonmatchings/game_305D0/func_15003120.s")
+struct func_15003120_s {
+    s32 a;
+    s32 b;
+    s32 c;
+};
+
+void func_15003120(s32 arg0, s32 arg1, struct func_15003120_s *arg2) {
+    s32 i;
+
+    (*(struct func_15003120_s ***)D_800B0E30)[arg0] = arg2;
+    (*(u8 **)D_800B0E34)[arg0] = 0;
+    if (arg2 != NULL) {
+        (*(struct func_15003120_s ***)D_800B0E30)[arg0] = (struct func_15003120_s *)((u8 *)(*(struct func_15003120_s ***)D_800B0E30)[arg0] + arg1);
+        for (i = 0; (*(struct func_15003120_s ***)D_800B0E30)[arg0][i].a != 0; i++) {
+            (*(struct func_15003120_s ***)D_800B0E30)[arg0][i].a += arg1;
+            (*(struct func_15003120_s ***)D_800B0E30)[arg0][i].b += arg1;
+        }
+        (*(u8 **)D_800B0E34)[arg0] = i;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_305D0/func_150031EC.s")
 

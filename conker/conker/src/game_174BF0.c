@@ -62,7 +62,33 @@ void func_15147A30(s32 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_174BF0/func_15147A80.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_174BF0/func_15147C4C.s")
+struct func_15147C4C_s {
+    u8 pad0[0x1E];
+    u16 unk1E;
+    u8 pad20[0x8];
+    s32 unk28;
+    u8 pad2C[0x5];
+    u8 unk31;
+    u8 pad32[0x2];
+    u8 unk34[0x20];
+    u8 unk54[0x4];
+};
+
+extern s32 func_151462C8();
+extern s32 (*D_8008A2A4[])(struct func_15147C4C_s *, s32, s16);
+
+s32 func_15147C4C(s32 arg0, struct func_15147C4C_s *arg1, s16 arg2) {
+    arg0 = func_151462C8(arg0, arg1->unk34, 0, 0, 0, arg2, arg1->unk54, 2,
+                         (arg1->unk1E & 0x20) ? arg1->unk28 : 0);
+    if (arg1->unk31 >= 0x13) {
+        func_1516972C((struct102 *)arg1);
+        return arg0;
+    }
+    if (arg1->unk31 != 0) {
+        return D_8008A2A4[arg1->unk31](arg1, arg0, arg2);
+    }
+    return arg0;
+}
 
 struct func_15147D1C_s {
     char pad0[0x20];

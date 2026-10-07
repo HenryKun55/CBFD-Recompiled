@@ -8,7 +8,67 @@ void func_150BEF70(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_EC420/func_150BEF7C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EC420/func_150BF0F4.s")
+struct func_150BF0F4_s {
+    u8 pad0[0x14];
+    s16 unk14;
+    s16 unk16;
+    u8 pad18[0x1F - 0x18];
+    u8 unk1F;
+    u8 pad20[4];
+    u8 unk24;
+    u8 pad25;
+    u8 unk26;
+    u8 unk27;
+    u8 pad28[4];
+    u8 unk2C;
+    s8 unk2D;
+    s8 unk2E;
+    u8 unk2F;
+};
+
+s32 func_150BF0F4(struct func_150BF0F4_s *arg0) {
+    s32 v0;
+    s32 v1;
+
+    v0 = arg0->unk1F;
+    v1 = arg0->unk26;
+    if (arg0->unk24 != 0) {
+        if (v0 != v1) {
+            v0 += D_800BE9E4 * arg0->unk27;
+            if (v0 > v1) {
+                v0 = v1;
+            }
+            arg0->unk1F = v0;
+        }
+    } else if (v0 != 0) {
+        v0 -= D_800BE9E4 * arg0->unk2F;
+        if (v0 < 0) {
+            v0 = 0;
+        }
+        arg0->unk1F = v0;
+    }
+    if (arg0->unk24 == 0 && v0 == 0) {
+        return 1;
+    }
+    v0 = arg0->unk2D;
+    v0 *= D_800BE9E4;
+    arg0->unk14 += v0;
+    v0 = arg0->unk2E;
+    v0 *= D_800BE9E4;
+    arg0->unk16 += v0;
+    v1 = arg0->unk14;
+    if (v1 <= 0 || v1 <= 0) {
+        arg0->unk14 = arg0->unk16 = 0;
+        return 1;
+    }
+    v1 = arg0->unk2C;
+    v1 += D_800BE9E4;
+    if (v1 >= 0x80) {
+        v1 = 0x7F;
+    }
+    arg0->unk2C = v1;
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_EC420/func_150BF21C.s")
 

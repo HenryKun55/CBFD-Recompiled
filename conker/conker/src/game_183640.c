@@ -141,7 +141,11 @@ Gfx *func_15157F80(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3, u8 *arg4) {
     return gdl;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157FE8.s")
+Gfx *func_15157FE8(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3) {
+    gSPMatrix(gdl++, (u8 *)D_800BE628 + arg2 * 0x180 + (D_800BE9C0 << 6) + 0x100, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    gSPMatrix(gdl++, (Mtx *)((struct10 **)&D_800DC2A0)[D_800BE9C0] + arg2, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_PROJECTION);
+    return gdl;
+}
 
 extern u8 D_800A6060[];
 

@@ -79,7 +79,7 @@ def main():
     for f, ok, why in checked:
         if not ok:
             report.append(f'{f}\tnot a match\t{why}')
-    migrated = {l.split()[0] for l in open('rodata_migrated.txt') if l.strip()}
+    migrated = {l.split()[0]: int(l.split()[2], 16) - int(l.split()[1], 16) for l in open('rodata_migrated.txt') if l.strip()}
     by_file = {}
     for f in good:
         p = source_of(f)
@@ -98,7 +98,11 @@ def main():
         for f in fs:
             insert(path, f)
         ok, log = build_obj(path)
-        if ok and (fileid in migrated or rodata_size(f'build/{path}.o') == base_rodata) and data_sizes(f'build/{path}.o') == base_data:
+        def rodata_ok():
+            # A migrated file's rodata must still fill its range exactly.
+            size = rodata_size(f'build/{path}.o')
+            return size == migrated[fileid] if fileid in migrated else size == base_rodata
+        if ok and rodata_ok() and data_sizes(f'build/{path}.o') == base_data:
             done += fs
             report += [f'{f}\tin\t{path}' for f in fs]
             continue
@@ -114,8 +118,8 @@ def main():
             elif data_sizes(f'build/{path}.o') != base_data:
                 report.append(f'{f}\tleft out\tadds data/bss to {fileid}')
                 ok = False
-            elif fileid not in migrated and rodata_size(f'build/{path}.o') != base_rodata:
-                report.append(f'{f}\tleft out\tadds rodata to {fileid} (not migrated)')
+            elif not rodata_ok():
+                report.append(f'{f}\tleft out\tchanges the rodata of {fileid}')
                 ok = False
             if ok:
                 done.append(f)

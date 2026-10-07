@@ -89,7 +89,29 @@ s32 func_1515D030(void *arg0, void *arg1) {
 // with the same opcodes/immediates but $v0/$v1/$t7 chosen instead of
 // $t7/$v0/$t8 - not reproducible via struct-vs-raw-pointer field access,
 // OR-operand order, or union-based byte/word aliasing for sp38.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1897A0/func_1515D088.s")
+struct func_1515D088_s {
+    void *ptr;
+    f32 f;
+    u8 b;
+};
+
+void *func_1515D088(void *arg0) {
+    void *ret;
+    struct func_1515D088_s s;
+    s32 t;
+
+    t = (s.b = *(s32 *) ((char *) arg0 + 0x18));
+    if (t < 0 || t >= 2) {
+        return 0;
+    }
+    s.ptr = arg0;
+    s.f = 0.0f;
+    ret = func_151491F4(0x12C, -1, 0x11, 0, 0xD, 0xC, 0xFF, 1);
+    if (ret) {
+        memcpy((char *) ret + 0x28, &s, 0xC);
+    }
+    return ret;
+}
 // s32 func_1515D088(void *arg0) {
 //     s32 sp3C;
 //     s8 sp38;

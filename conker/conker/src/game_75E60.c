@@ -43,7 +43,26 @@
 //     }
 //     return f2;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_75E60/func_150489B0.s")
+f32 func_150489B0(u8 arg0) {
+    s32 v0;
+    f32 f2;
+
+    if (arg0 >= 0x41) {
+        v0 = arg0;
+        if (v0 >= 0x81) {
+            if (v0 >= 0xC1) {
+                f2 = D_8009A220[0x100 - v0];
+            } else {
+                f2 = -D_8009A220[v0 - 0x80];
+            }
+        } else {
+            f2 = -D_8009A220[0x80 - v0];
+        }
+    } else {
+        f2 = D_8009A220[arg0];
+    }
+    return f2;
+}
 // NON-MATCHING: not convinced this is correct
 // f32 func_150489B0(u8 arg0) {
 //     f32 ret;

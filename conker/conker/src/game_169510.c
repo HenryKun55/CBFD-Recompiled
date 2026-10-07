@@ -573,7 +573,29 @@ void func_1513FA70(void *arg0, s16 arg1) {
 // register pressure in this leaf function to give IDO a reason to
 // promote it to a saved register, this near-miss shape looks
 // structural rather than reachable from source phrasing.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_169510/func_1513FFF4.s")
+typedef struct {
+    u8 pad0[6];
+    u16 unk6;
+    u16 unk8;
+    u8 padA[2];
+} func_1513FFF4_s;
+extern func_1513FFF4_s D_80090B60[];
+
+void func_1513FFF4(s16 *arg0, u8 arg1, u8 arg2) {
+    func_1513FFF4_s *e;
+    u16 w;
+    u16 h;
+
+    if (arg1 != 0xFF) {
+        e = &D_80090B60[arg1];
+        w = e->unk6 - 1;
+        h = e->unk8 - 1;
+        arg0[4] = arg0[0x1C] = (arg2 & 1) ? (w << 6) : 0;
+        arg0[0xC] = arg0[0x14] = (arg2 & 1) ? 0 : (w << 6);
+        arg0[5] = arg0[0xD] = (arg2 & 2) ? (h << 6) : 0;
+        arg0[0x15] = arg0[0x1D] = (arg2 & 2) ? 0 : (h << 6);
+    }
+}
 // extern s32 D_80090B60;
 //
 // void func_1513FFF4(void *arg0, u8 arg1, u8 arg2) {
@@ -664,7 +686,30 @@ void func_1513FA70(void *arg0, s16 arg1) {
 //     *(u16 *) (d2 + 0x6) = 0;
 //     *(s8 *) (d2 + 0xf) = (s8) *(s16 *) (s2 + 0x6);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_169510/func_151400D0.s")
+struct func_151400D0_s {
+    s16 v[4];
+    u16 w;
+};
+struct func_151400D0_d {
+    u8 pad0[6];
+    u16 w;
+    u8 pad8[4];
+    s8 b[4];
+};
+void func_151400D0(struct func_151400D0_d *arg0, struct func_151400D0_s *arg1) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        arg0->w = arg1->w;
+        arg0->b[0] = arg1->v[0];
+        arg0->b[1] = arg1->v[1];
+        arg0->b[2] = arg1->v[2];
+        arg0->b[3] = arg1->v[3];
+        arg0->w = 0;
+        arg0++;
+        arg1++;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_169510/func_15140190.s")
 

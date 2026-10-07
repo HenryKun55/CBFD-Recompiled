@@ -5,13 +5,27 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510CB10.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510CDB8.s")
+Gfx *func_1510CDB8(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3) {
+    gDPSetPrimColor(gdl++, 0xF2, 0, D_800D9B68[arg3][0], D_800D9B68[arg3][1], D_800D9B68[arg3][2], arg1);
+    gDPSetEnvColor(gdl++, D_800D9B78[arg3][0], D_800D9B78[arg3][1], D_800D9B78[arg3][2], arg2);
+    return gdl;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510CE60.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510D0EC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510D374.s")
+extern u8 D_1A37E0[];
+
+s32 func_1510D374(s32 arg0) {
+    s32 i;
+    s32 ret = (s32)D_1A37E0;
+
+    for (i = 0; i < arg0; i++) {
+        ret += ((u16 *)D_80091D20)[i];
+    }
+    return ret;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510D404.s")
 
@@ -52,7 +66,22 @@ void func_1510D720(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510D7AC.s")
+void func_1510D7AC(s32 arg0) {
+    s32 *q;
+    if (((s8 *)D_800BC448)[arg0] != 0) {
+        if (D_800D9F68[arg0] != 0) {
+            if (--D_800D9F68[arg0] == 0) {
+                if (((s8 *)D_800BC448)[arg0] & 0x40) {
+                    func_10004074(*(s32 *)D_800B0E58[arg0]);
+                }
+                q = &D_800B0E58[arg0];
+                func_10004074(*q);
+                *q = -1;
+                ((s8 *)D_800BC448)[arg0] = 0;
+            }
+        }
+    }
+}
 
 extern u8 D_800D9ED0;
 

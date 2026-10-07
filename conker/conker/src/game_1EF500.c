@@ -85,7 +85,36 @@ void func_151C4510(f32 *arg0, f32 *arg1, f32 arg2) {
     arg0[15] += arg1[3] * arg2;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1EF500/func_151C455C.s")
+extern void (*D_8008FBD0[])(s32);
+
+struct func_151C455C_s {
+    u8 unk0;
+    u8 pad1[0x2F];
+    u8 unk30[0x54];
+    struct131 *unk84;
+    u8 pad88[4];
+    f32 unk8C;
+    u8 pad90[0xC];
+    s8 unk9C;
+};
+
+s32 func_151C455C(s32 arg0, struct func_151C455C_s *arg1, f32 arg2) {
+    s32 ret = 1;
+
+    arg1->unk8C -= arg2;
+    if (arg1->unk8C <= 0.0f) {
+        if (D_800E0940 != NULL && (arg1->unk0 & 1) && arg1->unk84 != NULL) {
+            ((void (*)(void *, s32))D_800E0940)(arg1->unk30, arg1->unk84 - D_800DBEF4);
+        }
+        if (arg1->unk0 & 2) {
+            if (arg1->unk9C != -1) {
+                D_8008FBD0[arg1->unk9C](arg0);
+            }
+        }
+        ret = 0;
+    }
+    return ret;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1EF500/func_151C4644.s")
 

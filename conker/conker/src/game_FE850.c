@@ -43,4 +43,11 @@ void func_150D146C(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_FE850/func_150D149C.s")
+extern f32 D_800A08C0;
+
+void func_150D149C(u8 *arg0) {
+    f32 *temp_v0 = (f32 *)(arg0 + 0x28);
+
+    func_151467A4((f32 *)(arg0 + 0x30), 10.0f, (f32 *)(arg0 + 0x2C), 50.0f, 100.0f, 123.0f, D_800A08C0, temp_v0);
+    func_1515D4D4((s32)*temp_v0, ((u8 *)&D_800DCD20)[1], ((u8 *)&D_800DCD20)[2], 0);
+}

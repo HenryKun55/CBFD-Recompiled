@@ -35,6 +35,25 @@ void func_151001B4(void *arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_12D630/func_15100230.s")
+struct func_15100230_s {
+    void *unk0;
+    u8 unk4;
+};
+
+void func_15100230(void *arg0, struct func_15100230_s *arg1, u8 arg2) {
+    struct func_15100230_s *temp = (struct func_15100230_s *)((u8 *)arg0 + 0x28);
+
+    if (arg2 == 0x48) {
+        if (arg1->unk0 == temp->unk0) {
+            goto call;
+        }
+        if (arg1->unk4 == temp->unk4) {
+        call:
+            func_1516972C(arg0);
+        }
+    } else {
+        func_15149514(arg1, arg2, temp, &temp->unk4, arg0);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_12D630/func_151002BC.s")

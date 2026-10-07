@@ -3,7 +3,20 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503DE70.s")
+struct func_1503DE70_s {
+    s32 unk0;
+    s32 unk4;
+};
+extern struct func_1503DE70_s *D_8008446C[];
+void func_1503DF0C(s32, s32, s32, s32);
+
+void func_1503DE70(struct127 *arg0, s32 arg1, s32 arg2) {
+    if (arg2 != -1) {
+        func_1503DF0C(arg0 - gObjects, arg1, D_8008446C[arg1][arg2].unk0, D_8008446C[arg1][arg2].unk4);
+    } else {
+        func_1503DF0C(arg0 - gObjects, arg1, -1, -1);
+    }
+}
 
 void func_1503DF0C(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     struct106 *ptr = &D_800C6660[arg0];
@@ -46,11 +59,51 @@ s32 func_1503E1F4(s32 arg0, s32 arg1) {
 void func_1503EEB8(void) {
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503EEC0.s")
+struct func_1503EEC0_s {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+    s16 unkC;
+    s16 unkE;
+};
+
+void func_1503EEC0(s32 arg0) {
+    s32 v;
+    struct func_1503EEC0_s *p;
+
+    func_1503ECA0(arg0);
+    p = &((struct func_1503EEC0_s *)D_800C6660)[arg0];
+    v = p->unkC;
+    v -= D_800BE9E4;
+    p->unkC = v;
+    if (v <= 0) {
+        func_15060F28(&gObjects[arg0], 1);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503EF4C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503EFC4.s")
+struct func_1503EFC4_s {
+    u8 *unk0;
+    s32 unk4;
+    s32 unk8;
+    s16 unkC;
+    u8 unkE;
+    u8 unkF;
+};
+extern u8 D_80098914[];
+
+void func_1503EFC4(s32 arg0) {
+    struct func_1503EFC4_s *p = &((struct func_1503EFC4_s *)D_800C6660)[arg0];
+    s32 i;
+    s32 n;
+
+    p->unkC = 0x78;
+    n = D_80098914[p->unkE];
+    for (i = 0; i < n; i++) {
+        *(f32 *)(p->unk0 + i * 0x68 + 0x4C) = (s32)(func_150ADA20() % 20U) - 5;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503F078.s")
 

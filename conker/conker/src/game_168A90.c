@@ -43,7 +43,32 @@
 //         func_1516972C(arg0);
 //     }
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_168A90/func_1513B798.s")
+extern s32 (*D_80089C18[])(void *);
+
+void func_1513B798(void *arg0) {
+    s32 v0;
+    u8 v1 = 0;
+    s8 idx;
+
+    if (*(u8 *) ((char *) arg0 + 0x10) & 1) {
+        *(s16 *) ((char *) arg0 + 0x14) -= D_800BE9E4;
+        if (*(s16 *) ((char *) arg0 + 0x14) < 0) {
+            v1 = 1;
+        }
+    }
+    if (!v1) {
+        idx = *(s8 *) ((char *) arg0 + 0x11);
+        if (idx != -1) {
+            v0 = D_80089C18[idx](arg0);
+            if (v0 == 0) {
+                v1 = 1;
+            }
+        }
+    }
+    if (v1) {
+        func_1516972C(arg0);
+    }
+}
 // NON-MATCHING: full semantics recovered and verified via isolated
 // harness (correct register roles for s0=arg1/a3=buf were only reached
 // after dropping the truly-dead 4th parameter - target never spills it,
@@ -203,6 +228,71 @@ s32 func_1513BAD4(s32 arg0, s32 arg1) {
 //     }
 //     return v0;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_168A90/func_1513BAE8.s")
+struct func_1513BAE8_s {
+    u8 unk0;
+    u8 unk1;
+    u8 unk2;
+    u8 pad3;
+    s16 unk4;
+    s16 pad6;
+    s32 unk8;
+    s32 unkC;
+    s32 unk10;
+    s32 unk14;
+    s32 unk18;
+    s32 unk1C;
+    s32 unk20;
+    u8 unk24;
+    u8 unk25;
+    u8 pad26[0xA];
+    s32 unk30;
+    s32 unk34;
+    u8 unk38;
+};
+struct func_1513BAE8_t {
+    u8 pad0[0x50];
+    s32 unk50;
+    u8 pad54[0xA4];
+    u8 unkF8[1];
+};
+extern void *func_1513B5E0(struct func_1513BAE8_s *, s32, s32, s32, s32);
+extern void *memcpy(void *, const void *, unsigned int);
+
+void *func_1513BAE8(void) {
+    void *v0;
+    struct func_1513BAE8_s st;
+    f32 farr[5];
+
+    st.unk1 = 2;
+    st.unk2 = 5;
+    st.unk4 = 0x12C;
+    st.unk30 = 9;
+    farr[0] = 0.0f;
+    farr[1] = 0.0f;
+    farr[3] = 0.0f;
+    farr[4] = 0.0f;
+    farr[2] = 0.0f;
+    st.unk0 = 0;
+    st.unk34 = 0x1AE;
+    st.unk8 = 1;
+    st.unkC = 0x220205;
+    st.unk10 = 0x40600;
+    st.unk24 = 0;
+    st.unk25 = 0;
+    st.unk14 = 1;
+    st.unk18 = 0x36;
+    st.unk1C = 0x80;
+    st.unk20 = 0x20;
+    st.unk38 = 3;
+    v0 = func_1513B5E0(&st, 1, 0x14, 0xFF, 1);
+    if (v0 != NULL) {
+        if (*(s32 *)((u8 *)v0 + 0x50) != 0x1180) {
+            func_1516972C(v0);
+        } else {
+            memcpy(&((struct func_1513BAE8_t *)v0)->unkF8[((struct func_1513BAE8_t *)v0)->unk50], farr, 0x14);
+        }
+    }
+    return v0;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_168A90/func_1513BBFC.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_168A90/func_1513BEB0.s")

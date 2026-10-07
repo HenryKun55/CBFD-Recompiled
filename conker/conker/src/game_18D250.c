@@ -19,7 +19,30 @@ struct func_1515FF74_s *func_1515FF74(void *arg0, s32 arg1, u8 arg2, s32 arg3) {
     return ret;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18D250/func_1515FFEC.s")
+extern s32 (*D_8008B0D0[])(struct102 *);
+
+void func_1515FFEC(struct102 *arg0) {
+    s32 idx;
+    u8 done = 0;
+
+    if (((u8 *)arg0)[0xE] & 1) {
+        *(s16 *)((u8 *)arg0 + 0x12) -= D_800BE9E4;
+        if (*(s16 *)((u8 *)arg0 + 0x12) < 0) {
+            done = 1;
+        }
+    }
+    if (!done) {
+        idx = ((s8 *)arg0)[0xF];
+        if (idx != -1) {
+            if (D_8008B0D0[idx](arg0) == 0) {
+                done = 1;
+            }
+        }
+    }
+    if (done) {
+        func_1516972C(arg0);
+    }
+}
 
 extern void (*D_8008B0E4[])(void *, s32, u8);
 

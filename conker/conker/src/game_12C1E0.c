@@ -5,7 +5,31 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_12C1E0/func_150FED30.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_12C1E0/func_150FEFD0.s")
+extern s32 D_800A2050;
+s32 func_1514654C(); /* extern */
+
+void func_150FEFD0(u8 *arg0, s16 arg1, f32 *arg2) {
+    void *sp34;
+    f32 *sp30;
+    struct126 *temp_v0;
+
+    if (arg1 == -1) {
+        arg2[0] = *(f32 *)(arg0 + 0x14);
+        arg2[1] = *(f32 *)(arg0 + 0x18);
+        arg2[2] = *(f32 *)(arg0 + 0x1C);
+        return;
+    }
+    temp_v0 = func_1503195C(arg0, arg1, 0);
+    if (temp_v0 == NULL) {
+        arg2[0] = *(f32 *)(arg0 + 0x14);
+        arg2[1] = *(f32 *)(arg0 + 0x18);
+        arg2[2] = *(f32 *)(arg0 + 0x1C);
+        return;
+    }
+    sp34 = &D_800A2050;
+    sp30 = arg2;
+    func_1514654C(arg0, temp_v0, 0, &sp34, &sp30, 1);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_12C1E0/func_150FF084.s")
 
@@ -54,7 +78,25 @@ void func_150FFBDC(s32 arg0, s32 arg1, s32 arg2) {
     func_15145EA4(sp1C, sp18, *(s32 *)(arg0 + 0x1D4) + (D_80088BB0 << 6), 1);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_12C1E0/func_150FFC3C.s")
+void func_150FFC3C(struct127 *arg0) {
+    struct {
+        u8 f0;
+        s16 f2;
+        u8 f4;
+        u8 f5;
+        s8 f6;
+    } local;
+
+    if (arg0->camera == 0) {
+        return;
+    }
+    local.f0 = 1;
+    local.f2 = (u32) func_150ADA20() % 11 + 20;
+    local.f5 = 1 << arg0->camera->unk23D;
+    local.f4 = (func_150ADA20() & 1) + 7;
+    local.f6 = -1;
+    func_151D8868(&local, 0, 0xFF, 1);
+}
 
 extern s32 D_8008FC8C;
 extern u8 *D_8008FC94;

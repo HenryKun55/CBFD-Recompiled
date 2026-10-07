@@ -468,4 +468,47 @@ s32 func_10009FFC(void) {
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/init_8F90/func_1000A03C.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/init_8F90/func_1000A348.s")
+void func_1000A348(void) {
+    struct54 *v0;
+    struct54 *next;
+    struct54 *a0;
+    struct54 *a1;
+    struct54 *a2;
+
+    v0 = (struct54 *)D_800406A0.unk4;
+    while (v0 != NULL) {
+        next = v0->unk0;
+        if (v0->unk14 == 0 && v0->unk16 == 0) {
+            a0 = (struct54 *)v0->unkC;
+            a0->unk0 = (struct54 *)v0->unk8;
+            v0->unkC = 0;
+            if (v0 == (struct54 *)D_800406A0.unk4) {
+                D_800406A0.unk4 = (s32)next;
+            }
+            a0 = v0->unk0;
+            if (a0 != NULL) {
+                a0->unk4 = v0->unk4;
+            }
+            a0 = v0->unk4;
+            if (a0 != NULL) {
+                a0->unk0 = v0->unk0;
+            }
+            if (D_800406A0.unk10 != NULL) {
+                a1 = D_800406A0.unk10;
+                v0->unk0 = a1->unk0;
+                v0->unk4 = a1;
+                a2 = a1->unk0;
+                if (a2 != NULL) {
+                    a2->unk4 = v0;
+                }
+                a1->unk0 = v0;
+            dummy:; // needed to split the block for matching
+            } else {
+                D_800406A0.unk10 = v0;
+                v0->unk0 = NULL;
+                v0->unk4 = NULL;
+            }
+        }
+        v0 = next;
+    }
+}

@@ -139,9 +139,113 @@ s32 func_151D779C(struct func_151D779C_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_204660/func_151D77C8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_204660/func_151D7830.s")
+typedef struct {
+    f32 x, y, z;
+} func_151D7830_v;
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_204660/func_151D792C.s")
+struct func_151D7830_s {
+    u8 unk0;
+    u8 unk1;
+    u8 pad2[0xA];
+    u8 unkC;
+    u8 padD[0x1B];
+    void *unk28;
+    u8 pad2C[4];
+    func_151D7830_v unk30;
+};
+
+struct func_151D7830_a {
+    func_151D7830_v pos;
+    s16 unkC;
+    s16 unkE;
+    s32 unk10;
+    u8 unk14;
+    u8 unk15;
+    s32 unk18;
+};
+
+struct func_151D7830_b {
+    struct func_151D7830_s *ptr;
+    func_151D7830_v pos;
+    func_151D7830_v vel;
+};
+
+extern void *func_15147A80();
+
+void func_151D7830(struct func_151D7830_s *arg0) {
+    void *ret;
+    struct func_151D7830_b b;
+    struct func_151D7830_a a;
+    void *temp;
+
+    b.ptr = arg0;
+    b.pos = arg0->unk30;
+    b.vel.x = 0.0f;
+    b.vel.y = 0.0f;
+    b.vel.z = 0.0f;
+    a.unk15 = 0x19;
+    a.pos = arg0->unk30;
+    a.unkC = 0x12C;
+    a.unkE = 0x76;
+    a.unk10 = 0x12;
+    a.unk14 = 4;
+    a.unk18 = 0;
+    ret = func_15147A80(&a, 0x20, 0x1C, 0xD, 0x10, 0x10, 0, 0, 0, arg0->unkC, arg0->unk1);
+    if (ret != NULL) {
+        memcpy(*(void **)((u8 *)ret + 0x98), &b, 0x1C);
+        arg0->unk28 = ret;
+    }
+}
+
+typedef struct { f32 x, y, z; } func_151D792C_v;
+struct func_151D792C_e {
+    func_151D792C_v pos;
+    u8 unkC[0x10];
+};
+struct func_151D792C_s {
+    u8 pad0[0x1E];
+    u16 unk1E;
+    u8 pad20[5];
+    u8 unk25;
+    u8 pad26[6];
+    s8 unk2C;
+    s8 unk2D;
+    s8 unk2E;
+    u8 pad2F[0x54 - 0x2F];
+    func_151D792C_v unk54;
+    u8 pad60[0x94 - 0x60];
+    struct func_151D792C_e *unk94;
+};
+
+void func_151D8718(f32 *arg0, f32 *arg1, f32 arg2);
+
+s32 func_151D792C(struct func_151D792C_s *arg0) {
+    struct func_151D792C_e *arr = arg0->unk94;
+    s32 i;
+    struct func_151D792C_e *e;
+
+    if (arg0->unk2C < 2 && (arg0->unk1E & 8)) {
+        return 0;
+    }
+    i = arg0->unk2E;
+    while (i != arg0->unk2D) {
+        i--;
+        if (i < 0) {
+            i = arg0->unk25 - 1;
+        }
+        e = &arr[i];
+        func_151D8718(&e->pos.x, (f32 *)e->unkC, D_800BE9A4);
+    }
+lbl:
+    if (arg0->unk2C > 0) {
+        arg0->unk54 = arr[arg0->unk2D].pos;
+    } else {
+        arg0->unk54.x = 0.0f;
+        arg0->unk54.y = 0.0f;
+        arg0->unk54.z = 0.0f;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_204660/func_151D7A38.s")
 

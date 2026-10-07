@@ -159,7 +159,63 @@ s32 func_150C251C(void *arg0) {
     return 1;
 }
 #pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C2558.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C2700.s")
+void func_15150178();
+extern f32 D_800A0274;
+extern f32 D_800A0278;
+extern f32 D_800A027C;
+
+struct func_150C2700_s {
+    f32 x, y, z;
+    s16 unkC;
+    s16 unkE;
+    f32 unk10;
+    f32 unk14;
+    s16 unk18;
+    s16 unk1A;
+    f32 unk1C;
+    f32 unk20;
+    u8 unk24;
+    u8 unk25;
+    f32 unk28;
+    f32 unk2C;
+    u8 unk30;
+    u8 unk31;
+    f32 unk34;
+    u8 unk38;
+    f32 unk3C;
+};
+
+s32 func_150C2700(s32 arg0, s32 arg1, f32 arg2, f32 arg3, f32 arg4, s32 arg5, s32 arg6, s32 arg7, s32 arg8, s32 arg9, s32 arg10, s32 arg11, s32 arg12, s32 arg13, u8 arg14) {
+    struct func_150C2700_s sp28;
+    s16 sp20[4];
+
+    sp28.x = arg2;
+    sp28.y = arg3;
+    sp28.unkC = 6;
+    sp28.unkE = 5;
+    sp20[0] = 0x6B;
+    sp20[1] = 0x46;
+    sp20[2] = -0x1F;
+    sp20[3] = 0x2E;
+    sp28.z = arg4;
+    sp28.unk10 = 30.0f;
+    sp28.unk14 = 35.0f;
+    sp28.unk18 = 0x64;
+    sp28.unk1A = 0;
+    sp28.unk1C = D_800A0274;
+    sp28.unk20 = D_800A0278;
+    sp28.unk24 = 0x9B;
+    sp28.unk25 = 0x64;
+    sp28.unk28 = D_800A027C;
+    sp28.unk2C = 0.0f;
+    sp28.unk30 = 1;
+    sp28.unk31 = 6;
+    sp28.unk34 = 0.0f;
+    sp28.unk38 = 1;
+    sp28.unk3C = 0.0f;
+    func_15150178(sp20, &sp28, 0, arg14, 1);
+    return 1;
+}
 void func_150C2804(s32 arg0, s32 arg1, s32 arg2, s16 arg3, u8 arg4, s32 arg5) {
     struct {
         s32 f0;
@@ -204,7 +260,30 @@ s32 func_150C2FCC(void *arg0) {
     }
     return 1;
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C308C.s")
+struct17 *func_15144B34(s32 arg0);
+
+s32 func_150C308C(void *arg0) {
+    u8 ret = 0;
+    struct17 *v;
+    f32 dist;
+
+    if (*(s16 *) ((char *) arg0 + 0x1C) >= 6) {
+        v = func_15144B34(D_80082FA4);
+        dist = v->unk0 * v->unk0 + v->unk8 * v->unk8;
+        if (dist < D_800A0310) {
+            ret = 1;
+        } else {
+            dist = func_150484A0(v->unk0, v->unk8);
+            if (func_15144C8C(dist, *(f32 *) ((char *) arg0 + 0x160)) > D_800A0314) {
+                ret = 1;
+            }
+        }
+    }
+    if (ret) {
+        *(s16 *) ((char *) arg0 + 0x1C) = 5;
+    }
+    return 1;
+}
 // ? func_150C308C(void *arg0) {
 //     u8 sp1F;
 //     f32 temp_f0;
@@ -252,7 +331,33 @@ s32 func_150C2FCC(void *arg0) {
 // returning arg0+8. Register roles differ throughout (this
 // reconstruction runs 6 instructions shorter, 46 vs target's 52) -
 // not otherwise investigated further this round.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C3160.s")
+struct func_150C3160_s {
+    u8 pad[0x2E4];
+    s32 unk2E4;
+    s32 unk2E8;
+    s32 unk2EC;
+};
+
+Gfx *func_150C3160(Gfx *gfx, struct func_150C3160_s *arg1) {
+    f32 ratio;
+    s32 period;
+    s32 phase;
+
+    if (arg1->unk2E8 != 0) {
+        ratio = (f32) arg1->unk2E4 / (f32) arg1->unk2E8;
+    } else {
+        ratio = 1.0f;
+    }
+    ratio = 1.0f - ratio;
+    period = 500.0f * ratio + 2.0f;
+    phase = 2 - arg1->unk2EC;
+    arg1->unk2EC = period / 3;
+    while (phase < 0) {
+        phase += 0x40;
+    }
+    gDPSetTileSize(gfx++, 4, period, phase, 0x1FE, 0x3E);
+    return gfx;
+}
 // void *func_150C3160(void *arg0, void *arg1) {
 //     void *out;
 //     f32 ratio;

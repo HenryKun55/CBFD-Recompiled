@@ -11,7 +11,17 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BA518.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BB044.s")
+struct func_151BB044_s {
+    u8 pad0[0x14];
+    f32 x;
+    f32 y;
+    f32 z;
+};
+void func_151BB0E0(void);
+
+void func_151BB044(struct func_151BB044_s *arg0) {
+    func_1000FA64(0x4A7, (s16) arg0->x, (s16) arg0->y, (s16) arg0->z, 0x2000, 0x320, 0xC8, (s32) func_151BB0E0, (s32) arg0, 0, 8, 0);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BB0E0.s")
 
@@ -19,11 +29,44 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BBA9C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BBEE4.s")
+void func_151BBEE4(f32 *arg0, u8 arg1, s32 arg2) {
+    Header header;
+    Header2 header2;
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BBFBC.s")
+    header.unk0 = 3;
+    header.unk1 = -1;
+    header.unk2 = (func_150ADA20() & 0xF) + 5;
+    header.unk4 = 0;
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BC074.s")
+    header2.unk0 = arg0[0];
+    header2.unk4 = arg0[1];
+    header2.unk8 = arg0[2];
+
+    func_151602C0(&header, &header2, (func_150ADA20() % 21U) + 30, 0xFF, 0x61, 0x36, 0xFF, 0, 0, arg1, arg2);
+}
+
+void func_150E7FEC(f32 arg0, u8 arg1, s32 arg2, void *arg3, s16 arg4, u8 arg5, u8 arg6, u8 arg7, u8 arg8, u8 arg9, u8 arg10, s32 arg11);
+
+void func_151BBFBC(s32 arg0, void *arg1, u8 arg2, s32 arg3) {
+    s32 pad;
+    u32 sp40;
+    f32 sp3C;
+
+    sp3C = func_150ADA68();
+    sp40 = func_150ADA20();
+    func_150E7FEC((sp3C * 75.0f) + 75.0f, (sp40 % 56U) + 0xC8, arg0, arg1, (func_150ADA20() % 205U) + 0x12B, 1, 1, 0, 0, 0, arg2, 0);
+}
+
+extern f32 D_800AA760[3];
+extern f32 D_800AA76C[3];
+extern f32 D_800AA82C;
+void func_15160CDC(s32, s32, f32 *, f32 *, f32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
+
+void func_151BC074(s32 arg0) {
+    if (arg0 != 0) {
+        func_15160CDC(arg0, 1, D_800AA760, D_800AA76C, D_800AA82C, 2, 0x12C, 0xFF, 0xFF, 0xFF, 0xFF, 1, 0, 0, 0xFF, 1);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BC104.s")
 
@@ -182,7 +225,39 @@ void func_151BE1E4(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BE210.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BE4B8.s")
+struct func_151BE4B8_s2 {
+    s32 unk0;
+    u8 pad4[0x37];
+    u8 unk3B;
+};
+
+struct func_151BE4B8_s {
+    struct func_151BE4B8_s2 *unk0;
+    u8 unk4;
+    u8 pad5[0x40 - 0x5];
+    f32 unk40;
+    f32 unk44;
+    u8 pad48[0x54 - 0x48];
+    f32 unk54;
+    u8 unk58;
+};
+
+s32 func_151BE4B8(u8 *arg0, s16 arg1) {
+    struct func_151BE4B8_s *s;
+    f32 sp20[3];
+
+    if (((struct func_151BE4B8_s *)(arg0 + 0x110))->unk0->unk3B != ((struct func_151BE4B8_s *)(arg0 + 0x110))->unk4
+        || (s = (struct func_151BE4B8_s *)(arg0 + 0x110), s->unk0->unk0 == 0)) {
+        func_1516972C(arg0);
+        return 0;
+    }
+    if (!(s->unk58 & 1)) {
+        return 0;
+    }
+    sp20[0] = s->unk40 * s->unk54;
+    sp20[1] = s->unk44 * s->unk54;
+    return func_1513FAB4(arg0, 0, sp20, arg1);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BE558.s")
 
@@ -220,7 +295,24 @@ void func_151BE674(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BE6A0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BE6CC.s")
+struct func_151BE6CC_s { s32 a[4]; };
+struct func_151BE6CC_t { u8 pad0[0x48]; f32 unk48; };
+extern struct func_151BE6CC_s D_800AA7A8;
+extern f32 D_800AA8AC;
+
+s32 func_151BE6CC(u8 *arg0) {
+    struct func_151BE6CC_t *temp = (struct func_151BE6CC_t *)(arg0 + 0x110);
+    struct func_151BE6CC_s sp24 = D_800AA7A8;
+    s32 pad;
+
+    *(s16 *)(arg0 + 0x170) -= D_800BE9E4;
+    if (*(s16 *)(arg0 + 0x170) < 0) {
+        arg0[0x18] = sp24.a[func_150ADA20() & 3];
+        *(s16 *)(arg0 + 0x170) = (func_150ADA20() & 7) + 3;
+    }
+    temp->unk48 += (*(f32 *)(arg0 + 0x174) - temp->unk48) * D_800AA8AC;
+    return 1;
+}
 
 void func_151BE788(s32 arg0, s32 arg1, s32 arg2) {
     func_15169850(arg1, arg2, arg0 + 0x180, arg0 + 0x184, arg0);

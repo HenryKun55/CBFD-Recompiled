@@ -7,7 +7,39 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_E5E90/func_150B8F44.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_E5E90/func_150B9560.s")
+extern f32 D_8009FDD4;
+extern f32 D_8009FDD8;
+extern f32 D_8009FDDC;
+
+struct func_150B9560_s {
+    u8 pad0[0x1C];
+    s16 unk1C;
+    u8 pad1E[0x2C - 0x1E];
+    f32 unk2C;
+    f32 unk30;
+    u8 pad34[0x38 - 0x34];
+    f32 unk38;
+    u8 pad3C[0x110 - 0x3C];
+    f32 unk110;
+};
+
+s32 func_150B9560(struct func_150B9560_s *arg0) {
+    f32 *p = &arg0->unk110;
+    f32 temp;
+
+    if (arg0->unk1C < 0x50) {
+        *p += D_8009FDD4 * D_800BE9A4;
+        arg0->unk38 -= *p;
+    }
+    if (arg0->unk1C >= 0x73) {
+        temp = D_8009FDD8;
+        arg0->unk2C *= temp;
+        arg0->unk30 *= temp;
+    } else if (arg0->unk1C < 0x41) {
+        arg0->unk30 += D_8009FDDC;
+    }
+    return 1;
+}
 
 struct func_150B95FC_s {
     u8 pad0[0x1C];

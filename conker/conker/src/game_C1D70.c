@@ -3,13 +3,42 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_150948C0.s")
+extern void *D_800D2C20;
+void func_1509499C(s32 arg0, s16 **arg1);
+void func_150A7960(void *mtx, f32 x, f32 y, f32 z, f32 *outX, f32 *outY, f32 *outZ);
+
+void func_150948C0(s32 arg0, f32 (*arg1)[3]) {
+    s16 *sp50[16];
+    s32 i;
+
+    func_1509499C(arg0, sp50);
+    for (i = 0; i < 16; i++) {
+        if (sp50[i] != NULL) {
+            func_150A7960(D_800D2C20, sp50[i][0], sp50[i][1], sp50[i][2], &arg1[i][0], &arg1[i][1], &arg1[i][2]);
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_1509499C.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_15094AB8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_15094EA0.s")
+extern Mtx D_800D2CA8[];
+void func_150A7A48(f32 a[4][4], f32 b[4][4], Mtx *c);
+
+struct func_15094EA0_s {
+    u8 pad0[0x100];
+    Mtx unk100[2];
+};
+
+void func_15094EA0(s32 arg0) {
+    f32 sp58[4][4];
+    f32 sp18[4][4];
+
+    guMtxL2F(sp58, &((Mtx **)&D_800DC2A0)[D_800BE9C0][arg0]);
+    guMtxL2F(sp18, &((struct func_15094EA0_s *)D_800BE628)[arg0].unk100[D_800BE9C0]);
+    func_150A7A48(sp58, sp18, &D_800D2CA8[arg0]);
+}
 
 extern Gfx D_800873D0[];
 extern s32 D_800D2CA0;

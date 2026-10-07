@@ -156,17 +156,126 @@ void func_151078E4(struct func_151078E4_s *arg0, void *arg1, u8 arg2) {
     func_15169850(arg1, arg2, arg0->unk60, arg0->unk60 + 4, arg0);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_133190/func_15107924.s")
+void func_15107A20();
+void func_15107AE0();
+
+typedef struct {
+    f32 x, y, z;
+} func_15107924_v3;
+
+struct func_15107924_inner {
+    s32 unk0;
+    u8 pad4[0x3B - 4];
+    u8 unk3B;
+};
+
+struct func_15107924_data {
+    struct func_15107924_inner *unk0;
+    u8 unk4;
+    s16 unk6;
+    s16 unk8;
+};
+
+struct func_15107924_s {
+    u8 pad0[0x14];
+    func_15107924_v3 unk14;
+    func_15107924_v3 unk20;
+    func_15107924_v3 unk2C;
+    func_15107924_v3 unk38;
+    u8 pad44[0x60 - 0x44];
+    struct func_15107924_data *unk60;
+};
+
+s32 func_15107924(struct func_15107924_s *arg0, s8 *arg1) {
+    struct func_15107924_data *data = arg0->unk60;
+    struct func_15107924_inner *inner = data->unk0;
+    func_15107924_v3 old;
+
+    if (inner->unk0 == 0 || inner->unk3B != data->unk4) {
+        return 0;
+    }
+    *arg1 = 0;
+    old = arg0->unk14;
+    func_15107A20(inner, data->unk6, data->unk8, &arg0->unk14, 0);
+    if (old.x != arg0->unk14.x || old.y != arg0->unk14.y || old.z != arg0->unk14.z) {
+        *arg1 = 1;
+        func_15107AE0(&arg0->unk14, &arg0->unk38, &arg0->unk20, &arg0->unk2C);
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_133190/func_15107A20.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_133190/func_15107AE0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_133190/func_15107B78.s")
+struct func_15107B78_s {
+    u8 pad0[0xF0];
+    f32 unkF0;
+    u8 padF4[0x1D4 - 0xF4];
+    s32 unk1D4;
+};
+
+void func_1515C244();
+void func_15143794();
+
+void func_15107B78(struct func_15107B78_s *arg0, s16 arg1, s16 arg2, u8 arg3, s32 arg4) {
+    f32 sp2C[3];
+    f32 sp20[3];
+    s32 sp1C;
+    s32 sp18;
+
+    if (arg0->unk1D4 != 0) {
+        func_1515C244(arg0, sp20, &sp1C, &sp18);
+        func_15143794(arg1, arg2, sp1C, sp2C);
+        sp2C[1] *= arg0->unkF0;
+        sp2C[0] += sp20[0];
+        sp2C[1] += sp20[1];
+        sp2C[2] += sp20[2];
+        func_151C329C(sp2C, arg3, arg4);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_133190/func_15107C1C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_133190/func_15107E48.s")
+typedef struct { f32 x, y, z; } func_15107E48_v3;
+struct func_15107E48_s2 {
+    struct127 *unk0;
+    u8 unk4;
+    u8 pad5[3];
+    u8 unk8[0xC];
+    u8 unk14;
+};
+struct func_15107E48_s {
+    u8 pad0[0x14];
+    func_15107E48_v3 unk14;
+    u8 unk20[0xC];
+    u8 unk2C[0xC];
+    u8 unk38[0x28];
+    struct func_15107E48_s2 *unk60;
+};
+void func_15107F54(struct127 *arg0, u8 arg1, s32 arg2, s32 arg3);
+void func_15107AE0(void *, void *, void *, void *);
+
+s32 func_15107E48(struct func_15107E48_s *arg0, u8 *arg1) {
+    struct func_15107E48_s2 *v = arg0->unk60;
+    struct127 *s = v->unk0;
+    func_15107E48_v3 old;
+
+    if (s->interaction_state == 0 || s->unique_id != v->unk4) {
+        return 0;
+    }
+    if (s->unk1D4 == 0) {
+        return 0;
+    }
+    *arg1 = 0;
+    old = arg0->unk14;
+    func_15107F54(s, v->unk14, (s32)v->unk8, (s32)&arg0->unk14);
+    if (old.x != arg0->unk14.x || old.y != arg0->unk14.y || old.z != arg0->unk14.z) {
+        *arg1 = 1;
+        func_15107AE0(&arg0->unk14, arg0->unk38, arg0->unk20, arg0->unk2C);
+    }
+    return 1;
+}
 
 void func_15107F54(struct127 *arg0, u8 arg1, s32 arg2, s32 arg3) {
     func_15143134(arg2, arg3, (s32) arg0->unk1D4 + (arg1 << 6));

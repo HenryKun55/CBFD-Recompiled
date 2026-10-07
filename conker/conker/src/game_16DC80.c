@@ -125,7 +125,22 @@ M:
 //     }
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16DC80/func_15141478.s")
+s32 func_15141478(struct210 *arg0) {
+    f32 *q = (f32 *)((char *)arg0 + 0x110);
+    f32 *p = &arg0->unk170;
+
+    arg0->unk180 -= D_800BE9A4;
+    if (arg0->unk180 < 0.0f) {
+        p[4] = p[5] * func_150ADA68();
+        if (func_150ADA20() & 3) {
+            p[3] = p[1] + (p[0] - p[1]) * func_150ADA68();
+        } else {
+            p[3] = p[0] + (p[2] - p[0]) * func_150ADA68();
+        }
+    }
+    q[0x12] += (p[3] - q[0x12]) * p[6];
+    return 1;
+}
 
 // NON-MATCHING (extremely close - 2 words off out of 28). Applying the
 // func_1513B0B8 intermediate-pointer fix here (hoist `f32 *p =
@@ -196,9 +211,74 @@ s32 func_15141564(struct210 *arg0) {
 // needing any special tricks); this reconstruction is a few
 // instructions leaner overall, most likely from not needing the
 // extra pointer-materialization step target's addressing style costs.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16DC80/func_151415D4.s")
+s32 func_151415D4(struct210 *arg0) {
+    f32 *p = &arg0->unk170;
+    f32 t;
+    f32 m;
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16DC80/func_151416E8.s")
+    if (arg0->unk17C < arg0->unk180) {
+        arg0->unk158 = p[1];
+    } else {
+        if (p[3] < p[5]) {
+            t = p[8] * (p[3] - p[4]);
+            arg0->unk158 = p[2] * t + p[1];
+        lbl:;
+        } else {
+            if (p[3] < p[6]) {
+                arg0->unk158 = p[0];
+            } else {
+                t = 1.0f - p[8] * (p[3] - p[6]);
+                arg0->unk158 = p[2] * t + p[1];
+            }
+        }
+    }
+    p[3] += D_800BE9A4;
+    m = p[7];
+    if (m < p[3]) {
+        do {
+            p[3] -= m;
+        } while (m < p[3]);
+    }
+    return 1;
+}
+
+struct func_151416E8_sub {
+    u8 pad0[0x58];
+    u8 unk58;
+    s8 unk59;
+};
+
+struct func_151416E8_s {
+    u8 pad0[0x110];
+    struct func_151416E8_sub unk110;
+};
+
+extern void (*D_8008A02C[])(struct func_151416E8_s *, u8 *, u8);
+
+void func_151416E8(struct func_151416E8_s *arg0, u8 *arg1, u8 arg2) {
+    struct func_151416E8_sub *sub = &arg0->unk110;
+
+    if (D_8008A02C[sub->unk58] != NULL) {
+        D_8008A02C[sub->unk58](arg0, arg1, arg2);
+    }
+    if ((arg2 != 0x22) && (arg2 != 0x24) && (arg2 != 0x25)) {
+        return;
+    }
+    if (*arg1 != (*sub).unk58) {
+        return;
+    }
+    switch (arg2) {
+        case 0x22:
+            func_1516972C((struct102 *)arg0);
+            break;
+        case 0x24:
+            sub->unk59 = -1;
+            break;
+        case 0x25:
+            sub->unk59 = 2;
+            break;
+    }
+}
 
 // ???
 // NON-MATCHING: mips_to_c reconstruction, hand-typed. Copies D_8008A074

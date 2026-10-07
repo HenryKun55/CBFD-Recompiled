@@ -222,7 +222,19 @@ void func_15040A6C(s32 arg0) {
 // contains delay slot
 #pragma GLOBAL_ASM("asm/nonmatchings/game_6D800/func_15040A78.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6D800/func_15040CC8.s")
+void func_15040CC8(s32 arg0) {
+    s32 i;
+
+    for (i = 0; i < 16; i++) {
+    }
+    // (u32) wrapper keeps IDO from rewriting the test as i != 10
+    for (i = -20; (u32)(i < 10); i++) {
+        D_800844B0[*(u8 *)((i << 3) + arg0)]((i << 3) + arg0);
+    }
+    if (D_800848B0 != 0) {
+        func_1500390C(D_800848B0);
+    }
+}
 // NON-MATCHING: todo
 // void func_15040CC8(s32 *arg0) {
 //     s32 temp_a0_2;

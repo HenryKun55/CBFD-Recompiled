@@ -47,7 +47,23 @@
 //     func_1510B070(arg1);
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_476D0/func_1501A39C.s")
+extern Gfx *D_800BE9C8[];
+extern Gfx D_8002C930[];
+
+void func_1501A39C(void) {
+    s32 i;
+    Gfx *gfx;
+
+    for (i = 0; i < 2; i++) {
+        gfx = D_800BE9C8[i];
+        gSPSegment(gfx++, 0x00, 0x00000000);
+        gSPSegment(gfx++, 0x00, 0x00000000);
+        gSPDisplayList(gfx++, D_8002C930);
+        gDPSetDepthImage(gfx++, D_800BE9C4);
+        gSPViewport(gfx++, 0x40 + D_800BE628 + i * 16);
+        D_800BE9D8[i] = (s32)gfx;
+    }
+}
 // NON-MATCHING: something along these lines
 // extern Gfx* D_800BE9C8;
 // extern s32 D_8002C930;
@@ -131,7 +147,23 @@ void func_150A7A00(f32 arg0, f32 arg1, s32 arg2, f32 arg3, f32 arg4, f32 arg5, f
 // unk30, gating on arg0's record having enough valid history (unk2C)
 // and margin (unk30) against (D_800BE620-2), then a non-negative
 // unk24 and enough margin (unk28) against D_800BE624.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_476D0/func_1501AE94.s")
+s32 func_1501AE94(s32 arg0) {
+    f32 delta;
+    char *rec;
+    f32 f2;
+
+    delta = (f32) D_800BE620 - 2.0f;
+    f2 = (f32) D_800BE624;
+    rec = (char *) D_800BE628 + arg0 * 384;
+
+    if (*(f32 *) (rec + 0x2C) < 2.0f || delta < *(f32 *) (rec + 0x30)) {
+        return 0;
+    }
+    if (*(f32 *) (rec + 0x24) < 0.0f || f2 < *(f32 *) (rec + 0x28)) {
+        return 0;
+    }
+    return 1;
+}
 // s32 func_1501AE94(s32 arg0) {
 //     f32 delta;
 //     char *rec;

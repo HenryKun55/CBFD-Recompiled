@@ -30,7 +30,39 @@ void n_alEvtqNew(ALEventQueue *evtq, N_ALEventListItem *items, s32 itemCount)
 
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1C060/n_alEvtqNextEvent.s")
+ALMicroTime n_alEvtqNextEvent(ALEventQueue *evtq, N_ALEvent *evt)
+{
+    N_ALEventListItem *item;
+    ALMicroTime delta;
+
+    item = (N_ALEventListItem *)evtq->allocList.next;
+
+    if (item) {
+        {
+            ALLink *ln = (ALLink *)item;
+            if (ln->next)
+                ln->next->prev = ln->prev;
+            if (ln->prev)
+                ln->prev->next = ln->next;
+        }
+        bcopy(&item->evt, evt, sizeof(*evt));
+        {
+            ALLink *ln = (ALLink *)item;
+            ALLink *to = &evtq->freeList;
+            ln->next = to->next;
+            ln->prev = to;
+            if (to->next)
+                to->next->prev = ln;
+            to->next = ln;
+        }
+        delta = item->delta;
+    } else {
+        evt->type = -1;
+        delta = 0;
+    }
+
+    return delta;
+}
 // s32 n_alEvtqNextEvent(void *arg0, void *arg1) {
 //     void *sp2C;
 //     s32 sp28;

@@ -290,7 +290,26 @@ void func_10017594(N_ALUnknownStruct1 *arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/libultra/audio/init_15550/func_10017604.s")
+void func_10017604(u8 arg0) {
+    s32 mask;
+    N_ALEvent event;
+    N_ALUnknownStruct1 *cur;
+
+    mask = osSetIntMask(1);
+    cur = D_8002BA20;
+    if (cur != NULL) {
+        do {
+            event.type = 1024;
+            event.msg.unknown1.unk0 = cur;
+            if ((cur->unk53 & arg0) == arg0) {
+                event.msg.unknown1.unk0->unk53 &= -0x11;
+                n_alEvtqPostEvent(&D_8002BA2C->evtq, &event, 0, 2);
+            }
+            cur = (N_ALUnknownStruct1 *)cur->node.next;
+        } while (cur != NULL);
+    }
+    osSetIntMask(mask);
+}
 // NON-MATCHING: stack isnt quite right
 // void func_10017604(u8 arg0) {
 //     s32 mask;
@@ -340,7 +359,31 @@ void func_10017714(arg0, type, arg2)
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/libultra/audio/init_15550/func_10017780.s")
+struct func_10017780_s {
+    u8 pad0[2];
+    u8 unk2;
+};
+
+extern u16 *D_800428B8;
+
+void func_10017780(u8 arg0, u16 arg1) {
+    s32 mask;
+    N_ALUnknownStruct1 *p;
+    s32 i;
+    N_ALEvent event;
+
+    mask = osSetIntMask(1);
+    p = D_8002BA20;
+    D_800428B8[arg0] = arg1;
+    for (i = 0; p != NULL; i++, p = (N_ALUnknownStruct1 *)p->node.next) {
+        if (p->unkC != 0 && (((struct func_10017780_s *)((s32 *)p->unkC)[1])->unk2 & 0x1F) == arg0) {
+            event.type = 0x800;
+            event.msg.unknown1.unk0 = p;
+            n_alEvtqPostEvent(&D_8002BA2C->evtq, &event, 0, 2);
+        }
+    }
+    osSetIntMask(mask);
+}
 // NON-MATCHING: far from matching
 // void func_10017780(u8 arg0, u16 arg1) {
 //     s32 sp34;

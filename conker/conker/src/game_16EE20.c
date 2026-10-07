@@ -32,7 +32,32 @@ void func_151419B0(void *arg0) {
 // accordingly) - the same "immune to restructuring" register-choice
 // class documented elsewhere this session, just with an unusually
 // wide blast radius since so many instructions read that one value.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_151419D0.s")
+struct func_151419D0_s {
+    s32 unk0;
+    s32 unk4;
+    u8 unk8;
+    u8 unk9;
+};
+
+void func_151419D0(struct102 *arg0, struct func_151419D0_s *arg1, u8 arg2) {
+    struct func_151419D0_s *cfg = (struct func_151419D0_s *) ((char *) arg0 + 0x28);
+    s32 v1;
+
+    if (arg2 == 0) {
+        v1 = arg1->unk0;
+        if (v1 == cfg->unk4 || cfg->unk8 == *(u8 *) &arg1->unk4) {
+            func_1516972C(arg0);
+        }
+    } else if (arg2 == 0x2D) {
+        if (cfg->unk4 == arg1->unk0) {
+            cfg->unk4 = arg1->unk4;
+            cfg->unk8 = arg1->unk9;
+        } else if (cfg->unk4 == arg1->unk4) {
+            cfg->unk4 = arg1->unk0;
+            cfg->unk8 = arg1->unk8;
+        }
+    }
+}
 // void func_151419D0(void *arg0, void *arg1, u8 arg2) {
 //     char *cfg;
 //     s32 v1;
@@ -281,7 +306,27 @@ f32 func_151423D8(u8 arg0) {
 // register-choice difference (not just one instruction) that cascades
 // through most of the function; didn't find a source form that steers
 // IDO toward $v0 specifically.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142444.s")
+struct127 *func_15142444(u8 arg0, struct127 *arg1) {
+    struct127 *v0;
+
+    if (arg0 == 0xFF) {
+        if (arg1->unk1D4 != 0) {
+            return arg1;
+        }
+        return 0;
+    }
+    if (arg1 != 0 && arg1->interaction_state != 0 && arg1->unique_id == arg0) {
+        if (arg1->unk1D4 != 0) {
+            return arg1;
+        }
+        return 0;
+    }
+    v0 = func_15083E90();
+    if (v0 != 0 && v0->unk1D4 != 0) {
+        return v0;
+    }
+    return 0;
+}
 // struct127 *func_15142444(u8 arg0, struct127 *arg1) {
 //     struct127 *v0;
 //
@@ -309,7 +354,24 @@ f32 func_151423D8(u8 arg0) {
 //     }
 //     return v0;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_151424F4.s")
+void func_151424F4(Mtx *m, f32 scale02, f32 scale1, f32 rotX, f32 rotY, f32 rotZ, f32 scaleX, f32 scaleY, f32 scaleZ, f32 transX, f32 transY, f32 transZ) {
+    f32 mtx[4][4];
+
+    func_150A8050(&mtx, rotX, rotY, rotZ);
+    mtx[3][0] = transX;
+    mtx[3][1] = transY;
+    mtx[3][2] = transZ;
+    mtx[0][0] *= scaleX * scale02;
+    mtx[0][1] *= scaleY * scale02;
+    mtx[0][2] *= scaleZ * scale02;
+    mtx[1][0] *= scaleX * scale1;
+    mtx[1][1] *= scaleY * scale1;
+    mtx[1][2] *= scaleZ * scale1;
+    mtx[2][0] *= scaleX * scale02;
+    mtx[2][1] *= scaleY * scale02;
+    mtx[2][2] *= scaleZ * scale02;
+    guMtxF2L(&mtx, m);
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142600.s")
 void func_15142838(Mtx *m, f32 scale02, f32 scale1, f32 rotX, f32 rotY, f32 rotZ, f32 transX, f32 transY, f32 transZ) {
     f32 mtx[4][4];
@@ -329,7 +391,21 @@ void func_15142838(Mtx *m, f32 scale02, f32 scale1, f32 rotX, f32 rotY, f32 rotZ
     mtx[2][2] *= scale02;
     guMtxF2L(&mtx, m);
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142914.s")
+void func_15142914(f32 mtx[4][4], f32 scale02, f32 scale1, f32 rotX, f32 rotY, f32 rotZ, f32 transX, f32 transY, f32 transZ) {
+    func_150A8050(mtx, rotX, rotY, rotZ);
+    mtx[3][0] = transX;
+    mtx[3][1] = transY;
+    mtx[3][2] = transZ;
+    mtx[0][0] *= scale02;
+    mtx[0][1] *= scale02;
+    mtx[0][2] *= scale02;
+    mtx[1][0] *= scale1;
+    mtx[1][1] *= scale1;
+    mtx[1][2] *= scale1;
+    mtx[2][0] *= scale02;
+    mtx[2][1] *= scale02;
+    mtx[2][2] *= scale02;
+}
 // Looks up a packed RGB triplet from D_8008A160 (12 bytes per arg0,
 // 4 sub-entries of 3 bytes each selected by func_150ADA20()&3) and
 // unpacks it into *arg1/*arg2/*arg3.
@@ -376,7 +452,17 @@ f32 func_15142B44(f32 arg0) {
 // the first check, per the func_1513B0B8 pattern) but IDO schedules the
 // store/increment/global-update triple within each block in a different
 // relative order than source - same 3 instructions, just rotated.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142B7C.s")
+Gfx *func_15142B7C(Gfx *gdl, u32 set, u32 clear) {
+    if (~D_800DD200 & clear) {
+        gSPClearGeometryMode(gdl++, clear);
+        D_800DD200 |= clear;
+    }
+    if (~D_800DD1FC & set) {
+        gSPSetGeometryMode(gdl++, set);
+        D_800DD1FC |= set;
+    }
+    return gdl;
+}
 // void *func_15142B7C(void *arg0, s32 arg1, s32 arg2) {
 //     void *p = arg0;
 //
@@ -449,7 +535,25 @@ f32 func_15142B44(f32 arg0) {
 // changed the register-allocation strategy entirely (dropped the
 // $s0/stack-frame use altogether) rather than reproducing target's
 // specific redundant move - left as the closest natural form.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142C10.s")
+extern s16 D_800DD1C8;
+extern s16 D_800DD1CA;
+extern s16 D_800DD1CC;
+extern s16 D_800DD1CE;
+
+Gfx *func_15142C10(Gfx *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, u8 *arg5) {
+    if (arg1 != D_800DD1C8 || arg2 != D_800DD1CA || arg3 != D_800DD1CC || arg4 != D_800DD1CE) {
+        if (*arg5 == 1) {
+            gDPPipeSync(arg0++);
+            *arg5 = 0;
+        }
+        gDPSetEnvColor(arg0++, arg1, arg2, arg3, arg4);
+        D_800DD1C8 = arg1;
+        D_800DD1CA = arg2;
+        D_800DD1CC = arg3;
+        D_800DD1CE = arg4;
+    }
+    return arg0;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142CF0.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142E24.s")
 // NON-MATCHING: mips_to_c reconstruction, hand-typed. Skips (returns
@@ -609,7 +713,20 @@ void func_15143874(s16 arg0, f32 arg1, f32 *arg2, f32 *arg3) {
 // push/pop), while this reconstruction keeps them in $a0/$a1/$v0/$v1
 // instead - same unresolved "why does target promote this pointer to a
 // saved register" category as elsewhere in this file.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15143D18.s")
+void func_15143D18(s32 *arg0, s32 *arg1, s32 arg2, s32 arg3) {
+    if (arg3 < arg2) {
+        arg2 ^= arg3 ^= arg2 ^= arg3;
+    }
+    if (*arg1 < *arg0) {
+        *arg0 ^= *arg1 ^= *arg0 ^= *arg1;
+    }
+    if (*arg0 < arg2) {
+        *arg0 = arg2;
+    }
+    if (arg3 < *arg1) {
+        *arg1 = arg3;
+    }
+}
 // void func_15143D18(s32 *arg0, s32 *arg1, s32 arg2, s32 arg3) {
 //     s32 v1;
 //     s32 tmp;
@@ -809,7 +926,23 @@ f32 func_15144528(f32 arg0, f32 arg1, f32 arg2) {
 // different decision tree (testing sel!=0 first, then disambiguating)
 // since IDO recognizes cases 0 and 1 produce the same result and merges
 // the tests - didn't find a source form that keeps them separate.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15144598.s")
+f32 func_15144598(void *arg0) {
+    f32 result;
+
+    switch (*((u8 *) arg0 + 0x15) & 3) {
+        default:
+            result = 1.0f;
+            break;
+        case 2:
+            result = (f32) (*(s16 *) ((char *) arg0 + 0xA) * *(s16 *) ((char *) arg0 + 0x6)) * 4.0f;
+            break;
+        case 1:
+        case 0:
+            result = (f32) (*(s16 *) ((char *) arg0 + 0x6) * *(s16 *) ((char *) arg0 + 0x6)) * D_800A5694;
+            break;
+    }
+    return result;
+}
 // f32 func_15144598(void *arg0) {
 //     s32 sel = *((u8 *) arg0 + 0x15) & 3;
 //     s16 v0;
@@ -857,7 +990,36 @@ f32 func_15144528(f32 arg0, f32 arg1, f32 arg2) {
 // writing each case as an independent guard rather than a switch or
 // if/else-if chain (both of those, like the sibling func_15144598
 // just above, compiled to a noticeably different decision tree).
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_1514462C.s")
+struct func_1514462C_s {
+    u8 pad0[6];
+    s16 unk6;
+    s16 unk8;
+    s16 unkA;
+    u8 padC[9];
+    u8 unk15;
+};
+
+f32 func_1514462C(struct func_1514462C_s *arg0) {
+    f32 result;
+    f32 x;
+
+    switch (arg0->unk15 & 3) {
+        default:
+            result = 1.0f;
+            break;
+        case 2:
+            result = arg0->unk6 * arg0->unk8 * arg0->unkA;
+            break;
+        case 0:
+            result = (f32) (arg0->unk6 * arg0->unk6) * D_800A5698 * arg0->unk8;
+            break;
+        case 1:
+            x = arg0->unk6;
+            result = x * D_800A569C * x * x;
+            break;
+    }
+    return result;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_1514470C.s")
 f32 func_15144A74(vertex *arg0, vertex *arg1) {
     return arg0->x * arg1->x + arg0->y * arg1->y + arg0->z * arg1->z;
@@ -1001,7 +1163,30 @@ void func_151450B4(struct17 *arg0, struct17 *arg1, struct17 *arg2) {
 // bytes, but changes which physical registers the sum-of-squares
 // computation uses, breaking several already-matching words - a net
 // loss, so not applied.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15145128.s")
+s32 func_15145128(struct17 *arg0, struct17 *arg1, f32 *arg2, f32 *arg3) {
+    f32 mag;
+    f32 local;
+
+    if (arg3 == NULL) {
+        arg3 = &local;
+    }
+    mag = arg0->unk0 * arg0->unk0 + arg0->unk4 * arg0->unk4 + arg0->unk8 * arg0->unk8;
+    if (mag == 0.0f) {
+        return 0;
+    }
+    if (arg2 != NULL) {
+        mag = sqrtf(mag);
+        *arg2 = mag;
+        *arg3 = 1.0f / mag;
+    } else {
+        mag = sqrtf(mag);
+        *arg3 = 1.0f / mag;
+    }
+    arg1->unk0 = *arg3 * arg0->unk0;
+    arg1->unk4 = *arg3 * arg0->unk4;
+    arg1->unk8 = *arg3 * arg0->unk8;
+    return 1;
+}
 // s32 func_15145128(struct17 *arg0, struct17 *arg1, f32 *arg2, f32 *arg3) {
 //     f32 local;
 //     f32 mag2;
@@ -1065,7 +1250,23 @@ void func_151450B4(struct17 *arg0, struct17 *arg1, struct17 *arg2) {
 // form also regressed to redundant reloads of *p9 and p5 in each
 // branch, so was discarded). Same branch-polarity/register-numbering
 // near-miss family documented elsewhere in this project.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_151451F0.s")
+s32 func_151452C4(s32 a0, s32 a1, s32 a2, f32 a3, s32 a4, s32 a5, f32 *a6, f32 *a7);
+
+s32 func_151451F0(s32 a0, s32 a1, s32 a2, f32 a3, f32 a4, s32 a5, s32 a6, f32 *a7, f32 *a8) {
+    if (func_151452C4(a0, a1, a2, a3, a5, a6, a7, a8) != 0) {
+        if (*a7 < 0.0f && *a8 < 0.0f) {
+            return 0;
+        }
+        if (*a7 >= 0.0f && *a8 < 0.0f) {
+            return 1;
+        }
+        if (*a7 < a4) {
+            return 1;
+        }
+        return 0;
+    }
+    return 0;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_151452C4.s")
 
 s32 func_151454BC(u8 arg0, f32 arg1, struct17 *arg2) {
@@ -1125,7 +1326,26 @@ s32 func_151454BC(u8 arg0, f32 arg1, struct17 *arg2) {
 // spill/reload pair instead of a callee-saved register (costing it a
 // different, but equal-count, instruction mix), and correspondingly
 // uses a smaller 0x28-byte frame versus this reconstruction's 0x30.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15145548.s")
+s32 func_1514563C(struct17 *a0, struct17 *a1, struct17 *a2, struct17 *a3, f32 *arg4);
+
+void func_15145548(struct17 *arg0, struct17 *arg1, struct17 *arg2, struct17 *arg3, f32 *arg4) {
+    f32 local;
+
+    if (arg4 == NULL) {
+        arg4 = &local;
+    }
+    if (func_1514563C(arg0, arg1, arg2, arg3, arg4) != 0) {
+        if (*arg4 < 0.0f) {
+            *arg3 = *arg0;
+        } else if (*arg4 > 1.0f) {
+            arg3->unk0 = arg0->unk0 + arg1->unk0;
+            arg3->unk4 = arg0->unk4 + arg1->unk4;
+            arg3->unk8 = arg0->unk8 + arg1->unk8;
+        }
+    } else {
+        *arg3 = *arg0;
+    }
+}
 // NON-MATCHING: closest-point-on-line-toward-target helper. Computes
 // t = (dot(dir,a2) - dot(dir,a0)) / dot(dir,dir), returning 0 for a
 // degenerate (zero-length) direction; otherwise writes t to *arg4
@@ -1168,7 +1388,26 @@ s32 func_151454BC(u8 arg0, f32 arg1, struct17 *arg2) {
 // the FIRST field write too, where this reconstruction keeps it
 // register-resident - a minor register-residency gap, not chased
 // further after a reordering attempt made no difference.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_1514563C.s")
+s32 func_1514563C(struct17 *a0, struct17 *a1, struct17 *a2, struct17 *a3, f32 *arg4) {
+    f32 denom;
+    f32 dotA0;
+    f32 dotA2;
+    f32 local;
+    if (arg4 == NULL) {
+        arg4 = &local;
+    }
+    denom = a1->unk0 * a1->unk0 + a1->unk4 * a1->unk4 + a1->unk8 * a1->unk8;
+    if (denom == 0.0f) {
+        return 0;
+    }
+    dotA0 = a1->unk0 * a0->unk0 + a1->unk4 * a0->unk4 + a1->unk8 * a0->unk8;
+    dotA2 = a1->unk0 * a2->unk0 + a1->unk4 * a2->unk4 + a1->unk8 * a2->unk8;
+    *arg4 = (dotA2 - dotA0) / denom;
+    a3->unk0 = *arg4 * a1->unk0 + a0->unk0;
+    a3->unk4 = *arg4 * a1->unk4 + a0->unk4;
+    a3->unk8 = *arg4 * a1->unk8 + a0->unk8;
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15145740.s")
 // NON-MATCHING: 90% there
@@ -1292,7 +1531,21 @@ u8 func_15145C90(s32 arg0) {
 // (branch-likely) with a speculative next-iteration reload in the
 // delay slot instead - tried reordering the three post-body
 // increment statements without effect.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15145CD0.s")
+extern void func_150A7960(void *mtx, f32 x, f32 y, f32 z, f32 *outX, f32 *outY, f32 *outZ);
+struct func_15145CD0_s { f32 rx, ry, rz; s32 pad; s16 tx, ty, tz; };
+
+void func_15145CD0(struct func_15145CD0_s *arg0, f32 **arg1, f32 **arg2, s32 arg3) {
+    f32 mtx[4][4];
+    s32 i;
+
+    func_150A8050(mtx, arg0->rx, arg0->ry, arg0->rz);
+    mtx[3][0] = arg0->tx;
+    mtx[3][1] = arg0->ty;
+    mtx[3][2] = arg0->tz;
+    for (i = 0; arg3 > 0; i++, arg3--) {
+        func_150A7960(mtx, arg1[i][0], arg1[i][1], arg1[i][2], &arg2[i][0], &arg2[i][1], &arg2[i][2]);
+    }
+}
 // NON-MATCHING: batch vector-transform loop, same family as the
 // near-miss func_15145CD0 just above but with contiguous 3-float
 // array elements (not arrays of pointers) for both the source (arg1)
@@ -1329,7 +1582,23 @@ u8 func_15145C90(s32 arg0) {
 // physical register across their non-overlapping live ranges costs
 // target extra spill bookkeeping this reconstruction doesn't need),
 // though not confirmed instruction-by-instruction here.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15145DB4.s")
+extern void func_150A7960(void *mtx, f32 x, f32 y, f32 z, f32 *outX, f32 *outY, f32 *outZ);
+
+void func_15145DB4(f32 *arg0, f32 arg1[][3], f32 arg2[][3], s32 arg3) {
+    f32 mtx[4][4];
+    s32 i;
+
+    func_150A8050(mtx, arg0[0], arg0[1], arg0[2]);
+    mtx[3][0] = ((s16 *) arg0)[8];
+    mtx[3][1] = ((s16 *) arg0)[9];
+    mtx[3][2] = ((s16 *) arg0)[10];
+    i = 0;
+    while (arg3 > 0) {
+        func_150A7960(mtx, arg1[i][0], arg1[i][1], arg1[i][2], &arg2[i][0], &arg2[i][1], &arg2[i][2]);
+        arg3--;
+        i++;
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15145EA4.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15146078.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_151462C8.s")

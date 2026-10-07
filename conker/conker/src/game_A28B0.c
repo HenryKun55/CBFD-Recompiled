@@ -116,7 +116,26 @@ void func_15075548(void) {
 //     func_15075498();
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_15075884.s")
+struct func_15075884_s {
+    u8 pad0[8];
+    struct {
+        s16 x;
+        s16 unk2;
+        s16 z;
+        s16 unk6;
+    } e[1];
+};
+
+void func_15075884(void) {
+    f32 dx, dz, d;
+
+    func_15075548();
+    dx = ((struct func_15075884_s **)D_800D2104)[gCurrentObject->unk13F]->e[gCurrentObject->unk21E].x - gCurrentObject->x_position;
+    dz = ((struct func_15075884_s **)D_800D2104)[gCurrentObject->unk13F]->e[gCurrentObject->unk21E].z - gCurrentObject->z_position;
+    d = sqrtf((dx * dx) + (dz * dz));
+    dx = D_800D1891;
+    gCurrentObject->unk44 = 2.0f * (d / dx);
+}
 // NON-MATCHING: array index is wrong
 // void func_15075884(void) {
 //     f32 temp_f0;
@@ -224,7 +243,19 @@ void func_15075A50(void) {
 //         gCurrentObject->xz_velocity = 0.0f;
 //     }
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_15075AAC.s")
+void func_15075AAC(void) {
+    char *v0;
+    f32 a, b;
+
+    func_15075548();
+    v0 = (char *) D_800D2104[gCurrentObject->unk13F] + D_800D1891 * 8;
+    a = *(s16 *) (v0 + 0) - gCurrentObject->x_position;
+    b = *(s16 *) (v0 + 4) - gCurrentObject->z_position;
+    if (fabsf(a) + fabsf(b) < 40.0f) {
+        gCurrentObject->unk21C = 0;
+        gCurrentObject->xz_velocity = 0.0f;
+    }
+}
 
 void func_15075B60(void) {
     func_15075548();
@@ -509,7 +540,25 @@ void func_15076760(void) {
 // case-1-selecting beq's delay slot (empty/nop in every source form
 // tried here), making this reconstruction exactly one instruction (4
 // bytes) longer than target.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_15076768.s")
+void func_15076768(void) {
+    f32 pos[3];
+
+    switch (D_800D1890) {
+        case 0:
+            func_15197A7C(gCurrentObject);
+            break;
+        case 1:
+            pos[0] = gCurrentObject->x_position;
+            pos[1] = -390.0f;
+            pos[2] = gCurrentObject->z_position;
+            {
+                u8 tmp[0x24];
+                func_1504715C(tmp, gCurrentObject);
+                func_1514B364(pos, tmp, 0xFF, 0);
+            }
+            break;
+    }
+}
 // void func_15076768(void) {
 //     struct199 tmp;
 //
@@ -528,7 +577,18 @@ void func_15076760(void) {
 // }
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_150767F4.s")
+struct func_150767F4_s {
+    u16 unk0;
+    u8 pad2[0x32A];
+};
+
+void func_150767F4(void) {
+    struct127 *tmp = &gObjects[gCurrentObject->unk222];
+    u16 tmp0 = func_1505A630(tmp->x_position - gCurrentObject->x_position, gCurrentObject->z_position - tmp->z_position, 0) >> 8;
+    if (((tmp0 - (((struct func_150767F4_s *)D_800CC34A)[gCurrentObject->unk222].unk0 >> 8)) + D_800D1891 & 0xFF) < (D_800D1891 * 2)) {
+        func_15075400(D_800D1890);
+    }
+}
 // NON-MATCHING: JUSTREG
 // void func_150767F4(void) {
 //     struct127 *tmp = &gObjects[gCurrentObject->unk222]; // * 0x32C) ;
@@ -714,7 +774,11 @@ void func_15076FA8(void) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_150770E4.s")
+void func_150770E4(void) {
+    if (((f32 (*)[203])D_800CC30C)[gCurrentObject->unk222][0] < D_800D1892) {
+        func_15075400(D_800D1893);
+    }
+}
 // NON-MATCHING: JUSTREG (?)
 // void func_150770E4(void) {
 //     // this can't be right?
@@ -735,7 +799,22 @@ void func_15077190(void) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_150771F0.s")
+void func_150771F0(void) {
+    s32 a2;
+    s32 a3;
+
+    if (D_800D1893 == 0) {
+        a2 = D_800D1890;
+        a3 = D_800D1891;
+        func_1506160C(gCurrentObject, (D_800D1892 != 0) ? 1 : 2, a2, a3, 0);
+    } else {
+        if (D_800D1892 == 0) {
+            func_1502EA60(gCurrentObject, D_800D1890);
+        } else {
+            func_1502EA7C(gCurrentObject, D_800D1890);
+        }
+    }
+}
 // NON-MATCHING: something isnt right...
 // void func_150771F0(void) {
 //     s32 phi_a1;
@@ -860,7 +939,21 @@ void func_150779A8(void) {
     gCurrentObject->unk223 = 0xB;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_150779D4.s")
+void func_150779D4(void) {
+    struct127 *tmp;
+    u8 idx = 0;
+    f32 d;
+
+    if (D_800D1892 != 0) {
+        idx = gCurrentObject->unk222;
+    }
+    tmp = &gObjects[idx];
+    if ((gCurrentObjectIndex != idx) && ((tmp->interaction_state != 1) || (tmp->unk65 == 0))) {
+        if (func_1505A6F8(gCurrentObject, tmp) < (d = D_800D1893 * 8)) {
+             func_15075400(D_800D1890);
+        }
+    }
+}
 // NON-MATCHING: JUSTREG! using $f6 not $f2
 // void func_150779D4(void) {
 //     struct127 *tmp;
@@ -949,7 +1042,24 @@ void func_15077DA0(void) {
     gCurrentObject->unk21E = D_800D1890;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_15077DBC.s")
+struct func_15077DBC_s {
+    u8 pad0[8];
+    struct {
+        s16 x;
+        s16 y;
+        s16 z;
+        s16 w;
+    } pts[1];
+};
+
+void func_15077DBC(void) {
+    if (D_800D1890 != 0xFA) {
+        gCurrentObject->unk21E = D_800D1890;
+    }
+    gCurrentObject->x_position = ((struct func_15077DBC_s **)D_800D2104)[gCurrentObject->unk13F]->pts[gCurrentObject->unk21E].x;
+    gCurrentObject->y_position = ((struct func_15077DBC_s **)D_800D2104)[gCurrentObject->unk13F]->pts[gCurrentObject->unk21E].y;
+    gCurrentObject->z_position = ((struct func_15077DBC_s **)D_800D2104)[gCurrentObject->unk13F]->pts[gCurrentObject->unk21E].z;
+}
 // ???
 // void func_15077DBC(void) {
 //     if (D_800D1890 != 0xFA) {
@@ -978,7 +1088,30 @@ void func_15077F34(void) {
     gCurrentObject->unk250 = D_800D1891;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_15077F64.s")
+void func_15056A00(s32, u8, u8);
+void func_15077F64(void) {
+    s32 pad2[2];
+    u8 pad;
+    u8 temp_t6;
+    s16 *temp_v0;
+    f32 dx;
+    f32 dz;
+    u8 a;
+
+    temp_t6 = D_800D1890 - 1;
+    temp_v0 = (s16 *)((u8 *)D_800D2104[gCurrentObject->unk13F] + (gCurrentObject->unk21E * 8));
+    dx = temp_v0[4] - gCurrentObject->x_position;
+    dz = gCurrentObject->z_position - temp_v0[6];
+    gCurrentObject->unk78 = func_1505A630(dx, dz, 0);
+    a = (gCurrentObject->unk78 - gCurrentObject->unk76) >> 8;
+    if (a & 0x80) {
+        a = -a;
+    }
+    if (((u8 *)D_80099A3C)[temp_t6 * 10] < a) {
+        gCurrentObject->unk250 = D_800D1891;
+        func_15056A00(gCurrentObject, a, temp_t6);
+    }
+}
 // NON-MATCHING: what is D_800D2104 ???
 // void func_15056A00(s32, s32, u8);
 // void func_15077F64(void) {
@@ -1033,7 +1166,30 @@ void func_150781A4(void) {
 }
 
 // another function with D_800D2104
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_150781F4.s")
+struct func_150781F4_s {
+    s16 x;
+    s16 y;
+    s16 z;
+    s16 w;
+};
+
+void func_150781F4(void) {
+    struct func_150781F4_s *pos;
+    f32 dx, dz, dist;
+    s32 idx;
+    s32 flag;
+
+    idx = D_800D1891 + 1;
+    pos = &((struct func_150781F4_s **)D_800D2104)[gCurrentObject->unk13F][idx];
+    dx = pos->x - gCurrentObject->x_position;
+    dz = pos->z - gCurrentObject->z_position;
+    dist = sqrtf(dx * dx + dz * dz);
+    dx = D_800D1893 * 8;
+    flag = D_800D1892;
+    if (((flag == 0) && (dist < dx)) || ((flag != 0) && (dx < dist))) {
+        func_15075400(D_800D1890);
+    }
+}
 
 void func_150782CC(void) {
     gCurrentObject->unk23E = D_800D1890;
@@ -1086,7 +1242,21 @@ void func_15078520(void) {
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_15078544.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_1507879C.s")
+struct func_1507879C_s {
+    s32 unk0;
+    s32 unk4;
+    f32 unk8;
+};
+
+void func_1507879C(void) {
+    struct func_1507879C_s *ptr = (struct func_1507879C_s *)D_800CC5A0[gCurrentObject->unk222].interaction_state;
+    f32 temp_f0 = ptr->unk8;
+
+    if (((D_800D1892 == 0) && (temp_f0 < (u32)D_800D1891)) ||
+        ((D_800D1892 == 1) && (temp_f0 > (u32)D_800D1891))) {
+        func_15075400(D_800D1890);
+    }
+}
 // NON-MATCHING: D_800CC5A0 ???
 // void func_1507879C(void) {
 //     f32 temp_f0 =  D_800CC5A0[gCurrentObject->unk222].unk8;
@@ -1237,7 +1407,15 @@ void func_15079390(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_150793D8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_15079570.s")
+void func_15079570(void) {
+    f32 temp_f2;
+
+    temp_f2 = func_1505A6F8(gCurrentObject, &gObjects[gCurrentObject->unk222]);
+    gCurrentObject->unk44 = gCurrentObject->xz_velocity;
+    temp_f2 = 2.0f * (temp_f2 / gCurrentObject->unk44);
+    gCurrentObject->y_velocity = gCurrentObject->gravity * temp_f2 * 0.5f;
+    gCurrentObject->y_velocity += ((*(f32 *)((u8 *)D_800CC2E8 + gCurrentObject->unk222 * sizeof(struct127)) - gCurrentObject->y_position) / temp_f2) * 2.0f;
+}
 // NON-MATCHING: JUSTREG - t1 not t0
 // void func_15079570(void) {
 //     f32 temp_f2;
@@ -1273,7 +1451,20 @@ void func_150796CC(void) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_15079790.s")
+void func_15079790(void) {
+    s16 sp1E;
+    s16 temp_t0;
+
+    if (D_800D1892 != 0) {
+        gCurrentObject->id = 0xFF;
+    } else {
+        gCurrentObject->id = 0x3A;
+        sp1E = (func_150ADA20() % 500U) - 250;
+        temp_t0 = (func_150ADA20() % 500U) - 250;
+        gCurrentObject->x_position = ((s16 **)D_800D2104)[gCurrentObject->unk13F][0] + sp1E;
+        gCurrentObject->z_position = ((s16 **)D_800D2104)[gCurrentObject->unk13F][2] + temp_t0;
+    }
+}
 // seriously, D_800D2104?
 // void func_15079790(void) {
 //     s16 temp_t1;
@@ -1935,7 +2126,25 @@ void func_1507B958(void) {
     gCurrentObject->unkB0 = D_800D1890;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_1507B974.s")
+struct func_1507B974_s {
+    u8 pad0[6];
+    u16 unk6;
+};
+
+void func_1507B974(void) {
+    struct127 *phi_v1;
+
+    phi_v1 = gCurrentObject;
+    if (gCurrentObject->unk65 != 0) {
+        phi_v1 = &gObjects[gCurrentObject->unk65 - 1];
+    }
+    if (D_800D1891 == ((struct func_1507B974_s **)D_800D2104)[phi_v1->unk13F][phi_v1->unk21E + D_800D1893].unk6) {
+        D_800D1892 ^= 1;
+    }
+    if (D_800D1892 != 0) {
+        func_15075400(D_800D1890);
+    }
+}
 // NON-MATCHING: dont think D_800D2104 is correct
 // void func_1507B974(void) {
 //     struct127 *phi_v1;
@@ -1974,7 +2183,42 @@ void func_1507BB20(void) {
 }
 
 // scary loops
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_1507BB28.s")
+struct func_1507BB28_s {
+    struct216 *unk0;
+    u8 unk4;
+    u8 pad5[3];
+};
+extern struct216 D_8009A120;
+extern struct func_1507BB28_s D_80086A88[];
+
+int func_1507BB28(int arg0, int arg1) {
+    struct func_1507BB28_s *arr;
+    struct func_1507BB28_s *fb;
+    s32 tmp;
+    s32 i;
+
+    tmp = D_800D1588[gCurrentObject->id];
+    if (tmp == 0) {
+        return (int)&D_8009A120;
+    }
+    arr = ((struct func_1507BB28_s **)tmp)[-4];
+    if (arr == NULL) {
+        return (int)&D_8009A120;
+    }
+    for (i = 0; arr[i].unk4 != arg1; i++) {
+        if (arr[i].unk0 == NULL) {
+            i = 0;
+            fb = D_80086A88;
+            for (; fb[i].unk4 != arg1; i++) {
+                if (fb[i].unk0 == NULL) {
+                    while (1);
+                }
+            }
+            return (int)fb[i].unk0;
+        }
+    }
+    return (int)arr[i].unk0;
+}
 
 void func_1507BC14(struct127 *arg0) {
 

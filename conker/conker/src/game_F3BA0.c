@@ -19,7 +19,40 @@ void func_150C66F0(struct func_150C66F0_s *arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_F3BA0/func_150C673C.s")
+struct func_150C673C_sub {
+    u8 pad0[4];
+    u8 unk4;
+    u8 pad5[3];
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    u8 pad1A[2];
+    f32 unk1C;
+};
+struct func_150C673C_s {
+    u8 pad0[0x24];
+    s32 unk24;
+};
+
+s32 func_150C673C(struct func_150C673C_s *arg0) {
+    s8 ret;
+    struct func_150C673C_sub *p = (struct func_150C673C_sub *)((u8 *)arg0 + 0xB0);
+    ret = 1;
+    if (p->unk4 == 0) {
+        ret = 0;
+    }
+    p->unk4 = 0;
+    p->unk14 -= D_800BE9E4;
+    if (p->unk14 < 0) {
+        p->unk14 = (u32)func_150ADA20() % (u32)(p->unk18 + 1) + p->unk16;
+        p->unk10 = func_150ADA68() * p->unkC + p->unk8;
+    }
+    arg0->unk24 += (s32)((p->unk10 - arg0->unk24) * p->unk1C);
+    return ret;
+}
 
 typedef struct func_150C682C_sub { u8 pad[0x14]; s32 unk14; } func_150C682C_sub;
 struct func_150C682C_s {

@@ -164,7 +164,39 @@ s32 func_151D93F4(void *arg0, void *arg1) {
 //
 //     return 1;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151D9450.s")
+struct func_151D9450_sub {
+    f32 unk0;
+    u8 unk4;
+    u8 unk5;
+    s8 unk6;
+    s8 unk7;
+    f32 unk8;
+    f32 unkC;
+};
+
+struct func_151D9450_s {
+    u8 pad0[0x38];
+    f32 unk38;
+    f32 unk3C;
+    u8 pad40[0xA8 - 0x40];
+    struct func_151D9450_sub unkA8;
+    u8 padB8[0xC1 - 0xB8];
+    u8 unkC1;
+};
+
+int func_151D9450(struct func_151D9450_s *arg0, void *arg1) {
+    struct func_151D9450_sub *sub;
+
+    sub = &arg0->unkA8;
+    if (arg0->unkC1 & 1) {
+        return 1;
+    }
+    sub->unk4 += sub->unk6 * D_800BE9E4;
+    sub->unk5 += sub->unk7 * D_800BE9E4;
+    arg0->unk38 = func_151423D8(sub->unk4 - 0x40) * sub->unk8 + sub->unk0;
+    arg0->unk3C = func_151423D8(sub->unk5 - 0x40) * sub->unkC + sub->unk0;
+    return 1;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151D9534.s")
 
 u8 func_151D97A8(void) {
@@ -229,7 +261,39 @@ u8 func_151D9B34(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151D9B8C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151D9EB0.s")
+void func_151D9014(void *arg0, f32 *arg1, u8 arg2, f32 arg3, s16 arg4, u8 arg5, f32 arg6, u8 arg7, f32 arg8, f32 arg9, u8 argA, s32 argB, u8 argC, u8 argD, u8 argE, s32 argF);
+
+struct func_151D9EB0_sub {
+    s16 unk0;
+    s16 pad2;
+    f32 unk4;
+    u8 unk8[0xC];
+    u8 unk14;
+    u8 unk15;
+    u8 unk16;
+};
+
+struct func_151D9EB0_s {
+    u8 unk0;
+    u8 unk1;
+    u8 pad2[0xA];
+    u8 unkC;
+    u8 padD[0x1B];
+    struct func_151D9EB0_sub unk28;
+};
+
+void func_151D9EB0(struct func_151D9EB0_s *arg0) {
+    struct func_151D9EB0_sub *sub;
+
+    arg0->unk28.unk0 -= D_800BE9E4;
+    if (arg0->unk28.unk0 < 0) {
+        sub = &arg0->unk28;
+        func_151D9014(sub->unk8, &D_800A5480, sub->unk16, func_150ADA68() * D_800AB464 + D_800AB468,
+                      (func_150ADA20() % 41U) + 0x23, sub->unk14, sub->unk4, 0, 1.0f, 1.0f,
+                      sub->unk15, 0, 1, 0, arg0->unkC, arg0->unk1);
+        sub->unk0 = (func_150ADA20() % 111U) + 0x1E;
+    }
+}
 
 void func_151D9FC0(u8 arg0, f32 arg1, u8 arg2, s32 arg3, s32 arg4, u8 arg5, s32 arg6) {
     f32 temp_f8 = arg1 * 0.5f;
@@ -328,7 +392,19 @@ s32 func_151DA6A8(struct210 *arg0) {
 // v1=record, this: v1=base, t0=record, etc.) and the stack frame is
 // 8 bytes larger (0x50 vs target's 0x48) for reasons not chased down
 // further.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DAA88.s")
+struct func_151DAA88_s { f32 x; f32 y; f32 z; s32 pad[2]; };
+s32 func_151DAA88(u8 *arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4, s32 arg5) {
+    u8 *rec = *(u8 **) (arg0 + 0x98);
+    struct func_151DAA88_s *base = *(struct func_151DAA88_s **) (arg0 + 0x94);
+    f32 vec[3];
+
+    vec[0] = base[*(s8 *) (arg0 + 0x2D)].x;
+    vec[1] = arg4;
+    vec[2] = base[*(s8 *) (arg0 + 0x2D)].z;
+    func_151D9FC0(rec[0x50], *(f32 *) (rec + 0x4C) * (*(f32 *) rec * 11.0f), rec[0x1B], arg5, (s32) vec, arg0[0xC], arg0[0x1]);
+    rec[0x20] = 4;
+    return 1;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DAB58.s")
 // NON-MATCHING: mips_to_c reconstruction, hand-typed. Advances a
 // counter byte at arg0->0x110 by (arg0->0x111 signed byte) *

@@ -7,7 +7,31 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_3FC60/func_15012C84.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_3FC60/func_15012ED8.s")
+extern u8 D_800BE530[][3];
+extern s16 D_800BE550[];
+extern u8 D_800BE564;
+
+void func_15012ED8(u32 *arg0) {
+    s32 i;
+    s32 cmd;
+    u32 *gfx;
+
+    i = 0;
+    cmd = (s8)(arg0[0] >> 24);
+    gfx = arg0;
+    while (cmd != -0x21) {
+        if (cmd == -5) {
+D_800BE550[D_800BE564] = i;
+D_800BE530[D_800BE564][0] = (gfx[1] >> 24) & 0xFF;
+D_800BE530[D_800BE564][1] = (gfx[1] >> 16) & 0xFF;
+D_800BE530[D_800BE564][2] = (gfx[1] >> 8) & 0xFF;
+D_800BE564++;
+        }
+        cmd = (s8)(gfx[2] >> 24);
+        i++;
+        gfx += 2;
+    }
+}
 
 extern u8 D_800DF7D0;
 extern u8 D_800DF7D1;

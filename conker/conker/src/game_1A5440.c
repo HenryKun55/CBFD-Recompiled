@@ -28,7 +28,26 @@ void func_15178C34(u8 arg0, s32 arg1, s32 arg2, s32 arg3, s16 arg4) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1A5440/func_15178C9C.s")
+s32 func_15178B98(u8 arg0);
+
+s32 func_15178C9C(u8 arg0, s32 arg1) {
+    s32 temp_v0;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+
+    temp_v0 = func_15178B98(arg0);
+    if (temp_v0 != 0) {
+        dx = gObjects[arg1].x_position - *(s32 *)(temp_v0 + 0x18);
+        dy = gObjects[arg1].y_position - *(s32 *)(temp_v0 + 0x1C);
+        dz = gObjects[arg1].z_position - *(s32 *)(temp_v0 + 0x20);
+        dx *= dx;
+        dy *= dy;
+        dz *= dz;
+        return sqrtf(dx + dy + dz);
+    }
+    return 1;
+}
 
 extern struct102 *D_800DCF3C;
 

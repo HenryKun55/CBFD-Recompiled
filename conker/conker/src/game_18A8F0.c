@@ -25,7 +25,29 @@ void func_1515D4D4(arg0, arg1, arg2, arg3)
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18A8F0/func_1515D520.s")
+struct func_1515D520_s {
+    struct func_1515D520_s *next;
+};
+
+void *func_1515D520(void) {
+    struct func_1515D520_s *p = allocate_memory(0x34, 1, 2, 2);
+    struct func_1515D520_s *q;
+
+    if (p != NULL) {
+        bzero(p, 0x34);
+        if (*(struct func_1515D520_s **)&D_800DCD78 != NULL) {
+            q = *(struct func_1515D520_s **)&D_800DCD78;
+            while (q->next != NULL) {
+                q = q->next;
+            }
+            q->next = p;
+        } else {
+            *(struct func_1515D520_s **)&D_800DCD78 = p;
+        }
+        p->next = NULL;
+    }
+    return p;
+}
 
 void *func_1515D5F8();
 
@@ -33,7 +55,51 @@ void *func_1515D5AC(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, 
     return func_1515D5F8(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18A8F0/func_1515D5F8.s")
+struct func_1515D5F8_s {
+    u8 pad0[4];
+    u8 unk4;
+    u8 unk5;
+    u8 unk6;
+    u8 unk7;
+    u8 unk8;
+    u8 unk9;
+    u8 unkA;
+    u8 unkB;
+    u8 padC[2];
+    s16 unkE;
+    s16 unk10;
+    s16 unk12;
+    u8 pad14[0x18];
+    u8 unk2C;
+    u8 unk2D;
+    u8 unk2E;
+    u8 unk2F;
+};
+
+void *func_1515D5F8(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+    s32 arg0; s32 arg1; s32 arg2; s32 arg3; s32 arg4; s32 arg5; s32 arg6; s32 arg7; s32 arg8; u8 arg9;
+{
+    struct func_1515D5F8_s *p = func_1515D520();
+
+    if (p != NULL) {
+        p->unk4 = 0;
+        p->unk5 = arg4;
+        p->unk6 = arg5;
+        p->unk7 = arg6;
+        p->unk8 = arg7;
+        p->unk9 = arg8;
+        p->unkB = arg9;
+        p->unkA = 0;
+        p->unkE = arg0;
+        p->unk10 = arg1;
+        p->unk12 = arg2;
+        p->unk2F = arg3;
+        p->unk2C = 0x7F;
+        p->unk2D = 0;
+        p->unk2E = 0;
+    }
+    return p;
+}
 
 struct func_1515D69C_s {
     struct func_1515D69C_s *next;
@@ -67,11 +133,66 @@ void func_1515D6C8(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_18A8F0/func_1515E888.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18A8F0/func_1515EB84.s")
+struct func_1515EB84_s {
+    u8 pad0[0x14];
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    u8 pad20[0xC];
+    f32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    u8 pad38[0x180 - 0x38];
+    f32 unk180;
+    u8 pad184[0x32C - 0x184];
+};
+
+struct func_1515EB84_obj {
+    u8 pad0[0x14];
+    u8 unk14;
+    u8 unk15;
+    u8 pad16[2];
+    u32 unk18;
+};
+
+struct func_1515EB84_node {
+    struct func_1515EB84_node *next;
+    struct func_1515EB84_obj *obj;
+};
+
+s32 func_150A1DA0();
+
+struct func_1515EB84_obj *func_1515EB84(s32 arg0, s32 arg1, s32 arg2, s32 arg3, struct func_1515EB84_node *arg4) {
+    struct func_1515EB84_s sp34;
+    s32 pad[2];
+
+    sp34.unk14 = sp34.unk2C = arg0;
+    sp34.unk180 = sp34.unk18 = sp34.unk30 = arg1;
+    sp34.unk1C = sp34.unk34 = arg2;
+    while (arg4 != NULL) {
+        if (arg4->obj->unk14 == 0 &&
+            (arg3 == 0 || ((arg4->obj->unk18 >> 24) & arg3)) &&
+            ((arg4->obj->unk15 >> 2) == 0x18 || (arg4->obj->unk18 >> 31) == 0) &&
+            func_150A1DA0(&sp34, arg4->obj, 0) == 0) {
+            return arg4->obj;
+        }
+        arg4 = arg4->next;
+    }
+    return NULL;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_18A8F0/func_1515EC78.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18A8F0/func_1515EF74.s")
+f32 func_1515F008(s16 *arg0, s32 arg1);
+void func_1515F040(f32 arg0, s32 arg1);
+void func_1515F0AC(f32 arg0, s32 arg1);
+
+void func_1515EF74(s16 *arg0) {
+    func_1515F040(1.0f / func_1515F008(arg0, 0), 0);
+    func_1515F040(1.0f / func_1515F008(arg0, 5), 1);
+    func_1515F040(1.0f / func_1515F008(arg0, 0xA), 2);
+    func_1515F0AC(-func_1515F008(arg0, 0xE), 3);
+}
 
 f32 func_1515F008(s16 *arg0, s32 arg1) {
     s32 v;
@@ -120,7 +241,26 @@ void func_1515F170(s32 arg0, u8 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18A8F0/func_1515F1B0.s")
+struct func_1515F1B0_s {
+    s32 unk0;
+    f32 unk4;
+    f32 unk8;
+    s32 unkC;
+};
+
+struct func_1515F1B0_s *func_1515F1B0(s32 arg0) {
+    struct func_1515F1B0_s *p;
+
+    p = (struct func_1515F1B0_s *)func_10003C6C(0x10, 1, 2, 0, 1);
+    if (p == NULL) {
+        return NULL;
+    }
+    p->unk0 = arg0;
+    p->unk4 = arg0 ? func_1514462C(arg0) : 0.0f;
+    p->unk8 = arg0 ? func_15144598(arg0) : 0.0f;
+    p->unkC = 0;
+    return p;
+}
 
 struct func_1515F25C_s {
     s32 pad0[3];

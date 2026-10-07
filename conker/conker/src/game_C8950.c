@@ -151,7 +151,49 @@ void func_1509B764(struct249 *arg0) {
 //     }
 //     D_800D2F48.length++;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C8950/func_1509B810.s")
+void func_1509B810(struct249 *arg0) {
+    s32 mask = 0xFFFF03FF;
+    struct249 *cursor;
+    s32 key;
+    s32 i;
+
+    cursor = D_800D2F48.unk8;
+    key = arg0->unk0 & mask;
+
+    if (D_800D2F48.length == 0) {
+        D_800D2F48.unk4 = arg0;
+        D_800D2F48.unk8 = arg0;
+        arg0->next = NULL;
+        arg0->prev = NULL;
+        D_800D2F48.length++;
+        return;
+    }
+    for (i = 0; i < D_800D2F48.length; i++) {
+        if ((cursor->unk0 & mask) < key) {
+            if (cursor == D_800D2F48.unk8) {
+                arg0->prev = cursor;
+                arg0->next = NULL;
+                cursor->next = arg0;
+                D_800D2F48.unk8 = arg0;
+                D_800D2F48.length++;
+                return;
+            }
+            arg0->prev = cursor;
+            arg0->next = cursor->next;
+            cursor->next->prev = arg0;
+            cursor->next = arg0;
+            D_800D2F48.length++;
+            return;
+        }
+        cursor = cursor->prev;
+    }
+    cursor = D_800D2F48.unk4;
+    D_800D2F48.unk4 = arg0;
+    arg0->prev = NULL;
+    arg0->next = cursor;
+    cursor->prev = arg0;
+    D_800D2F48.length++;
+}
 
 void func_1509B8FC(arg0)
     s16 arg0;
@@ -207,7 +249,23 @@ void func_1509B8FC(arg0)
 //     func_10004074(arg0);
 //     return newBuf;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C8950/func_1509B950.s")
+int func_1509B950(struct248 *arg0) {
+    struct248 *newBuf;
+    u32 pad;
+    pad = 8 - (((u32)arg0 + arg0->unk4) & 7);
+    arg0->unkA = arg0->unk4 + pad;
+    arg0->unk4 = arg0->unkA + arg0->unk6;
+    arg0->unk4 += 8 - (((u32)arg0 + arg0->unk4) & 7);
+    newBuf = (struct248 *)allocate_memory(arg0->unk4, 0xFF, 2, 0);
+    if (newBuf == NULL) {
+        while (1) {
+        }
+    }
+    bcopy(arg0, newBuf, arg0->unk4);
+    bzero((u8 *)newBuf + newBuf->unkA, newBuf->unk6);
+    func_10004074(arg0);
+    return (int)newBuf;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C8950/func_1509BA04.s")
 
@@ -275,7 +333,31 @@ void func_1509B8FC(arg0)
 // gap by letting the two branches share one address computation, but
 // target still needs about 3 fewer instructions in that tail section
 // that further restructuring didn't close.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C8950/func_1509C120.s")
+void func_1509C120(void) {
+    s32 idx;
+    s32 i;
+    s32 arr[4];
+    struct102 *old;
+
+    idx = func_150ADA20() & 3;
+    old = D_800D2E4C;
+    if ((old != NULL) && !(func_150ADA20() & 4)) {
+        return;
+    }
+    for (i = 0; i <= idx; i++) {
+        arr[i] = allocate_memory(0x1B, 0xFF, 2, 0);
+    }
+    for (i = 0; i <= idx; i++) {
+        if (i != idx) {
+            func_10004074(arr[i]);
+        }
+    }
+    D_800D2E4C = arr[idx];
+    if (old != NULL) {
+        bcopy(old, D_800D2E4C, 0x1B);
+        func_10004074(old);
+    }
+}
 
 void func_1509C228(void) {
     if ((D_800D2E68 & 8) || (D_800D2E4C->unkF & 1)) {

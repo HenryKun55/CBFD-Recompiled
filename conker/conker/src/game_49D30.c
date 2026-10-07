@@ -7,7 +7,19 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_1501CC3C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_1501CDC0.s")
+extern u8 D_800C363A[];
+extern u8 *D_800C3960[][30];
+
+void func_1501CDC0(s32 arg0) {
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < D_800C363A[arg0]; i++) {
+        for (j = 0; j < 16; j++) {
+            D_800C3960[arg0][i][j] = 0xFF;
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_1501CE54.s")
 
@@ -64,7 +76,31 @@ s32 func_1501D2C4(s32 arg0, s32 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_1501DAAC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_1501DE18.s")
+extern s32 D_800C3640[];
+extern s32 D_800C35B0[];
+s32 func_150229E4(struct127 *);
+void func_1502178C(struct127 *, s32, s32);
+void func_1501E81C(s32, s32);
+void func_150242F8(s32, s32);
+void func_1501EC38(s32);
+void func_15020EC4(s32);
+
+void func_1501DE18(s32 arg0) {
+    s32 i;
+    struct127 *obj;
+    D_800C35B0[arg0] = D_800C3640[arg0] + D_800BEA08;
+    func_150242F8(1, 0);
+    func_1501EC38(0);
+    func_150242F8(0, 0);
+    func_15020EC4(0);
+    for (i = 0, obj = gObjects; i < 25; i++, obj++) {
+        if (obj->interaction_state == 0) continue;
+        gCurrentObjectIndex = i;
+        if (func_150229E4(obj) == 0) continue;
+        func_1502178C(obj, arg0, -1);
+    }
+    func_1501E81C(1, arg0);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_1501DF04.s")
 
@@ -72,7 +108,34 @@ s32 func_1501D2C4(s32 arg0, s32 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_1501E1B4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_1501E2F8.s")
+extern u8 D_800C3C8C;
+extern s32 D_800C35B0[];
+extern s32 D_800C3640[];
+void func_1501E81C(s32, s32);
+void func_1501E400(s32);
+void func_150242F8(s32, s32);
+void func_1501EC38(s32);
+void func_15020EC4(s32);
+
+void func_1501E2F8(s32 arg0) {
+    if ((&D_800C35EA)[arg0] == 1) {
+        if (D_800C35B0[arg0] >= D_800C3640[arg0]) {
+            if (D_800C3C8C == 0) {
+                func_1501E81C(0, arg0);
+                if ((&D_800C35EA)[arg0] == 1) {
+                    func_1501E400(0);
+                    func_150242F8(1, 0);
+                    func_1501EC38(0);
+                    func_150242F8(0, 0);
+                    func_15020EC4(0);
+                    func_1501E2F8(0);
+                }
+            } else {
+                D_800C3C8C = 2;
+            }
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_1501E400.s")
 
@@ -187,11 +250,43 @@ void func_15022754(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_150227BC.s")
+extern u8 D_800C354A[];
+extern u8 D_800C3550[][30];
+void *func_151149AC();
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_15022848.s")
+void func_150227BC(s32 arg0) {
+    s32 i;
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_150228E4.s")
+    for (i = 0; i < D_800C354A[arg0]; i++) {
+        *((u8 *)func_151149AC(D_800C3550[arg0][i]) + 0x6E) = 1;
+    }
+}
+
+void func_15022398(s32, s32);
+void func_150222E0(s32, s32);
+
+void func_15022848(s32 arg0) {
+    s32 i;
+
+    if ((&D_800C35EA)[arg0] == 1) {
+        D_800C3638 = 0;
+        for (i = 0; i < D_800C363A[arg0]; i++) {
+            func_15022398(i, arg0);
+            func_150222E0(i, arg0);
+        }
+        D_800C3638 = 1;
+    }
+}
+
+void func_150228E4(s32 arg0) {
+    s32 i;
+
+    for (i = 0; i < D_800C3510[arg0]; i++) {
+        if (gObjects[D_800C3518[arg0][i]].interaction_state != 0) {
+            func_15060F28(&gObjects[D_800C3518[arg0][i]], 0);
+        }
+    }
+}
 
 void func_15022998(s32 *arg0) {
     s32 tmp = *arg0;
@@ -204,7 +299,28 @@ void func_15022998(s32 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_150229E4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_15022B08.s")
+struct func_15022B08_s {
+    u8 unk0[2];
+    u8 unk2;
+    u8 unk3[5];
+};
+
+extern u16 *D_800C35C8[];
+extern struct func_15022B08_s *D_800C35F0[];
+extern u8 D_800C363A[];
+
+s32 func_15022B08(s32 arg0, s32 arg1) {
+    s32 i;
+
+    for (i = 0; i < D_800C363A[arg1]; i++) {
+        if (D_800C35C8[arg1][i] != 0) {
+            if (D_800C35F0[arg1][i].unk2 == D_800DBEF4[arg0].pad70[2]) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_49D30/func_15022BA4.s")
 

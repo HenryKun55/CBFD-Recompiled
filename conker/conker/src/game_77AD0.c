@@ -264,7 +264,37 @@ void func_1505327C();
 //     D_800D35DC = (u8)0;
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_1504ADD0.s")
+void func_1504ADD0(void) {
+    struct127 *tmp;
+    s32 i;
+    u8 sp48[6];
+
+    if (D_800C35EA == 1) {
+        return;
+    }
+    for (i = 0; i < 25; i++) {
+        tmp = &gObjects[i];
+        if (tmp->interaction_state == 0) {
+            continue;
+        }
+        gCurrentObjectIndex = i;
+        gCurrentObject = tmp;
+        if (i < D_8008FD8C) {
+            if (i < 4) {
+                D_800CC284 = ((s32 *)D_800BE728[0])[i];
+            } else {
+                bzero(sp48, 6);
+                *(u8 **)&D_800CC284 = sp48;
+            }
+        }
+        switch (tmp->id) {
+            case 0x28:
+            case 0x77:
+                func_150ED578(tmp);
+                break;
+        }
+    }
+}
 // NON-MATCHING: whats up with sp48
 // void func_1504ADD0(void) {
 //     struct127 *tmp;
@@ -473,7 +503,45 @@ void func_1504C854(struct127 *arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_1504C8BC.s")
+struct func_1504C8BC_s {
+    s32 unk0;
+    u8 pad4[0x123];
+    u8 unk127;
+    u8 pad128[0xAC];
+    s32 unk1D4;
+    u8 pad1D8[0x144];
+    u8 *unk31C;
+};
+
+s32 func_1504C8BC(struct func_1504C8BC_s *arg0) {
+    u8 *temp_v1;
+
+    temp_v1 = arg0->unk31C;
+    if (temp_v1 == NULL) {
+        return 1;
+    }
+    if ((arg0->unk1D4 != 0) || (D_800BE9F0 == 0x33) || (arg0->unk0 == 0x25)) {
+        temp_v1[0x1A8] = 0;
+        return 1;
+    }
+    if ((arg0->unk127 & 1) == D_800CC2B8) {
+        if (temp_v1[0x1A8] != 0) {
+            *(s16 *)&D_800CC2BA = D_800BE9E4;
+            D_800BE9E4 += arg0->unk31C[0x1A8];
+            D_800BE9A4 = D_800BE9E4 * 0.5f;
+            if (D_800BE9A4 != 0.0f) {
+                D_800BE9A8 = 1.0f / D_800BE9A4;
+            } else {
+                D_800BE9A8 = 0.0f;
+            }
+            arg0->unk31C[0x1A8] = 0;
+            return 2;
+        }
+        return 1;
+    }
+    temp_v1[0x1A8] += D_800BE9E4;
+    return 0;
+}
 
 void func_1504C9E4(struct127 *arg0, s8 arg1, u8 arg2) {
     u8 phi_a2;

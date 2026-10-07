@@ -3,7 +3,21 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_15AA10/func_1512D560.s")
+struct func_1512D560_s {
+    s32 entries[20][2];
+    u8 pad0[0xA8 - 0xA0];
+    s32 unkA8;
+    s32 unkAC;
+};
+
+void func_1512D560(u8 *arg0, s32 arg1, s32 arg2) {
+    ((struct func_1512D560_s *)D_800DC2B0)[arg0[0x23D]].entries[((struct func_1512D560_s *)D_800DC2B0)[arg0[0x23D]].unkAC][0] = arg1;
+    ((struct func_1512D560_s *)D_800DC2B0)[arg0[0x23D]].entries[((struct func_1512D560_s *)D_800DC2B0)[arg0[0x23D]].unkAC][1] = arg2;
+    ((struct func_1512D560_s *)D_800DC2B0)[arg0[0x23D]].unkAC++;
+    if (((struct func_1512D560_s *)D_800DC2B0)[arg0[0x23D]].unkAC == 20) {
+        ((struct func_1512D560_s *)D_800DC2B0)[arg0[0x23D]].unkAC = 0;
+    }
+}
 
 struct func_1512D604_s {
     s32 entries[20][2];

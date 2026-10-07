@@ -21,7 +21,27 @@ void func_1502AAF8(s32 arg0) {
 // difference on the initial zero-trip-count guard for the loop IDO
 // generates from the single `for` loop below (both correct, no reachable
 // source phrasing changed it). Semantics confirmed identical.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502AF04.s")
+struct func_1502AF04_s {
+    s32 a;
+    s32 b;
+};
+
+void *func_1502AF04(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    s32 addr;
+    s32 dst;
+    s32 i;
+    struct func_1502AF04_s *p;
+
+    arg2 <<= 3;
+    addr = arg0 + arg2;
+    dst = (arg1 + 8) & ~0xF;
+    func_10004514(addr & ~0xF, dst, ((addr & 0xE) + (arg3 << 3) + 0xF) & ~0xF, 1);
+    p = (struct func_1502AF04_s *)(((arg1 + 8) & ~0xF) + (addr & 0xF));
+    for (i = 0; i != arg3; i++) {
+        p[i].a += arg0;
+    }
+    return (void *)(((arg1 + 8) & ~0xF) + (addr & 0xF));
+}
 // void *func_1502AF04(void *arg0, void *arg1, s32 arg2, s32 arg3) {
 //     void *base;
 //     void *p;
@@ -82,8 +102,63 @@ u32 func_1502B224(s32 romAddr, s32 *dest, s32 sizeAndFlags, u32 maxSize) {
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502B350.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502B4A8.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502B5C8.s")
+struct func_1502B4A8_s {
+    s32 offset;
+    u32 flags;
+};
+
+s32 func_1502B4A8(struct func_1502B4A8_s *arg0, s32 arg1) {
+    s32 i;
+
+    if (arg1 == 0) {
+        while ((arg0[arg1++].flags & 0x80000000) == 0) {
+        }
+    }
+    for (i = 0; i < arg1; i++) {
+        arg0[i].flags &= 0x0FFFFFFF;
+        if ((arg0[i].offset == -1) || (arg0[i].flags == 0)) {
+            arg0[i].offset = 0;
+        } else {
+            arg0[i].offset += (s32) arg0;
+        }
+    }
+    return arg1;
+}
+#include <stdarg.h>
+extern u8 D_AB1950;
+s32 func_1502AC88(s32 offset, s32 arg, s32 *out);
+s32 func_1502B350(s32 offset, s32 arg, s32 *out);
+
+s32 func_1502B5C8(s32 *status, s32 count, ...) {
+    va_list args;
+    s32 offset;
+    s32 arg;
+    s32 sp40;
+    s32 *p;
+    s32 sp38;
+    s32 ret;
+
+    p = &sp40;
+    if (status != NULL) {
+        p = status;
+    }
+    *p = 1;
+    offset = (s32) &D_AB1950;
+    va_start(args, count);
+    for (; count != 0; count--) {
+        arg = va_arg(args, s32);
+        if (*p != 0) {
+            offset += func_1502AC88(offset, arg, &sp38);
+        }
+        *p = sp38 & 0xFFFFFFF;
+    }
+    if (*p != 0) {
+        ret = func_1502B350(offset, sp38, p);
+    } else {
+        ret = 0;
+    }
+    return ret;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502B6BC.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502B7F0.s")
 // void func_1502B7F0(s32 *arg0, s32 arg1, s32 arg2, s32 arg3) {
@@ -116,7 +191,32 @@ u32 func_1502B224(s32 romAddr, s32 *dest, s32 sizeAndFlags, u32 maxSize) {
 //     }
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502B8E0.s")
+#include <stdarg.h>
+extern u8 D_AB1950;
+s32 func_1502AC88(s32 offset, s32 arg, s32 *out);
+
+u32 func_1502B8E0(s32 *dest, u32 maxSize, s32 count, ...) {
+    va_list args;
+    s32 more;
+    s32 offset;
+    s32 arg;
+    s32 sp34;
+
+    more = 1;
+    offset = (s32) &D_AB1950;
+    va_start(args, count);
+    for (; count != 0; count--) {
+        arg = va_arg(args, s32);
+        if (more != 0) {
+            offset += func_1502AC88(offset, arg, &sp34);
+        }
+        more = sp34 & 0xFFFFFFF;
+    }
+    if (more != 0) {
+        more = func_1502B224(offset, dest, sp34, maxSize);
+    }
+    return more;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_57FA0/func_1502B9B4.s")
 // NON-MATCHING: maybe 50% there?

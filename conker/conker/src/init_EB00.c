@@ -91,7 +91,35 @@ s32 func_1000EC24(struct251 *arg0, s32 arg1, s32 *arg2, struct11 *arg3, struct04
 // }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000EDA0.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000EE70.s")
+struct func_1000EE70_s {
+    s16 unk0;
+    s16 unk2;
+    s16 unk4;
+    s16 unk6;
+    u8 pad8[0x10];
+    struct127 *unk18;
+    s32 unk1C;
+    u8 pad20[4];
+    u16 unk24;
+};
+
+s32 func_1000EE70(struct func_1000EE70_s *arg0, s32 arg1, s32 *arg2, s32 arg3, s32 arg4, s32 *arg5) {
+    struct127 *temp_v1 = arg0->unk18;
+    if ((temp_v1 != NULL) && (*arg2 != 0)) {
+        u8 id = arg0->unk1C & 0xFF;
+        if ((temp_v1->interaction_state != 0) && (id == temp_v1->unique_id)) {
+            *arg5 = (((u32)temp_v1->unk184 >> 3) & 0x30) * 2;
+            arg0->unk2 = temp_v1->x_position;
+            arg0->unk4 = temp_v1->y_position;
+            arg0->unk6 = temp_v1->z_position;
+            return 0;
+        }
+        if (func_1000F44C(arg0->unk24) == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 s32 func_1000EF40(struct57 *arg0, struct57 *arg1, s32 *arg2, s32 arg3, s32 arg4, s32 arg5, u16 *arg6) {
     if (arg0->unk10 & 0x80) {
@@ -108,7 +136,20 @@ s32 func_1000EF40(struct57 *arg0, struct57 *arg1, s32 *arg2, s32 arg3, s32 arg4,
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000EFB4.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000F1A8.s")
+void func_1000F1A8(void) {
+    s32 i;
+
+    D_80042760 = 0;
+    D_80041FD9 = 1;
+    D_80041FD8 = 0;
+    bzero(D_800425E0, 0x180);
+    for (i = 0; i < 16; i++) {
+        D_800425E0[i].unk2 = i + 0x10;
+    }
+    D_80041F50 = 0;
+    func_100176EC();
+    D_80041F60 = D_80041F61 = 0;
+}
 
 void func_10017780(u8 arg0, u16 arg1);
 s32* allocate_memory(s32, s32, s32, s32);
@@ -187,10 +228,32 @@ s32 func_1000F44C( u16 arg0) {
     return 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000F4D8.s")
+s32 func_1000F4D8(u16 arg0) {
+    s32 i;
+
+    arg0 &= 0x7FFF;
+    for (i = 0; i < 16; i++) {
+        if ((D_800425E0[i].unk8 != 0) && ((D_800425E0[i].unk4 & 0x7FFF) == arg0) && (func_100173C4(&D_800425E0[i].unk8) != 0)) {
+            return 1;
+        }
+    }
+    return 0;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000F568.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000F6B8.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000F85C.s")
+void func_1000F85C(u16 arg0, s16 arg1, s32 arg2) {
+    if (arg0 >= 16) {
+        if (func_1000F3D0(arg0) != 0) {
+            if (arg1 == 16) {
+                f32 sp1C = alCents2Ratio(arg2);
+                arg2 = *(s32 *)&sp1C;
+            } else if (arg1 == 17) {
+                arg1 = 16;
+            }
+            func_10017714(D_800425E0[arg0 & 0xF].unk8, arg1, arg2);
+        }
+    }
+}
 // NON-MATCHING: not even close
 // void func_1000F85C(s32 arg0, s16 arg1, s32 arg2) {
 //     f32 sp1C;
@@ -245,7 +308,35 @@ void func_1000F9D4( u16 arg0, s16 arg1, s16 arg2, s16 arg3) {
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000FA64.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000FC18.s")
+struct func_1000FC18_s {
+    u16 unk0;
+    s16 unk2;
+    s16 unk4;
+    s16 unk6;
+    u16 unk8;
+    u8 pad[0x6];
+    s32 unk10;
+    u8 pad2[0x10];
+    u16 unk24;
+    u8 pad3[0xA];
+};
+
+void func_1000FC18(u16 arg0, s16 arg1, s16 arg2, s16 arg3, u16 arg4) {
+    s32 i;
+
+    for (i = 0; i < D_80042760; i++) {
+        if ((arg0 == ((struct func_1000FC18_s *)D_80041FE0)[i].unk0) &&
+            (arg1 == ((struct func_1000FC18_s *)D_80041FE0)[i].unk2) &&
+            (arg2 == ((struct func_1000FC18_s *)D_80041FE0)[i].unk4) &&
+            (arg3 == ((struct func_1000FC18_s *)D_80041FE0)[i].unk6) &&
+            (arg4 == (((struct func_1000FC18_s *)D_80041FE0)[i].unk8 & 0x7FFF))) {
+            if (((struct func_1000FC18_s *)D_80041FE0)[i].unk24 != 0) {
+                func_100111C8(((struct func_1000FC18_s *)D_80041FE0)[i].unk24);
+            }
+            ((struct func_1000FC18_s *)D_80041FE0)[i].unk10 |= 0x80;
+        }
+    }
+}
 // Stops the sounds placed at a point: for each of the first D_80042760 entries of
 // D_80041FE0 whose position (unk14, unk18, unk1C) is (x, y, z), stops the sound it
 // is playing (handle unk24, see func_100111C8) and sets its flag 0x80.
@@ -262,7 +353,18 @@ void func_1000FD38(s32 x, s32 y, s32 z) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000FDF4.s")
+void func_1000FDF4(u16 arg0) {
+    s32 i;
+
+    for (i = 0; i < D_80042760; i++) {
+        if (arg0 == D_80041FE0[i].unk24) {
+            if (D_80041FE0[i].unk24) {
+                func_100111C8(D_80041FE0[i].unk24);
+            }
+            D_80041FE0[i].unk10 = D_80041FE0[i].unk10 | 0x80;
+        }
+    }
+}
 // Stops the sound of entry `index` of an array of positional sound entries (the
 // 0x30-byte entries of D_80041FE0; see func_1000FD38), and sets its flag 0x80, if
 // the index is below *count. Returns 0 when it did, 1 when the index was out of
@@ -301,8 +403,29 @@ s32 func_1000FE88(struct15 *entries, s32 index, s32 *count) {
 //     return -1;
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000FF90.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1001001C.s")
+s32 func_1000FF90(s32 arg0, void *arg1, s32 arg2) {
+    s32 i;
+
+    for (i = 0; i < D_80042760; i++) {
+        if ((arg0 == D_80041FE0[i].unk14) &&
+            ((arg1 == (void *)D_80041FE0[i].unk18) || (arg1 == (void *)-1)) &&
+            ((arg2 == D_80041FE0[i].unk1C) || (arg2 == -1)) &&
+            ((D_80041FE0[i].unk10 & 0x80) == 0)) {
+            return i;
+        }
+    }
+    return -1;
+}
+void func_1001001C(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
+    s32 i;
+
+    for (i = 0; i < D_80042760; i++) {
+        if ((arg0 == D_80041FE0[i].unk14) && (arg1 == D_80041FE0[i].unk18) && (arg2 == D_80041FE0[i].unk1C)) {
+            *(f32 *)&D_80041FE0[i].unk2C = alCents2Ratio(arg4);
+            D_80041FE0[i].unkC = arg3;
+        }
+    }
+}
 void func_100100E0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
     s32 i;
 
@@ -373,7 +496,28 @@ s32 func_10010894(struct127 *arg0) {
     return 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1001091C.s")
+void func_1001091C(struct127 *arg0, s32 arg1) {
+    s32 temp_v0;
+
+    if (arg1 == 0) {
+        return;
+    }
+    if (arg0->interaction_state == 0) {
+        return;
+    }
+    if (arg0->camera != 0) {
+        if (arg0->unk8E != 0) {
+            func_1000F85C(arg0->unk8E, 8, arg1);
+        }
+    } else {
+        temp_v0 = func_1000FF90(func_1000EE70, arg0, arg0->unique_id | 0x10000);
+        if (temp_v0 != -1) {
+            D_80041FEC[temp_v0][0] = arg1;
+        } else {
+            arg0->unk8E = 0;
+        }
+    }
+}
 // NON-MATCHING: something isnt right...
 // void func_1001091C(struct127 *arg0, struct15 *arg1) {
 //     s32 temp_v0;
@@ -463,7 +607,18 @@ void func_10010AA8(struct127 *arg0) {
 // Arguments: (arg0, sound, volume, pitch, flags, listener, x, y, z, near, far), where
 // listener is passed on to func_1000F6B8 as its first argument (func_1000F9D4 gives
 // it -1).
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_10010E78.s")
+s32 func_10010E78(s32 arg0, s32 sound, u16 volume, s16 pitch, s32 flags, s32 listener, s32 x, s32 y, s32 z,
+                  s32 near, s32 far) {
+    s32 pan;
+    u32 vol;
+
+    vol = func_1000F6B8(listener, x, y, z, &pan, (s16) near, (s16) far);
+    vol = (volume * vol) >> 15;
+    if (vol != 0) {
+        return func_10010BE8((u16) arg0, sound, vol, pan & 0x7F, pitch, (pan & 0x80) | (u8) flags, D_80041FD9);
+    }
+    return 0;
+}
 
 // Plays a sound effect without a position: volume 0..0x7FFF, pan 0..0x7F (the
 // middle is 0x40), pitch and flags as func_10010BE8 takes them.

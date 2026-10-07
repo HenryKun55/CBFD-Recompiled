@@ -67,7 +67,32 @@ void func_10004674(void) {
     D_8003A571 = 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_4470/func_100046E4.s")
+void func_100046E4(u32 devAddr, u32 dramAddr, u32 size) {
+    OSIoMesg ioMsg;
+    OSMesg msg;
+    u32 sent;
+    u32 len;
+    s32 idx;
+
+    idx = __osRunningThread->id - 3;
+    sent = 0;
+    if ((idx >= 4) || (idx < 0)) {
+        idx = 0;
+    }
+    osInvalDCache((void *)dramAddr, size);
+    while (sent < size) {
+        if ((size - sent) < 0x14000) {
+            len = size - sent;
+        } else {
+            len = 0x14000;
+        }
+        osPiStartDma(&ioMsg, 0, 0, devAddr, (void *)dramAddr, len, &gMessageQueue[idx]);
+        osRecvMesg(&gMessageQueue[idx], &msg, 1);
+        sent += len;
+        devAddr += len;
+        dramAddr += len;
+    }
+}
 // NON-MATCHING: stack isnt right
 // void func_100046E4(s32 devAddr, void *dramAddr, u32 size) {
 //     s32 _dramAddr;

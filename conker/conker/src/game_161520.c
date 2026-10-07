@@ -205,7 +205,38 @@ void func_151348F0(f32 arg0, f32 arg1, s32 arg2, s32 arg3) {
 //     *(f32 *) ((char *) v0 + 0x38) = scale;
 //     return v1;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15134908.s")
+struct func_15134908_s {
+    u8 pad0[0x10];
+    f32 *unk10;
+    f32 *unk14;
+    f32 *unk18;
+    f32 unk1C;
+    u8 pad20[0xC];
+    f32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+};
+
+extern struct func_15134908_s *func_15167A68(s32, s32, s32, s32, s32, s32);
+
+struct func_15134908_s *func_15134908(u8 *arg0, s32 arg1, u8 arg2, s32 arg3) {
+    struct func_15134908_s *v0;
+
+    v0 = func_15167A68(0x2A, arg3, arg1 + 0x40, 1, arg2, 1);
+    if (v0 == NULL) {
+        return NULL;
+    }
+    arg0[0x16] |= 2;
+    memcpy(&v0->unk10, arg0, 0x1C);
+    v0->unk2C = *v0->unk10;
+    v0->unk30 = *v0->unk14;
+    v0->unk34 = *v0->unk18;
+    v0->unk38 = 1.0f / (2.0f * v0->unk1C);
+    v0->unk3C = 0.0f;
+    return v0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_151349D0.s")
 
@@ -237,7 +268,23 @@ void func_15134CD4(f32 arg0, f32 arg1, s32 arg2, s32 arg3) {
 // interleaving) but target's final decrement-and-check uses a
 // branch-likely (bgezl) that this reconstruction doesn't reproduce -
 // same unresolved category as func_15144B68 above.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15134CEC.s")
+s32 func_15134CEC(void *arg0) {
+    s32 v1 = *((u8 *) arg0 + 0x2E);
+
+    *(f32 *) ((char *) arg0 + 0x70) += 0.125f * D_800BE9A4;
+    *(f32 *) ((char *) arg0 + 0x74) += D_800A45B0 * D_800BE9A4;
+    *(f32 *) ((char *) arg0 + 0x14) += *(f32 *) ((char *) arg0 + 0x70) * D_800BE9A4;
+    *(f32 *) ((char *) arg0 + 0x1C) += *(f32 *) ((char *) arg0 + 0x74) * D_800BE9A4;
+    if (*(f32 *) ((char *) arg0 + 0x14) > 130.0f) {
+        return 0;
+    }
+    v1 -= D_800BE9E4 * 2;
+    if (v1 < 0) {
+        return 0;
+    }
+    *((u8 *) arg0 + 0x2E) = v1;
+    return 1;
+}
 // s32 func_15134CEC(void *arg0) {
 //     s32 v1 = *((u8 *) arg0 + 0x2E);
 //
@@ -282,7 +329,21 @@ void func_15134CD4(f32 arg0, f32 arg1, s32 arg2, s32 arg3) {
 //     *(f32 *) ((char *) v1 + 0x78) = 0.0f;
 //     return v1;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15134DAC.s")
+void *func_15134DAC(void *arg0, s32 arg1) {
+    void *v1 = func_15167A68(0x29, 0, arg1 + 0x80, 1, 0xFF, 1);
+
+    if (v1 == 0) {
+        return 0;
+    }
+    memcpy((char *) v1 + 0x18, arg0, 0x3C);
+    *(s16 *) ((char *) v1 + 0x54) = -*(s16 *) ((char *) arg0 + 0x28);
+    *(s32 *) ((char *) v1 + 0x10) = 1;
+    *(s32 *) ((char *) v1 + 0x14) = 0;
+    *(f32 *) ((char *) v1 + 0x70) = 0.0f;
+    *(f32 *) ((char *) v1 + 0x74) = 0.0f;
+    *(f32 *) ((char *) v1 + 0x78) = 0.0f;
+    return v1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15134E48.s")
 
@@ -432,7 +493,20 @@ void func_1513555C(void *arg0, void *arg1, u8 arg2) {
 // explicit if/else duplicates BOTH the `and` and the `sw` (44/40
 // instructions - too much). Couldn't find a source form that
 // duplicates only the store.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_151355B8.s")
+void func_151355B8(void *arg0, void *arg1, u8 arg2) {
+    switch (arg2) {
+        case 0:
+            if (*(s32 *) arg1 == *(s32 *) ((char *) arg0 + 0x1C) || *((u8 *) arg1 + 4) == *((u8 *) arg0 + 0x18)) {
+                func_1516972C((struct102 *) arg0);
+            }
+            break;
+        case 3:
+            if (*(s32 *) arg1 == *(s32 *) ((char *) arg0 + 0x1C) || *((u8 *) arg1 + 4) == *((u8 *) arg0 + 0x18)) {
+                *(s32 *) ((char *) arg0 + 0x10) = *(s32 *) ((char *) arg0 + 0x10) &= ~1;
+            }
+            break;
+    }
+}
 // void func_151355B8(void *arg0, void *arg1, u8 arg2) {
 //     switch (arg2) {
 //         case 0:
@@ -486,7 +560,49 @@ s32 func_151368A8(struct210 *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15136918.s")
+struct func_15136918_s {
+    s32 unk0;
+    s16 unk4;
+    u8 unk6;
+    s32 unk8;
+    s32 unkC;
+    u8 unk10;
+    u8 unk11;
+    u8 unk12;
+    u8 unk13;
+    u8 unk14;
+    u8 unk15;
+    u8 unk16;
+    u8 unk17;
+    s32 unk18;
+    u8 pad1C[0xC];
+};
+
+void func_15136918(f32 arg0, u8 arg1, u8 arg2, s16 arg3, s16 arg4, s32 arg5, f32 *arg6, u8 arg7, s32 arg8) {
+    struct func_15136918_s sp48;
+    s32 pad[2];
+
+    sp48.unk6 = 0x55;
+    sp48.unk0 = 0x300;
+    sp48.unk8 = 0;
+    sp48.unkC = 0;
+    sp48.unk10 = arg1;
+    sp48.unk11 = arg2;
+    sp48.unk12 = 0;
+    sp48.unk13 = 0;
+    sp48.unk14 = 0;
+    sp48.unk15 = 0;
+    sp48.unk18 = 0x280001;
+    sp48.unk16 = 1;
+    sp48.unk17 = 1;
+    if (arg3 == -1) {
+        sp48.unk4 = 300;
+    } else {
+        sp48.unk0 = 0x301;
+        sp48.unk4 = arg3 + 0x20;
+    }
+    func_1513C73C(&sp48, 0xD, 0, arg5, arg6[0], arg6[1], arg6[2], arg0, arg0, arg4, 0, 0, arg7, arg8);
+}
 
 s32 func_15136A1C(struct102 *arg0) {
     s32 v1;
@@ -541,7 +657,21 @@ s32 func_15137E10(void *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15137E60.s")
+void func_15137F30(s32 arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4, u8 *arg5, f32 *arg6, f32 *arg7, f32 *arg8, f32 *arg9, s16 *argA, u8 *argB, f32 *argC);
+void func_151D9014(void *arg0, f32 *arg1, u8 arg2, f32 arg3, s16 arg4, u8 arg5, f32 arg6, u8 arg7, f32 arg8, f32 arg9, u8 argA, s32 argB, u8 argC, u8 argD, u8 argE, s32 argF);
+
+void func_15137E60(s32 arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4, u8 *arg5) {
+    f32 sp6C[3];
+    f32 sp60[3];
+    f32 sp54[3];
+    f32 sp50;
+    s16 sp4E;
+    u8 sp4D;
+    f32 sp48;
+
+    func_15137F30(arg0, arg1, arg2, arg3, arg4, arg5, sp6C, sp60, sp54, &sp50, &sp4E, &sp4D, &sp48);
+    func_151D9014(sp6C, sp54, 0, sp50, sp4E, sp4D, sp48, 0, 1.0f, 1.0f, 1, 0, 1, 0, arg5[0xC], arg5[1]);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15137F30.s")
 
@@ -608,7 +738,28 @@ s32 func_151380B4(void *arg0, s32 arg1, s32 arg2) {
 //     func_151382E0(buf50, status, buf28, (u8) arg1, arg2);
 //     return func_15138424(arg0, buf50, status, buf28, (u8) arg1, arg2);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15138BC0.s")
+s32 func_15134070(void *arg0);
+s32 func_15138120(void *arg0, s32 arg1, s32 arg2);
+void func_151382E0(void *arg0, s32 arg1, void *arg2, u8 arg3, s32 arg4);
+void func_15138424(void *arg0, void *arg1, s32 arg2, void *arg3, u8 arg4, s32 arg5);
+
+void func_15138BC0(void *arg0, u8 arg1, s32 arg2) {
+    u8 buf50[0x10];
+    u8 savedByte;
+    s32 status;
+    u8 buf28[0x20];
+
+    status = func_15134070(arg0);
+    if (status != 0x63) {
+        savedByte = func_151380B4(arg0, status, (s32) buf50);
+        func_15138120(arg0, status, 1);
+        if (savedByte != 0) {
+            func_1504715C(buf28, arg0);
+            func_151382E0(buf50, status, buf28, arg1, arg2);
+            func_15138424(arg0, buf50, status, buf28, arg1, arg2);
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15138C80.s")
 

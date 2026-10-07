@@ -91,7 +91,22 @@ void func_15080BE8(void) {
     func_151F2D6C(0, 0x5622);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AD9B0/func_15080C64.s")
+extern u8 *D_800D199C;
+
+void func_15080C64(void) {
+    if (D_800D1941 != 0) {
+        if (((u8 *)D_800D1950)[0x15] == 0) {
+            func_15080BE8();
+            if (D_800BE9F0 != 0x29 && D_800BE9F0 != 0x2E) {
+                D_800D2E60[8] |= 0x10;
+            }
+            if (D_800D199C != 0) {
+                D_800D199C[0x14] = 1;
+                D_800D199C = 0;
+            }
+        }
+    }
+}
 
 s32 func_15080CF4(void) {
     if (D_800D1941 == 0) {

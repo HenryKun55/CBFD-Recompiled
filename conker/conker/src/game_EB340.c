@@ -52,7 +52,37 @@ s32 func_150BE1C4(struct func_150BE1C4_s *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EB340/func_150BE210.s")
+struct func_150BE210_s {
+    u8 pad0[0x4F];
+    u8 unk4F;
+    u8 pad50[0x64 - 0x50];
+    f32 unk64;
+    u8 pad68[0x73 - 0x68];
+    u8 unk73;
+    u16 unk74;
+    u8 pad76[0x84 - 0x76];
+    f32 unk84;
+};
+
+void func_1511650C(struct func_150BE210_s *, s32, s32, f32);
+
+void func_150BE210(struct func_150BE210_s *arg0) {
+    if ((arg0->unk73 & 3) != 3) {
+        func_1511650C(arg0, 1, 0x62C, 500.0f);
+        if (arg0->unk4F & 4) {
+            arg0->unk84 += arg0->unk64;
+        } else if (arg0->unk84 > 270.0f) {
+            arg0->unk84 = 270.0f;
+        }
+        if (arg0->unk84 > 360.0f) {
+            arg0->unk73 &= ~3;
+            arg0->unk73 |= 3;
+            arg0->unk64 = 0.0f;
+            func_100111C8(arg0->unk74);
+            arg0->unk74 = 0;
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_EB340/func_150BE2E8.s")
 

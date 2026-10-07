@@ -113,7 +113,25 @@ void func_15043A00(struct105 *arg0, s32 arg1, s32 arg2) {
 //     }
 //     return pos;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_70200/func_15043A20.s")
+s32 func_15043A20(void *arg0, s32 arg1, s32 arg2, void *arg3, s32 arg4) {
+    s32 chunk;
+
+    while (arg4 != 0) {
+        if (arg1 < arg2 + arg4) {
+            chunk = arg1 - arg2;
+        } else {
+            chunk = arg4;
+        }
+        memcpy((char *) arg0 + arg2, arg3, chunk);
+        arg2 += chunk;
+        arg3 = (char *) arg3 + chunk;
+        arg4 -= chunk;
+        if (arg2 >= arg1) {
+            arg2 = 0;
+        }
+    }
+    return arg2;
+}
 // NON-MATCHING: the read-side mirror of func_15043A20's ring-buffer
 // copy loop (same wrap-at-arg1 logic, but here arg0 is the wrapping
 // SOURCE and arg3 is the growing linear DESTINATION - i.e. this reads
@@ -151,7 +169,25 @@ void func_15043A00(struct105 *arg0, s32 arg1, s32 arg2) {
 //     }
 //     return pos;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_70200/func_15043AC8.s")
+s32 func_15043AC8(void *arg0, s32 arg1, s32 arg2, char *arg3, s32 arg4) {
+    s32 chunk;
+
+    while (arg4 != 0) {
+        if (arg2 + arg4 > arg1) {
+            chunk = arg1 - arg2;
+        } else {
+            chunk = arg4;
+        }
+        memcpy(arg3, (char *) arg0 + arg2, chunk);
+        arg2 += chunk;
+        arg3 += chunk;
+        arg4 -= chunk;
+        if (arg2 >= arg1) {
+            arg2 = 0;
+        }
+    }
+    return arg2;
+}
 
 s32 func_15043B70(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     s32 v0;
@@ -218,7 +254,34 @@ s32 func_15043B70(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
 //     *(s32 *) ((char *) arg0 + 0xC) = newPos;
 //     return 0;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_70200/func_15043BB8.s")
+s32 func_15043BB8(void *arg0, void *arg1, s32 arg2) {
+    s32 writePos;
+    s32 readPos;
+    s32 newPos;
+
+    if (arg2 != 0 && arg1 != NULL) {
+        arg2 += 4;
+        arg2 = (arg2 + 3) & ~3;
+
+        writePos = *(s32 *) ((char *) arg0 + 0xC);
+        readPos = *(s32 *) ((char *) arg0 + 8);
+        if (writePos < readPos) {
+            if (writePos + arg2 >= readPos) {
+                return 1;
+            }
+        } else {
+            if (writePos + arg2 - *(s32 *) ((char *) arg0 + 4) >= readPos) {
+                return 1;
+            }
+        }
+
+        arg2 -= 4;
+        newPos = func_15043A20(*(void **) arg0, *(s32 *) ((char *) arg0 + 4), writePos, &arg2, 4);
+        newPos = func_15043A20(*(void **) arg0, *(s32 *) ((char *) arg0 + 4), newPos, arg1, arg2);
+        *(s32 *) ((char *) arg0 + 0xC) = newPos;
+    }
+    return 0;
+}
 
 s32 func_15043CA4(void *arg0, char *arg1, s32 arg2) {
     s32 pos;

@@ -53,7 +53,54 @@ void func_150C7968(u8 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_F4D20/func_150C79BC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_F4D20/func_150C7C90.s")
+struct func_150C7C90_e {
+    s8 unk0;
+    u8 pad[7];
+};
+
+struct func_150C7C90_r {
+    u8 pad[0x12];
+    s16 unk12;
+};
+
+struct func_150C7C90_s {
+    u8 pad0[0x1C];
+    struct func_150C7C90_e *unk1C;
+    u8 pad20[0x1C];
+    s32 unk3C;
+    u8 pad40[0x3C];
+    s32 unk7C;
+};
+
+struct func_150C7C90_r *func_151149AC(u8 arg0);
+
+void func_150C7C90(struct func_150C7C90_s *arg0) {
+    s32 angle;
+    struct func_150C7C90_e *e;
+    s32 i;
+
+    if (arg0->unk7C == 0) {
+        e = arg0->unk1C;
+        i = 0;
+        while ((e + i)->unk0 != -14) {
+            i++;
+        }
+        arg0->unk7C = i;
+    }
+    e = &arg0->unk1C[arg0->unk7C];
+    angle = -0x29D - func_151149AC(arg0->unk3C & 0xFF)->unk12;
+    if (arg0->unk3C & 0x8000) {
+        angle = 0x344 - angle;
+    }
+    while (angle < 0) {
+        angle += 0x400;
+    }
+    while (angle >= 0x400) {
+        angle -= 0x400;
+    }
+    *(s32 *)e &= ~0xFFF;
+    *(s32 *)e |= angle;
+}
 
 struct func_150C7D7C_s {
     u8 pad[0x10];

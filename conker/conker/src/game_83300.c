@@ -350,7 +350,41 @@ s32 func_1505693C(struct127 *arg0, s32 arg1) {
 //         arg0->unk244 = row[v0];
 //     }
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15056A00.s")
+struct func_15056A00_s {
+    u8 b[10];
+};
+
+void func_15056A00(struct127 *arg0, u8 arg1, u8 arg2) {
+    u8 v0;
+    u16 v1;
+    u8 *p;
+
+    v0 = 0;
+    if (((struct func_15056A00_s *)D_80099A3C)[arg2].b[7] < arg1) {
+        v0 = 5;
+    } else if (((struct func_15056A00_s *)D_80099A3C)[arg2].b[2] < arg1) {
+        v0 = 2;
+    }
+    v1 = arg0->unk76;
+    if ((arg0->unk78 - v1) & 0x8000) {
+        v0 += 3;
+    } else {
+        v0 += 4;
+    }
+    p = &((struct func_15056A00_s *)D_80099A3C)[arg2].b[v0];
+    if (*p != 0xFF) {
+        arg0->unk218 -= 1;
+        arg0->unk21C = 0x4E20;
+        arg0->unk223 = 0xD;
+        arg0->unk44 = 0.0f;
+        arg0->unk244 = *p;
+        arg0->unkF4 &= ~0xE;
+        arg0->unkF4 |= 4;
+        arg0->unk78 = v1;
+        arg0->unk7A = v1;
+        arg0->unk138 = 0;
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15056B08.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505841C.s")
 // NON-MATCHING: JUSTREG
@@ -795,7 +829,22 @@ void func_1505959C(struct127 *arg0, s32 arg1) {
 // here spills to the stack and reloads via `lw`/mtc1, adding
 // instructions and pushing target's eagerly-live-across-both-calls
 // $f20 value into a deferred-recompute-after-the-calls shape instead.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505A184.s")
+void func_1505A184(s32 arg0, f32 arg1, f32 arg2, f32 *arg3, f32 *arg4, f32 *arg5) {
+    f32 c;
+    f32 s;
+    f32 pad;
+    f32 angle;
+
+    arg1 *= 0.5f;
+    arg2 *= D_800994B8;
+    *arg5 = func_150AD78C(arg2) * -arg1;
+    arg1 = func_150AD780(arg2) * arg1;
+    angle = (u16)arg0 * D_800994BC;
+    c = func_150AD780(angle);
+    s = -func_150AD78C(angle);
+    *arg3 = c * arg1;
+    *arg4 = s * arg1;
+}
 // void func_1505A184(s32 arg0, f32 arg1, f32 arg2, f32 *arg3, f32 *arg4, f32 *arg5) {
 //     f32 half1;
 //     f32 cosArg;
@@ -1069,11 +1118,49 @@ f32 func_1505D34C(f32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 *arg4) {
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505D408.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505D5D0.s")
+void func_1505D408(s32 arg0, struct127 *arg1, f32 arg2, f32 arg3, f32 arg4, f32 arg5, f32 arg6, s32 arg7);
+
+void func_1505D5D0(s32 arg0, struct127 *arg1, f32 arg2, f32 arg3, f32 arg4, f32 arg5, f32 arg6, s32 arg7, f32 arg8, f32 arg9, f32 argA, f32 argB, f32 argC) {
+    f32 temp_f0;
+    f32 dx;
+    f32 dy;
+    f32 dz;
+    f32 dist;
+    f32 r;
+
+    temp_f0 = func_1505D34C(arg1->unk40, argB, argC, arg1->xz_scale, &argC);
+    arg8 *= arg1->xz_scale;
+    arg9 *= arg1->y_scale;
+    dx = arg2 - (arg1->x_position + temp_f0);
+    dz = arg4 - (arg1->z_position + argC);
+    dy = arg3 - (arg1->y_position + argA * arg1->y_scale);
+    dy *= (arg5 + arg8 / arg9) * 0.5f;
+    dist = dx * dx + dy * dy + dz * dz;
+    r = arg6 + arg8;
+    if (dist < r * r) {
+        func_1505D408(arg0, arg1, dx, dy, dz, dist, r, arg7);
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505D6F0.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505DADC.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505DDA8.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505DF10.s")
+f32 func_1505DF10(struct127 *arg0, u8 arg1, u16 *arg2, f32 *arg3, f32 *arg4) {
+    struct127 *obj = &gObjects[arg1];
+    f32 dx;
+    f32 dy;
+    f32 dz;
+
+    dx = obj->x_position - arg0->x_position;
+    dy = arg0->y_position - obj->y_position;
+    dz = arg0->z_position - obj->z_position;
+    *arg4 = dy;
+    *arg2 = func_1505A630(dx, dz, 0);
+    dx *= dx;
+    dy *= dy;
+    dz *= dz;
+    *arg3 = dx + dz;
+    return dx + dy + dz;
+}
 // Clears arg0->unk84.uh (a "not yet initialized" sentinel), and if
 // arg0->unk2D0 is set, zeroes a 0x3A0-byte block within it plus a
 // couple of extra s32 fields, and bumps two counters from a per-id
@@ -1174,7 +1261,42 @@ void func_1505E060(struct func_1505E060_s *arg0) {
 // declaration order) puts it in $a3 instead, which cascades into
 // several further register differences later in the function -
 // tried but not resolved this round.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505E7CC.s")
+u32 func_1505E7CC(s32 arg0, u8 *arg1) {
+    u32 count;
+    u8 *rec;
+    u8 *base;
+    u32 i;
+    s32 entry;
+
+    if (arg1[4] == 0xFF) {
+        return 0;
+    }
+    entry = D_800D1588[arg1[4]];
+    if (entry == 0) {
+        return 0;
+    }
+    count = ((u32 *)entry)[-1];
+    if (count == 0) {
+        return 0;
+    }
+    count /= 24;
+    base = ((u8 **)entry)[-2];
+    if (base == NULL) {
+        return 0;
+    }
+    i = 0;
+    if (count != 0) {
+        rec = base;
+        do {
+            if (arg0 == *rec) {
+                return i;
+            }
+            i++;
+            rec += 0x18;
+        } while (i < count);
+    }
+    return 0;
+}
 // u32 func_1505E7CC(s32 arg0, void *arg1) {
 //     u8 type;
 //     char *entry;
@@ -1719,5 +1841,27 @@ extern s32 D_800C4488;
 // target's count exactly. Remaining gap is a 3-instruction scheduling
 // reorder in the prologue (same instructions, different order) plus
 // the usual register-renaming.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15063168.s")
+void func_15063168(struct127 *arg0) {
+    s32 i;
+    s32 selfIdx;
+    struct126 *sub;
+
+    for (i = 0; i < D_8008FD8C; i++) {
+        selfIdx = arg0 - gObjects;
+        if (i == selfIdx) {
+            continue;
+        }
+        if (!((1 << i) & D_800CC268)) {
+            continue;
+        }
+        sub = gObjects[i].unk31C;
+        if (sub == 0) {
+            continue;
+        }
+        if (sub->unk1AC != 0) {
+            continue;
+        }
+        func_15194FF4(arg0, &gObjects[i], 1);
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15063254.s")

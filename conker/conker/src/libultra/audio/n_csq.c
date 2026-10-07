@@ -3,7 +3,21 @@
 #pragma GLOBAL_ASM("asm/nonmatchings/libultra/audio/n_csq/n_alCSeqNew.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/libultra/audio/n_csq/n_alCSeqNextEvent.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/libultra/audio/n_csq/__n_alCSeqGetTrackEvent.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/libultra/audio/n_csq/func_100186DC.s")
+void func_100186DC(ALCSeq *seq, ALCSeqMarker *m) {
+    s32 i;
+
+    seq->validTracks = m->validTracks;
+    seq->lastTicks = m->lastTicks;
+    seq->lastDeltaTicks = m->lastDeltaTicks;
+
+    for (i = 0; i < 16; i++) {
+        seq->curLoc[i] = m->curLoc[i];
+        seq->curBUPtr[i] = m->curBUPtr[i];
+        seq->curBULen[i] = m->curBULen[i];
+        seq->lastStatus[i] = m->lastStatus[i];
+        seq->evtDeltaTicks[i] = m->evtDeltaTicks[i];
+    }
+}
 // void func_100186DC(void *arg0, void *arg1) {
 //     s32 sp4;
 //     s32 temp_t0;

@@ -3,9 +3,69 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_1514F640.s")
+struct func_1514F640_s {
+    u8 unk0;
+    u8 pad1[3];
+    f32 unk4[3];
+    f32 unk10[3];
+    f32 unk1C[3];
+    f32 unk28;
+};
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_1514F6E8.s")
+s32 func_15144E80(void *, f32 *, f32 *, f32 *);
+f32 func_15144A74(f32 *, void *);
+
+void func_1514F640(u8 *arg0, struct func_1514F640_s *arg1) {
+    arg1->unk0 = 2;
+    arg1->unk28 = *(f32 *)(arg0 + 0x20);
+    if (func_15144E80(arg0 + 0xC, arg1->unk10, arg1->unk1C, arg1->unk4) != 0) {
+        if (func_15144A74(arg1->unk4, arg0) < 0.0f) {
+            arg1->unk4[0] = -arg1->unk4[0];
+            arg1->unk4[1] = -arg1->unk4[1];
+            arg1->unk4[2] = -arg1->unk4[2];
+        }
+    }
+}
+
+s32 func_15145128();
+s32 func_15146078(void *arg0, f32 *arg1, f32 *arg2);
+
+struct func_1514F6E8_s {
+    u8 flags;
+    f32 a[3];
+    f32 b[3];
+    f32 c[3];
+};
+
+s32 func_1514F6E8(struct func_1514F6E8_s *arg0) {
+    s32 flags = arg0->flags;
+
+    if (!(flags & 1)) {
+        if (func_15145128(arg0->a, arg0->a, 0, 0) == 0) {
+            return 0;
+        }
+        arg0->a[0] *= 1000.0f;
+        arg0->a[1] *= 1000.0f;
+        arg0->a[2] *= 1000.0f;
+        flags = arg0->flags |= 1;
+    }
+    if (!(flags & 2)) {
+        if (func_15146078(arg0->a, arg0->b, arg0->c) == 0) {
+            return 0;
+        }
+        flags = arg0->flags |= 6;
+    }
+    if (!(flags & 4)) {
+        if (func_15145128(arg0->b, arg0->b, 0, 0) == 0) {
+            return 0;
+        }
+        if (func_15145128(arg0->c, arg0->c, 0, 0) == 0) {
+            return 0;
+        }
+        arg0->flags |= 4;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_1514F808.s")
 
@@ -111,11 +171,89 @@ void func_15153C84(void *arg0, s32 arg1, s32 arg2, u8 arg3, s32 arg4) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_15154A88.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_15154C90.s")
+struct func_15154C90_s {
+    u8 pad0[0x22];
+    s16 unk22;
+    u16 unk24;
+    s16 unk26;
+    s16 unk28;
+    u8 pad2A[4];
+    u8 unk2E;
+    u8 pad2F[0x68 - 0x2F];
+    u8 unk68;
+};
+
+extern s32 (*D_8008ACC8[])(struct func_15154C90_s *);
+
+void func_15154C90(struct func_15154C90_s *arg0) {
+    s32 temp;
+    s8 var_a1;
+
+    var_a1 = 0;
+    if (arg0->unk24 & 1) {
+        arg0->unk22 -= D_800BE9E4;
+        if (arg0->unk22 < 0) {
+            var_a1 = 1;
+        }
+    }
+    if (arg0->unk68 & 0xF) {
+        if (var_a1 == 0) {
+            if (D_8008ACC8[arg0->unk68 & 0xF](arg0) == 0) {
+                var_a1 = 1;
+            }
+        }
+    }
+    if (arg0->unk24 & 8) {
+        if (arg0->unk22 < arg0->unk26) {
+            temp = arg0->unk22 * arg0->unk28;
+            temp = (s16)temp;
+            if (temp < arg0->unk2E) {
+                arg0->unk2E = temp;
+            }
+        }
+    }
+    if (var_a1) {
+        func_1516972C((struct102 *)arg0);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_15154D80.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_1515548C.s")
+struct func_1515548C_s {
+    u8 pad0[0x8];
+    f32 x8;
+    f32 xC;
+    u8 pad10[0x4];
+    u16 x14;
+};
+struct func_1515548C_r {
+    u8 pad0[0x10];
+    u8 data[0x58];
+    u8 x68;
+};
+s32 func_151555AC(struct func_1515548C_s *arg0, f32 *arg1);
+void *func_15167A68(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, s32 arg5);
+
+struct func_1515548C_r *func_1515548C(struct func_1515548C_s *arg0, u8 arg1, s32 arg2, s32 arg3, s32 arg4, u8 arg5, s32 arg6) {
+    struct func_1515548C_r *ret;
+    f32 sp2C[2];
+
+    if (arg2 != 0 && arg3 > 0) {
+        sp2C[0] = arg0->x8;
+        sp2C[1] = arg0->xC;
+        if (func_151555AC(arg0, sp2C) != 0) {
+            return NULL;
+        }
+    }
+    ret = func_15167A68((arg0->x14 & 0x20) ? 0x57 : 0x5D, arg6, arg4 + 0x70, 1, arg5, 1);
+    if (ret == NULL) {
+        return NULL;
+    }
+    memcpy(ret->data, arg0, 0x58);
+    ret->x68 = 0;
+    ret->x68 |= arg1;
+    return ret;
+}
 
 extern void (*D_8008AD04[])(void *, s32, u8);
 

@@ -48,7 +48,28 @@
 //         }
 //     }
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_131F30/func_15104FF8.s")
+struct func_15104FF8_s {
+    s16 *unk0;
+    u8 pad4[4];
+    s16 unk8;
+};
+
+struct func_15104FF8_o {
+    u8 pad0[0x28];
+    struct func_15104FF8_s unk28;
+};
+
+void func_15104FF8(struct func_15104FF8_o *arg0, s32 arg1, u8 arg2) {
+    struct func_15104FF8_s *s = &arg0->unk28;
+
+    if (arg2 == 0x38) {
+        if (((u8 *)s->unk0)[0x14] == 1) {
+            s->unk8 = 0x12C;
+            func_1000FD38(&func_1000EF40, (s32)s->unk0, 0);
+            func_1000FA64(0x236, s->unk0[0], s->unk0[1], s->unk0[2], 0x4000, 0x5DC, 0x3E8, &func_1000EF40, (s32)s->unk0, 0, 8, 0);
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_131F30/func_151050B0.s")
 

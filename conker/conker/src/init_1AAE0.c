@@ -4,7 +4,28 @@
 
 void __n_resetPerfChanState();
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/func_1001AAE0.s")
+void func_1001AAE0(N_ALSeqPlayer *seqp, N_ALVoice *voice) {
+    N_ALVoiceState *prev = 0;
+    N_ALVoiceState *vs;
+
+    for (vs = seqp->vAllocHead; vs != 0; vs = vs->next) {
+        if (&vs->voice == voice) {
+            if (prev) {
+                prev->next = vs->next;
+            } else {
+                seqp->vAllocHead = vs->next;
+            }
+            if (vs == seqp->vAllocTail) {
+                seqp->vAllocTail = prev;
+            }
+            vs->next = seqp->vFreeList;
+            seqp->vFreeList = vs;
+            seqp->usedVoices--;
+            return;
+        }
+        prev = vs;
+    }
+}
 // void func_1001AAE0(void *arg0, s32 arg1) {
 //     void *sp4;
 //     void *sp0;
@@ -130,7 +151,18 @@ N_ALVoiceState *__n_mapVoice(N_ALSeqPlayer *seqp, u8 key, u8 vel, u8 channel)
     return vs;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/func_1001AFEC.s")
+N_ALVoiceState *func_1001AFEC(N_ALSeqPlayer *seqp, u8 key, u8 channel)
+{
+    N_ALVoiceState  *vs;
+
+    for (vs = seqp->vAllocHead; vs != 0; vs = vs->next) {
+        if ((vs->key == key) && (vs->channel == channel) &&
+            (vs->phase != AL_PHASE_RELEASE) && (vs->phase != AL_PHASE_SUSTREL))
+            return vs;
+    }
+
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/func_1001B07C.s")
 
@@ -152,7 +184,15 @@ s16 __n_vsVol(N_ALVoiceState *vs, N_ALSeqPlayer *seqp)
     return t1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/func_1001B310.s")
+s32 func_1001B310(struct25 *arg0, struct26 *arg1) {
+    s32 sp14;
+    s32 sp10;
+
+    sp14 = arg1->unk60[arg0->unk35].unkA & 0x80;
+    sp10 = ((arg1->unk60[arg0->unk35].unkA & 0x7F) + (s32) (arg1->unk7C * 127.0f)) * arg1->unk80;
+
+    return (MAX(0, MIN(127, sp10)) | sp14) & 0xff;
+}
 // NON-MATCHING: missing a move
 // s32 func_1001B310(struct25 *arg0, struct26 *arg1) {
 //     s32 sp14;
@@ -194,7 +234,20 @@ ALPan __n_vsPan(N_ALVoiceState *vs, N_ALSeqPlayer *seqp)
 }
 
 // not vanilla
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/__n_initFromBank.s")
+void __n_initFromBank(N_ALSeqPlayer *seqp, ALBank *b)
+{
+    s32 i;
+    ALInstrument *inst = 0;
+
+    for (i = 1; !inst; i++)
+        inst = b->instArray[i];
+
+    for (i = 0; i < seqp->maxChannels; i++)
+        __n_resetPerfChanState(seqp, i);
+
+    if (b->percussion)
+        __n_resetPerfChanState(seqp, i);
+}
 
 void __n_initChanState(N_ALSeqPlayer *seqp)
 {
@@ -227,7 +280,26 @@ void __n_resetPerfChanState(N_ALSeqPlayer *seqp, s32 chan) {
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/func_1001B7D0.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/func_1001BD34.s")
+s32 func_1001BD34(void *arg0, s32 *arg1, s32 arg2) {
+    s32 (*sp1C)(s32, s32);
+    s32 sp18;
+
+    sp18 = 0;
+    sp1C = (*(s32 (*(**)(void))(s32, s32))((char *)arg0 + 0x28))();
+    if (sp1C != NULL) {
+        if (arg2 == -1) {
+            sp18 = sp1C((s32)arg1, 1);
+        } else {
+            sp18 = sp1C(*arg1 + arg2 * 4 + 0x10, 0);
+        }
+        if ((sp18 != 0) && ((sp18 & 0xFF000003) != 0x80000000)) {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+    return sp18;
+}
 // s32 func_1001BD34(void *arg0, void *arg1, s32 arg2) {
 //     void *sp1C;
 //     s32 sp18;

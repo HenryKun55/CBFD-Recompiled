@@ -69,7 +69,27 @@ void func_150064E0(void) {
 #pragma GLOBAL_ASM("asm/nonmatchings/game_33990/func_1500707C.s")
 // requires jump table
 #pragma GLOBAL_ASM("asm/nonmatchings/game_33990/func_15007168.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_33990/func_1500727C.s")
+struct func_1500727C_s {
+    u16 sum;
+    u8 data[0x6E];
+};
+extern struct func_1500727C_s D_800BE2F0;
+s32 func_151DD3A0(OSMesgQueue *, s32, void *, s32);
+void func_15007168(void);
+
+// NOTE: the loop body must stay on the same line as the for() (-g3 line
+// numbers change IDO's scheduling of the unrolled body otherwise).
+void func_1500727C(void) {
+    u16 sum;
+    s32 i;
+
+    func_151DD3A0(&D_800BE900, 0x44, &D_800BE2F0, 0x70);
+    sum = 0xCC;
+    for (i = 2; i < 0x68; i++) { sum += D_800BE2F0.data[i - 2] << (i & 3); }
+    if (D_800BE2F0.sum != sum) {
+        func_15007168();
+    }
+}
 // NON-MATCHING: full semantics recovered and verified via isolated
 // harness - a checksum/hash routine. Seeds an accumulator from two
 // global bytes (D_800BE2F2<<2 + 0xCC + D_800BE2F3<<3), then walks a
@@ -118,8 +138,45 @@ void func_150064E0(void) {
 //     }
 // }
 #pragma GLOBAL_ASM("asm/nonmatchings/game_33990/func_15007360.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_33990/func_15007440.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_33990/func_15007558.s")
+extern s8 D_800E0BE0[28];
+extern s8 D_8008FE30;
+
+void func_15007440(void) {
+    s32 i;
+    u16 sum;
+    s8 saved;
+
+    func_151DD3A0(&D_800BE900, 0, D_800BE358, 0x20);
+    sum = 0xCC;
+    for (i = 2; i < 30; i++) { sum += D_800BE358[i] << (i & 3); }
+    saved = D_800E0BE0[0x10];
+    if (sum != *(u16 *)D_800BE358) {
+        for (i = 0; i < 28; i++) { D_800E0BE0[i] = -1; }
+    } else {
+        for (i = 0; i < 28; i++) { D_800E0BE0[i] = D_800BE358[i + 2]; }
+    }
+    D_800E0BE0[0x10] = saved;
+    func_151DD9E4();
+    func_151E7EF8();
+    D_8008FE30 = 1;
+}
+extern s8 D_800E0BE0[];
+
+void func_15007558(void) {
+    s32 i;
+    volatile s32 unused;
+    u16 sum;
+
+    for (i = 0; i < 0x1C; i++) {
+        D_800BE358[i + 2] = D_800E0BE0[i];
+    }
+    sum = 0xCC;
+    for (i = 2; i != 0x1E; i++) { sum += D_800BE358[i] << (i & 3); }
+    *(u16 *)D_800BE358 = sum;
+    if (D_8002AC5C == 0) {
+        unused = func_151DCEF0(&D_800BE900, 0, D_800BE358, 0x20);
+    }
+}
 
 void func_15007644(void) {
 }

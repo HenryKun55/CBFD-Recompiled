@@ -40,7 +40,32 @@ void func_151A8A20(u8 *arg0, s32 arg1, u8 arg2) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A8A78.s")
+struct func_151A8A78_s {
+    s32 a;
+    u8 b;
+};
+
+void func_151A8A78(struct102 *arg0, struct223 *arg1, u8 arg2) {
+    struct func_151A8A78_s *s = *(struct func_151A8A78_s **)((char *)arg0 + 0x60);
+    s32 t;
+    s32 u;
+
+    if (arg2 == 0) {
+        t = arg1->unk0;
+        if (t == s->a || arg1->unk4.ub == s[0].b) {
+            func_1516972C(arg0);
+        }
+    } else if (arg2 == 0x2D) {
+        u = arg1->unk0;
+        if (u == s->a) {
+            s->a = arg1->unk4.w;
+            s->b = arg1->unk9;
+        } else if (arg1->unk4.w == s[0].a) {
+            s->a = u;
+            s->b = arg1->unk8;
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A8B20.s")
 
@@ -79,7 +104,53 @@ s32 func_151A9060(u8 *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A90C0.s")
+extern f32 D_800A8F58;
+extern f32 D_800A8F5C;
+extern f32 D_800A8F60;
+extern f32 D_800A8F64;
+
+struct func_151A90C0_s {
+    s8 type;
+    s32 owner;
+    f32 f8;
+    f32 fC;
+    f32 f10;
+    f32 f14;
+    f32 f18;
+    f32 f1C;
+    f32 f20;
+    s8 b24;
+    s8 b25;
+    s8 b26;
+};
+
+void *func_151A8B20(void *, s32, s32, s32, s32);
+
+void func_151A90C0(s32 arg0, s32 arg1) {
+    struct func_151A90C0_s s;
+    f32 f;
+    u8 buf[1];
+    u8 *p;
+
+    s.type = 2;
+    s.owner = arg0;
+    f = arg1 & 1;
+    s.f8 = f ? D_800A8F58 : D_800A8F5C;
+    s.fC = f ? D_800A8F60 : D_800A8F64;
+    s.f10 = 0.0f;
+    s.f14 = 0.0f;
+    s.f18 = 0.0f;
+    s.f1C = 0.0f;
+    s.f20 = 0.0f;
+    s.b24 = 1;
+    s.b25 = -1;
+    s.b26 = 0;
+    buf[0] = arg1;
+    p = func_151A8B20(&s, -1, 1, 0xFF, 0);
+    if (p != NULL) {
+        memcpy(p + 0x80, buf, 1);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A91AC.s")
 

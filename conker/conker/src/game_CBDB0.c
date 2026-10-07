@@ -16,7 +16,23 @@ s32 func_1509F248(s32 arg0, s32 *arg1) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_CBDB0/func_1509F284.s")
+void func_1509F660(s32 arg0, s32 arg1);
+void func_1509F77C(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
+
+s32 func_1509F284(s32 arg0, s32 arg1, s32 *arg2) {
+    switch (arg1) {
+    case 1:
+        func_1509F660(arg2[2] & 0xFFF, 0);
+        return 1;
+    case 0:
+        func_1509F660(arg2[2] & 0xFFF, 1);
+        return 1;
+    case 2:
+        func_1509F77C((arg2[0] & 0xFFFF0000) >> 16, arg2[2] & 0xFFF, arg2[3], arg2[4], arg2[5]);
+        return 1;
+    }
+    return 0;
+}
 
 s32 func_1509F33C(s32 arg0, s32 arg1, s32 arg2) {
     return 0;
@@ -60,7 +76,19 @@ void func_1509F6B0(s32 sound, s32 volume, s32 pitch, s32 pan) {
     func_10010F30(sound, volume, pan, pitch, 0);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_CBDB0/func_1509F6E8.s")
+s32 func_1509F6E8(s32 arg0, s32 arg1, u16 arg2, s32 arg3, s32 arg4) {
+    f32 *temp_v0 = (f32 *)func_1505EEF4(arg1);
+    s32 x;
+    s32 y;
+    s32 z;
+    if (temp_v0 == NULL) {
+        return 0;
+    }
+    x = temp_v0[5];
+    y = temp_v0[6];
+    z = temp_v0[7];
+    return func_10010F88(arg0, arg2, 0, 0, 0, x, y, z, arg3, arg4);
+}
 
 void func_1509F77C(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
     f32 *temp_v0 = (f32 *)func_1505EEF4(arg1);

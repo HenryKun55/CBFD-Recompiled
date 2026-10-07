@@ -180,7 +180,27 @@ void func_1507DF10(struct127 *arg0, s32 arg1) {
 //     }
 // }
 #pragma GLOBAL_ASM("asm/nonmatchings/game_A9D90/func_1507DFE4.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A9D90/func_1507E114.s")
+s32 func_15084D70(s32, u8, s32, s32 *, s32 *, u8 *, u8 *, s32 *, s32 *, s32, s32 *);
+
+s32 func_1507E114(s32 arg0) {
+    s32 sp5C;
+    s32 sp54[2];
+    s32 sp48[3];
+    s32 sp44;
+    u8 sp43;
+    u8 sp42;
+    s32 sp3C;
+
+    if (D_800D18A8 == 0) {
+        return 0;
+    }
+    if ((D_800BE9F4 == 0x22) || (D_800BE9F4 == 0x18)) {
+        return 0;
+    }
+    D_800BE9F4 = (s8)D_800BE3DF;
+    func_15084D70(0, D_800BE3E0, 1, sp54, sp48, &sp43, &sp42, &sp44, &sp3C, 1, &sp5C);
+    return sp5C + 1;
+}
 // NON-MATCHING: full semantics recovered and verified via isolated
 // harness. Struct unidentified (raw offset casts, matching the sibling
 // func_151380B4 in game_161520.c which reads the same arg0->unk1D4

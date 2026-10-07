@@ -165,7 +165,38 @@ void func_16000424(struct118 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/debugger/debugger/func_16000590.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/debugger/debugger/func_160006CC.s")
+struct func_160006CC_s {
+    u8 c[4];
+};
+typedef struct {
+    u8 ch;
+    u8 ch2;
+    u8 idx;
+} func_160006CC_e;
+extern struct func_160006CC_s D_16003B48;
+extern func_160006CC_e D_160037F0[];
+
+int func_160006CC(struct118 *arg0) {
+    struct func_160006CC_s buf;
+    func_160006CC_e *p;
+    s32 pos;
+    s32 idx;
+
+    buf = D_16003B48;
+    pos = 0x123;
+    p = D_160037F0;
+    func_16001338(0xC0, 0xC0, 0xFF);
+    do {
+        buf.c[0] = p->ch;
+        buf.c[1] = p->ch2;
+        func_160012B0(pos, &buf);
+        pos += 3;
+        idx = p->idx;
+        func_16001044(pos, 0, ((s32 *)arg0)[idx + 1]);
+        pos += 0xD;
+        p++;
+    } while (p->ch != 0);
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/debugger/debugger/func_1600078C.s")
 // NON-MATCHING: close but still some stuff to figure out
 // void func_1600078C(void) {
@@ -259,7 +290,22 @@ s32 func_16000A5C(void) {
 
 // called from func_10007DAC
 #pragma GLOBAL_ASM("asm/nonmatchings/debugger/debugger/func_16000B14.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/debugger/debugger/func_16000F8C.s")
+void func_16000F8C(s32 arg0, f32 arg1) {
+    f32 f;
+    u8 buf[44];
+    u32 e;
+
+    if ((arg0 >= (D_160038A0 << 5)) && (arg0 < 833)) {
+        f = arg1;
+        e = (*(u32 *)&f & 0x7F800000) >> 23;
+        if ((e == 0 || e >= 255) && (e = *(u32 *)&f << 1) != 0) {
+            func_160012B0(arg0, D_160047D0);
+            return;
+        }
+        func_16001B34(buf, D_160047D4, D_160047DC, D_160047E0, (f64)arg1);
+        func_160012B0(arg0, buf);
+    }
+}
 // NON-MATCHING: lots to figure out
 // void func_16000F8C(s32 arg0, f32 arg1) {
 //     struct165 tmp;

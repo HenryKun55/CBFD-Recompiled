@@ -60,7 +60,20 @@ void func_150F33B0(struct func_150F33B0_s *arg0) {
     arg0->unk4F_0 = 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_11FF10/func_150F33F8.s")
+extern f32 D_800A1970;
+
+void func_150F33F8(s32 arg0) {
+    struct108 *temp_v0;
+
+    temp_v0 = (struct108 *)((char *)D_800DBFF0 + arg0 * 0x9A0);
+    if (temp_v0->unk300 < D_800A1970) {
+        if (temp_v0->unk2FC > 840.0f) {
+            *(s16 *)D_800D9A40 |= (1 << arg0);
+            return;
+        }
+        *(s16 *)D_800D9A40 &= ~(1 << arg0);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_11FF10/func_150F34A0.s")
 

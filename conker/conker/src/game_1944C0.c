@@ -112,8 +112,54 @@ void func_1516706C(void) {
 //         p++;
 //     } while (p != &D_8008CB70);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_151670C0.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_151671E8.s")
+extern u8 D_800DCE50[];
+
+void func_151670C0(void) {
+    s32 i;
+    s32 j;
+    struct102 *p;
+
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < 101; j++) {
+            if (D_8008B4A8[j].unk0 != NULL) {
+                p = ((struct102 *(*)[0x68]) D_800DCE50)[i][j];
+                D_800DD190++;
+                while (p != NULL) {
+                    ((struct102 **) D_800DD198)[D_800DD190] = ((struct102 **) p)[2];
+                    D_8008B4A8[j].unk0(p);
+                    p = ((struct102 **) D_800DD198)[D_800DD190];
+                }
+                D_800DD190--;
+            }
+        }
+    }
+}
+extern u8 D_800DCE50[];
+struct func_151671E8_s {
+    u8 pad0[8];
+    struct func_151671E8_s *unk8;
+};
+
+void func_151671E8(void) {
+    s32 i;
+    s32 j;
+    struct func_151671E8_s *p;
+
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < 101; j++) {
+            if (*(void **) ((u8 *) &D_8008B4A8[j] + 4) != NULL) {
+                p = ((struct func_151671E8_s *(*)[0x68]) D_800DCE50)[i][j];
+                D_800DD190++;
+                while (p != NULL) {
+                    ((struct func_151671E8_s **) D_800DD198)[D_800DD190] = p->unk8;
+                    (*(void (**)(void *)) ((u8 *) &D_8008B4A8[j] + 4))(p);
+                    p = ((struct func_151671E8_s **) D_800DD198)[D_800DD190];
+                }
+                D_800DD190--;
+            }
+        }
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15167310.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_151674F8.s")
 void *func_15167A68(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, s32 arg5) {
@@ -198,7 +244,47 @@ void func_15167AD8(void *arg0, u8 arg1, s32 arg2) {
 // The `/ 256` divisions correctly reproduce target's sign-correcting
 // shift-by-8 idiom (IDO's standard lowering for signed division by a
 // power of two) without writing the shift out by hand.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15167B44.s")
+extern void (*D_8008CA20[])(void *);
+
+struct func_15167B44_s {
+    u8 pad0[0x10];
+    u8 *unk10;
+    s16 unk14;
+    s16 unk16;
+    u8 pad18[0x22 - 0x18];
+    s8 unk22;
+    u8 unk23;
+    u8 unk24;
+};
+
+void func_15167B44(struct func_15167B44_s *arg0) {
+    s8 v1;
+    s32 neg;
+
+    if (arg0->unk24 != 0) {
+        D_8008CA20[arg0->unk24](arg0);
+    }
+    v1 = arg0->unk22;
+    if (v1 > 0) {
+        if (v1 < arg0->unk23) {
+            arg0->unk23 -= v1;
+        } else {
+            arg0->unk14 = arg0->unk10[4] << 8;
+        }
+    } else if (v1 < 0) {
+        neg = -v1;
+        if (arg0->unk14 / 256 >= arg0->unk10[4] - 1) {
+            if (neg < arg0->unk23) {
+                arg0->unk23 -= neg;
+                arg0->unk14 -= arg0->unk16;
+            }
+        }
+    }
+    arg0->unk14 += arg0->unk16;
+    if (arg0->unk14 / 256 >= arg0->unk10[4]) {
+        func_1516972C((struct102 *) arg0);
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15167C58.s")
 void *func_15167D84(void *arg0, s32 arg1, s32 arg2, s8 arg3, u8 arg4, s32 arg5) {
     void *v1;

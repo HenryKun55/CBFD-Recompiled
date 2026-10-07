@@ -35,7 +35,25 @@ void func_1507EEB8(u8 arg0, u8 *arg1) {
     arg1[0] = arg0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507EEF4.s")
+void func_1507EEF4(void) {
+    u8 *p = (u8 *)gCurrentObject->unk31C + 0x58;
+
+    if (p[0xC] == 0) {
+        p[0xC] = 1;
+        p[0xD] = 0;
+    } else if (p[0xC] == 1) {
+        func_150ADA20();
+        if (p[0xD] >= 3) {
+            p[0xC] = 2;
+            p[0xD] = 0;
+        }
+    } else {
+        if (p[0xD] >= (func_150ADA20() & 3) + 8) {
+            p[0xC] = 1;
+            p[0xD] = 0;
+        }
+    }
+}
 
 void func_1507EFA0(s32 arg0, u8 *arg1) {
     s32 i;
@@ -89,13 +107,89 @@ s32 func_1507F4C0(s32 arg0) {
     return ret;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507F54C.s")
+extern u8 D_800B85A4[][0x32C];
+
+void func_1507F54C(struct127 *arg0) {
+    s32 anim;
+
+    if (arg0->unk13C >= 100) {
+        switch (D_800B85A4[arg0->unk13C][0]) {
+        case 0x57:
+            anim = 0x115;
+            break;
+        case 0x8C:
+            anim = 0x1A5;
+            break;
+        case 0xA8:
+        case 0xA9:
+            anim = 0x1AF;
+            break;
+        case 0x89:
+        case 0xBA:
+            anim = 0x1FA;
+            break;
+        default:
+            anim = 0xD8;
+            break;
+        }
+        func_1505E650(arg0, anim, 1.0f, 4.0f, 0.0f, 0.0f, 0);
+    } else {
+        func_1505E650(arg0, 0xF, 1.0f, 3.0f, 0.0f, 0.0f, 0);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507F640.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507FC2C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507FEA0.s")
+void func_1507FC2C(struct127 *arg0);
+void func_1507FF94(struct127 *arg0);
+
+struct func_1507FEA0_s {
+    u8 unk0;
+    u8 pad1;
+    u16 unk2;
+    u8 unk4;
+    u8 unk5;
+    u8 pad6[6];
+    u8 unkC;
+    u8 unkD;
+};
+
+void func_1507FEA0(struct127 *arg0) {
+    struct func_1507FEA0_s *p;
+    s32 t;
+    s32 lim;
+
+    if (arg0->unk31C != NULL && arg0->unk127 != 0xFF) {
+        p = (struct func_1507FEA0_s *)((u8 *)arg0->unk31C + 0x58);
+        if (((u8 *)arg0)[0x13A] != 0) {
+            ((u8 *)arg0)[0x13A]--;
+        }
+        if (p->unk0 == 1 && D_800C35EA != 1) {
+            lim = 0xFFFF - D_800BE9E4;
+            if (p->unk2 < lim) {
+                p->unk2 += D_800BE9E4;
+            }
+        } else {
+            p->unk2 = 0;
+            p->unk4 = 0;
+            p->unk5 = 0;
+            p->unkC = 0;
+            p->unkD = 0;
+        }
+        t = *(s16 *)((u8 *)arg0->unk31C + 0x66);
+        if (t != 0) {
+            if (D_800BE9E4 < t) {
+                *(s16 *)((u8 *)arg0->unk31C + 0x66) = t - D_800BE9E4;
+            } else {
+                func_1507FF94(arg0);
+                *(s16 *)((u8 *)arg0->unk31C + 0x66) = 0;
+            }
+        }
+        func_1507FC2C(arg0);
+    }
+}
 
 struct func_1507FF94_s {
     struct127 *ptr;

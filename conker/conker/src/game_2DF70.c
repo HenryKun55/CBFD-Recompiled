@@ -268,7 +268,37 @@ u16 *func_15001DE0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
 //     arg0 = s1;
 //     goto loop;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2DF70/func_15002560.s")
+int func_15002560(void *arg0, void *arg1) {
+    char *s1;
+    char *s0;
+    s32 v0;
+
+loop:
+    if (arg0 == 0) {
+        return;
+    }
+    if (*(s16 *) ((char *) arg0 + 4) == 0) {
+        if (arg1 != 0) {
+            v0 = (char *) arg1 - (char *) arg0;
+        } else {
+            v0 = 0;
+        }
+        *(s16 *) ((char *) arg0 + 4) = v0;
+    }
+    v0 = *(s16 *) ((char *) arg0 + 0xC);
+    if (v0 == 0) {
+        return;
+    }
+    s1 = (char *) arg0 + v0;
+    while (*(s16 *) (s1 + 4) != 0) {
+        s0 = s1;
+        s0 += *(s16 *) (s1 + 4);
+        func_15002560(s1, s0);
+        s1 = s0;
+    }
+    arg0 = s1;
+    goto loop;
+}
 
 void func_150025FC(void) {
     s32 tmp0;
@@ -332,7 +362,17 @@ void func_15002724(s32 arg0) {
 //     func_1510F800();
 //     D_800DBE38 = 0;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2DF70/func_15002754.s")
+void func_15002754(void) {
+    D_800B0DC0 = (D_800B0DC0 + 3) & ~3;
+    D_800DBDD8[D_800DBE50] = D_800B0DC0;
+    D_800B0DC0 += D_800DBE38 * 12;
+    D_800DBDE8[D_800DBE50] = D_800B0DC0;
+    D_800B0DC0 += D_800DBE38 * 8;
+    D_800DBDF8[D_800DBE50] = D_800B0DC0;
+    D_800B0DC0 += D_800DBE38 * 4;
+    func_1510F800(D_800DBE50);
+    D_800DBE38 = 0;
+}
 
 
 s32 func_150027F8(s8 *arg0) {

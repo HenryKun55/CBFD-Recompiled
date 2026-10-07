@@ -1292,7 +1292,38 @@ s32 func_151F6B28(void *arg0, s32 arg1, s32 arg2) {
 //
 //     return *(s32 *) ((char *) arg0 + 0x201C) - *(s32 *) ((char *) arg0 + 0x3F88);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_221290/func_151F7F60.s")
+struct func_151F7F60_s {
+    void *unk0;
+    s32 (*unk4)(void *, void *, s32, s32);
+    char pad8[0x10];
+    s32 unk18;
+    u8 unk1C[0x2000];
+    s32 unk201C;
+    s32 unk2020;
+    char pad2024[0x3F88 - 0x2024];
+    s32 unk3F88;
+};
+s32 func_151F7F60(struct func_151F7F60_s *arg0) {
+    s32 shiftAmt = 0x1000;
+    s32 bytesRead;
+
+    if (arg0->unk201C + arg0->unk3F88 >= 0x1FFC) {
+        bcopy(&arg0->unk1C[shiftAmt], arg0->unk1C, shiftAmt);
+        arg0->unk201C -= shiftAmt;
+        arg0->unk2020 -= shiftAmt << 3;
+    }
+
+    bytesRead = arg0->unk4(arg0->unk0, &arg0->unk1C[arg0->unk201C], arg0->unk3F88, -1);
+
+    if (bytesRead < arg0->unk3F88) {
+        bzero(&arg0->unk1C[bytesRead], arg0->unk3F88 - bytesRead);
+    }
+
+    arg0->unk18 += arg0->unk3F88;
+    arg0->unk201C += arg0->unk3F88;
+
+    return arg0->unk201C - arg0->unk3F88;
+}
 // Frame sync + header parse. Scans the input stream a byte at a time for
 // the 0xFF / 0xF0 sync pattern (resetting on any mismatch), reads the
 // two header bytes, then pulls the twelve header bitfields into

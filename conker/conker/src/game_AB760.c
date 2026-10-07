@@ -7,7 +7,40 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AB760/func_1507E3C0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AB760/func_1507E500.s")
+struct func_1507E500_s {
+    u8 pad0[0x6F];
+    u8 unk6F;
+    u8 pad70[0x135 - 0x70];
+    u8 unk135;
+};
+
+s32 func_1507E968();
+u8 *func_1507E908();
+void *func_1507E9F8();
+void func_150302F0();
+void func_1507E5C8();
+
+void func_1507E500(struct func_1507E500_s *arg0, s32 arg1, s32 arg2) {
+    u8 *v;
+    u8 *p;
+
+    if (arg1 < func_1507E968(arg0)) {
+        v = func_1507E908(arg0, arg0->unk6F);
+        if (v[4] != 0) {
+            p = func_1507E9F8(arg0, 0);
+            if (p != NULL) {
+                func_150302F0(arg0, p[v[4] - 1]);
+            }
+        }
+        arg0->unk6F = arg1;
+        func_1507E5C8(arg0, arg2);
+        if (arg2 != 0) {
+            arg0->unk135 = arg2;
+        } else {
+            arg0->unk135 = func_1507E908(arg0, arg1)[3];
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AB760/func_1507E5C8.s")
 
@@ -43,7 +76,43 @@ s32 func_1507E6B8(struct func_1507E6B8_s *arg0) {
     return 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AB760/func_1507E73C.s")
+struct func_1507E73C_s {
+    u8 pad0[5];
+    u8 unk5;
+    u8 pad6[0x6F - 6];
+    u8 unk6F;
+    u8 unk70;
+    u8 pad71;
+    u16 unk72;
+};
+
+extern void func_1507E2B0();
+extern void func_1507EABC();
+
+void func_1507E73C(struct func_1507E73C_s *arg0) {
+    if (arg0->unk5 == 2) {
+        return;
+    }
+    if (arg0->unk72 != 0) {
+        s32 temp = arg0->unk72;
+        if (temp == 0xFFFE) {
+            return;
+        }
+        if (temp != 0xFFFF) {
+            if (D_800BE9E4 < temp) {
+                arg0->unk72 = temp - D_800BE9E4;
+            } else {
+                arg0->unk72 = 0;
+            }
+        }
+    }
+    if (func_1507E6B8(arg0)) {
+        func_1507E2B0(arg0);
+    }
+    if (arg0->unk72 == 0 && arg0->unk6F != arg0->unk70) {
+        func_1507EABC(arg0);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AB760/func_1507E7E4.s")
 

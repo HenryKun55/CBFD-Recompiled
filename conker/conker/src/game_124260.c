@@ -20,7 +20,24 @@ void func_150F6DB0(void *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_124260/func_150F706C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_124260/func_150F7310.s")
+struct func_150F7310_s {
+    s32 unk0;
+    u8 unk4;
+};
+void func_150F7310(struct102 *arg0, struct func_150F7310_s *arg1, u8 arg2) {
+    struct func_150F7310_s *p = (struct func_150F7310_s *)((u8 *)arg0 + 0x28);
+    if (arg2 == 0x3E) {
+        if (arg1->unk0 == p->unk0) {
+            goto hit;
+        }
+        if (arg1->unk4 == p->unk4) {
+        hit:
+            func_1516972C(arg0);
+        }
+    } else {
+        func_15149514((s32)arg1, arg2, (s32)p, (s32)&p->unk4, (s32)arg0);
+    }
+}
 
 void func_1514EDF0(s32, s32);
 

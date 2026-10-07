@@ -95,7 +95,32 @@
 //     return sp34;
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1E530/func_1001F978.s")
+struct func_1001F978_s {
+    s16 unk0;
+    s16 unk2;
+    s32 unk4;
+    s32 unk8[8];
+    s32 unk28;
+    s32 unk2C[1];
+};
+
+Acmd *func_1001F978(struct func_1001F978_s *arg0, s32 arg1, s32 arg2, Acmd *arg3) {
+    Acmd *ptr = arg3;
+    s16 sp22 = arg2 >> 8;
+
+    {
+        Acmd *_a = ptr++;
+        _a->words.w0 = 0xB000020;
+        _a->words.w1 = osVirtualToPhysical(&arg0->unk8);
+    }
+    {
+        Acmd *_a = ptr++;
+        _a->words.w0 = ((arg0->unk28 & 0xFF) << 16) | 0xE000000 | (arg0->unk2 & 0xFFFF);
+        _a->words.w1 = (osVirtualToPhysical(arg0->unk2C[arg1]) & 0xFFFFFF) | ((sp22 & 0xFF) << 24);
+    }
+    arg0->unk28 = 0;
+    return ptr;
+}
 // NON-MATCHING: lots of work still to do
 // struct56 *func_1001F978(struct55 *arg0, s32 arg1, s32 arg2, struct56 *arg3) {
 //     struct56 *sp24;

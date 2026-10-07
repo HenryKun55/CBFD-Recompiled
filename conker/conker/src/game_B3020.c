@@ -80,7 +80,42 @@ s32 func_15086CBC(s32 arg0, f32 *arg1, f32 *arg2, f32 *arg3) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_15087350.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_15087CC0.s")
+extern void *D_800872A0;
+extern s8 D_800D2398;
+struct func_15087CC0_s {
+    u8 pad0[0x30];
+    s8 unk30;
+    s8 unk31;
+    u8 pad32[0x16];
+    u8 unk48;
+    s8 unk49;
+    u8 pad4A[0x84 - 0x4A];
+};
+void func_150891E8(struct func_15087CC0_s *, struct127 *);
+void func_150896EC(struct func_15087CC0_s *, struct127 *, s32);
+
+void func_15087CC0(void) {
+    s32 i;
+    struct func_15087CC0_s *e;
+    struct127 *obj;
+
+    D_800D23A9 = 0;
+    if (D_800872A0 != NULL) {
+        for (i = 0; i < D_800D2398; i++) {
+            e = (struct func_15087CC0_s *)(i * 0x84 + (char *)D_800872A0);
+            obj = &gObjects[e->unk31];
+            if (*(s32 *)((u8 *)obj + 0x318) != 0) {
+                if (e->unk30 >= 2) {
+                    func_150891E8(e, obj);
+                } else if (e->unk48 == 0) {
+                    func_150896EC(e, obj, 0);
+                } else if (e->unk49 != 0) {
+                    func_150896EC(e, obj, 1);
+                }
+            }
+        }
+    }
+}
 
 extern void *D_800872A0;
 u8 func_150888A8(s32 arg0, s32 arg1, s32 arg2);
@@ -110,9 +145,71 @@ void func_15087DCC(s32 arg0, s32 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_15087E54.s")
+struct func_15087E54_s {
+    u8 pad0[0xC];
+    f32 unkC;
+    f32 unk10;
+    u8 pad14[0x84 - 0x14];
+};
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_15087EF0.s")
+struct func_15087E54_t {
+    u8 pad0[0x76];
+    u16 unk76;
+};
+
+void func_15087E54(s32 arg0, struct func_15087E54_t *arg1) {
+    struct func_15087E54_s *temp;
+    u16 angle;
+    u16 diff;
+
+    if (D_800872A0 != NULL) {
+        temp = (struct func_15087E54_s *)(arg0 * 0x84 + (char *)D_800872A0);
+        angle = func_1505A630(temp->unk10, temp->unkC, 0) + 0x4000;
+        diff = angle - arg1->unk76;
+        if (diff & 0x8000) {
+            if (diff < 0xDBFF) {
+                arg1->unk76 = angle + 0x2400;
+            }
+        } else if (diff > 0x2400) {
+            arg1->unk76 = angle - 0x2400;
+        }
+    }
+}
+
+extern s8 D_800D23A8;
+
+struct func_15087EF0_s {
+    f32 unk0;
+    u8 pad4[0x8];
+    f32 unkC;
+    f32 unk10;
+    u8 pad14[0x84 - 0x14];
+};
+
+void func_15087EF0(s32 arg0, u8 *arg1) {
+    struct func_15087EF0_s *temp;
+    u16 ret;
+    u16 val;
+
+    if (D_800872A0 != NULL) {
+        temp = (struct func_15087EF0_s *)(arg0 * 0x84 + (char *)D_800872A0);
+        ret = func_1505A630(temp->unk10, temp->unkC, 0);
+        if (D_800D23A8 == 0) {
+            if (temp->unk0 < 0.5f) {
+                val = ret + 0x4A00;
+            } else {
+                val = ret + 0x3600;
+            }
+        } else {
+            if (temp->unk0 >= 0.5f) {
+                val = ret + 0x4A00;
+            } else {
+                val = ret + 0x3600;
+            }
+        }
+        *(u16 *)(arg1 + 0x76) = val;
+    }
+}
 
 extern void *D_800872A0;
 
@@ -127,7 +224,30 @@ void func_15087FC4(s32 arg0, s32 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_15087FEC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_1508802C.s")
+struct func_1508802C_s {
+    u8 pad0[0x30];
+    u8 unk30;
+    s8 unk31;
+};
+
+s32 func_1508802C(struct func_1508802C_s *arg0, struct127 *arg1, s32 arg2) {
+    if (arg1->unk31C->unk120 != 0) {
+        return 1;
+    }
+    if (D_800D18A0 & (1 << (arg1 - gObjects))) {
+        return 1;
+    }
+    arg1->unk31C->unk84 = 1;
+    arg1->interaction_state = 0xC;
+    arg1->unk232 = arg2;
+    gCurrentObject = arg1;
+    gCurrentObjectIndex = arg0->unk31;
+    arg1->unk218 = func_1507BB28(0, arg2);
+    arg1->unk21C = 0;
+    arg1->immune = 0xFF;
+    arg0->unk30 = 2;
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_150880F8.s")
 
@@ -165,15 +285,106 @@ s32 func_150882B0(s32 arg0) {
     return temp->unk27;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_150882E4.s")
+extern void *D_800872A0;
+extern s8 D_800D2398;
+
+struct func_150882E4_s {
+    u8 pad0[0x8];
+    f32 unk8;
+    u8 padC[0x24 - 0xC];
+    s16 unk24;
+    u8 pad26[0x29 - 0x26];
+    s8 unk29;
+    u8 pad2A[0x84 - 0x2A];
+};
+
+s32 func_150882E4(s32 arg0, s32 arg1) {
+    struct func_150882E4_s *base;
+    struct func_150882E4_s *self;
+    struct func_150882E4_s *other;
+    s32 target;
+    s32 i;
+    s32 d;
+
+    base = D_800872A0;
+    if (base == NULL) {
+        return 0x10;
+    }
+    self = &base[arg0];
+    target = self->unk29 + arg1;
+    for (i = 0; i < D_800D2398; i++) {
+        other = &base[i];
+        if (target == other->unk29 && i != arg0) {
+            d = (self->unk24 * 16) + (s32)(self->unk8 * 16.0f);
+            d = d - (other->unk24 * 16) - (s32)(other->unk8 * 16.0f);
+            if (d < 0) {
+                d = -d;
+            }
+            return (d << 8) | i;
+        }
+    }
+    return 0x10;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_150883B0.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_1508855C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_150885EC.s")
+extern void *D_800872A0;
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_1508868C.s")
+struct func_150885EC_s {
+    u8 pad0[0x30];
+    s8 unk30;
+    s8 unk31;
+    u8 pad32[0x84 - 0x32];
+};
+
+void func_150885EC(s32 arg0, s32 arg1) {
+    s32 b;
+    s32 a;
+
+    if (D_800872A0 != NULL) {
+        b = ((struct func_150885EC_s *)D_800872A0)[arg1].unk31;
+        a = ((struct func_150885EC_s *)D_800872A0)[arg1].unk30;
+        bcopy(arg0 * 0x84 + (char *)D_800872A0, arg1 * 0x84 + (char *)D_800872A0, 0x84);
+        ((struct func_150885EC_s *)D_800872A0)[arg1].unk31 = b;
+        ((struct func_150885EC_s *)D_800872A0)[arg1].unk30 = a;
+    }
+}
+
+extern void *D_800872A0;
+extern s32 D_800D2394;
+extern s8 D_800D2398;
+extern s8 D_800D2399;
+struct func_15088824_s;
+void func_15088824(struct func_15088824_s *arg0);
+
+struct func_1508868C_s {
+    u8 pad0[0x30];
+    u8 unk30;
+    u8 unk31;
+    u8 pad32[0x84 - 0x32];
+};
+
+s32 func_1508868C(struct127 *arg0) {
+    s32 i;
+    s32 mask;
+
+    if (D_800872A0 == NULL) {
+        return -1;
+    }
+    for (mask = 1, i = 0; i < D_800D2399; i++, mask <<= 1) {
+        if (!(D_800D2394 & mask)) {
+            D_800D2394 |= mask;
+            i += D_800D2398;
+            func_15088824((struct func_15088824_s *)(i * 0x84 + (char *)D_800872A0));
+            ((struct func_1508868C_s *)D_800872A0)[i].unk30 = 1;
+            ((struct func_1508868C_s *)D_800872A0)[i].unk31 = arg0 - gObjects;
+            return i;
+        }
+    }
+    return -1;
+}
 
 extern s32 D_800D2394;
 extern s8 D_800D2398;
@@ -304,7 +515,34 @@ void func_1508B1D4(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_1508B20C.s")
+struct func_1508B20C_e {
+    f32 unk0;
+    s16 unk4;
+    s16 unk6;
+    s16 unk8;
+    s16 unkA;
+};
+
+struct func_1508B20C_s {
+    u8 pad0[0x1745];
+    s8 unk1745;
+    u8 pad1746[2];
+    struct func_1508B20C_e unk1748[8];
+};
+
+void func_1508B20C(f32 arg0, f32 arg1, f32 arg2, f32 arg3) {
+    s32 i;
+
+    if (D_800D23B0 != NULL) {
+        if (((struct func_1508B20C_s *)D_800D23B0)->unk1745 < 8) {
+            i = ((struct func_1508B20C_s *)D_800D23B0)->unk1745++;
+            ((struct func_1508B20C_s *)D_800D23B0)->unk1748[i].unk4 = arg0;
+            ((struct func_1508B20C_s *)D_800D23B0)->unk1748[i].unk6 = arg1;
+            ((struct func_1508B20C_s *)D_800D23B0)->unk1748[i].unk8 = arg2;
+            ((struct func_1508B20C_s *)D_800D23B0)->unk1748[i].unk0 = arg3 * arg3;
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_1508B2A8.s")
 
@@ -324,7 +562,27 @@ s32 func_1508C194(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_1508C5B8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B3020/func_1508C9CC.s")
+s32 func_1508C9CC(void) {
+    s32 count = 0;
+    s32 result = -1;
+    s8 i;
+
+    i = ((s8 *)D_800D23B0)[0x1702];
+    do {
+        i++;
+        if (i >= D_8008FD8C) {
+            i = 0;
+        }
+        if (gObjects[i].interaction_state != 0 && gObjects[i].unk31C != NULL &&
+            gObjects[i].unk31C->unk84 != 0 && !(D_800D18A0 & (1 << i))) {
+            count = D_8008FD8C;
+            result = i;
+        }
+        count++;
+    } while (count < D_8008FD8C);
+    ((s8 *)D_800D23B0)[0x1702] = i;
+    return result;
+}
 
 extern void *D_800D23B0;
 

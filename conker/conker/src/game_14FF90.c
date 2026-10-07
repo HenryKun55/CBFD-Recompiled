@@ -268,7 +268,25 @@ void func_15122AE0(void) {
 //     }
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_14FF90/func_15123070.s")
+void func_15123070(struct108 *arg0) {
+    f32 temp_f0;
+
+    if ((arg0->unk6C8 != 0) && ((arg0->unk6FC == 10) || (arg0->unk6FC == 14))) {
+        struct17 tmp;
+        func_15048F90(&arg0->unk618, &arg0->unk2A4, &tmp, arg0);
+        arg0->unk390 = arg0->unk37C - func_15048FC8(&tmp);
+    } else {
+        temp_f0 = arg0->unk3D0->unk40 - arg0->unk37C - 180.0f;
+        while (temp_f0 < 0.0f) {
+            temp_f0 += 360.0f;
+        }
+        arg0->unk390 = temp_f0;
+    }
+
+    while (arg0->unk390 < -360.0f) {
+        arg0->unk390 += 360.0f;
+    }
+}
 // NON-MATCHING: 1 missing lui
 // void func_15123070(struct108 *arg0) {
 //     f32 temp_f0;
@@ -782,7 +800,40 @@ void func_15127FEC(struct108 *arg0, s32 arg1, s32 arg2) {
 }
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_14FF90/func_15128030.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_14FF90/func_151283B8.s")
+void func_15121C80(struct108 *arg0, f32 arg1);
+void func_151283B8(struct108 *arg0) {
+    switch (arg0->unk2C) {
+    case 0x80:
+        func_15122440(arg0);
+        break;
+    case 0x40:
+        func_15129934(arg0);
+        break;
+    case 1:
+        func_15122980(arg0);
+        break;
+    case 8:
+        func_15121C80(arg0, 0.0f);
+        break;
+    case 2:
+        func_151220D0(arg0);
+        break;
+    case 0x400:
+        func_15122170(arg0);
+        break;
+    case 0x800:
+        func_15122980(arg0);
+        break;
+    case 0x100:
+        func_15120158(arg0);
+        break;
+    case 0x800000:
+        func_1512DEA4(arg0);
+        break;
+    case 0x2000:
+        break;
+    }
+}
 // Copies the tracked object's (arg0->unk3D0) position into the camera's
 // unk2B0/2B4/2B8, decrements a counter, and every ~60 frames (once
 // unk5FE counts down to 0) re-triggers func_15128774 if flag 8 is set in

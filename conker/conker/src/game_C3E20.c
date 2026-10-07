@@ -10,7 +10,21 @@ void func_15096970(void) {
     D_800D2DB4 = 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C3E20/func_150969A0.s")
+struct func_150969A0_s {
+    u8 unk0;
+    u8 pad[0x23];
+};
+
+s32 func_150969A0(s32 arg0) {
+    s32 i;
+
+    for (i = 0; i < arg0; i++) {
+        if (((struct func_150969A0_s *)D_800D2DC0)[i].unk0 != 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C3E20/func_15096A68.s")
 

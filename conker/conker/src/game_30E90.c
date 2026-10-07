@@ -155,7 +155,38 @@ void func_15004A4C(void) {
 //     D_800BE2A4++;
 //     return;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_30E90/func_15004BF0.s")
+s32 func_15004BF0(s32 arg0) {
+    s32 i;
+    s32 v;
+
+    if (arg0 == 0) {
+        v = 1;
+        for (i = arg0 = D_800DBF00; i < D_800DBEF0; i++) {
+            if (v == D_800DBEF4[i].pad70[2]) {
+                v++;
+                i = arg0 - 1;
+            }
+            if (v >= 0x100) {
+                v = 0xFF;
+                break;
+            }
+        }
+    } else {
+        arg0 = 0xFF - D_800DBF00;
+        v = arg0;
+        for (i = 0; i < D_800DBEF0; i++) {
+            if (v == D_800DBEF4[i].pad70[2]) {
+                v--;
+                i = -1;
+            }
+            if (v <= 0) {
+                v = arg0;
+                break;
+            }
+        }
+    }
+    return v;
+}
 // NON-MATCHING: register-choice gap only, logic and every instruction
 // opcode/operand-value verified identical to target. Walks an array of
 // 8-byte entries (s8 marker; pad[2]; u8 sub; s32 val;) starting at arg0,

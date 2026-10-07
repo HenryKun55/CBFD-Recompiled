@@ -7,7 +7,31 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514D15C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514D310.s")
+struct func_1514D310_s {
+    u8 pad0[0x10];
+    void *unk10;
+    struct func_1514D310_s *unk14;
+    u8 pad18[4];
+    s16 unk1C;
+};
+extern s16 *D_8008ABE8[];
+extern void (*D_8008AB58[])(void *);
+
+s32 func_1514D310(u8 *arg0) {
+    struct func_1514D310_s *cur;
+    struct func_1514D310_s *next;
+
+    cur = *(struct func_1514D310_s **)(arg0 + 0x2F4);
+    while (cur != NULL) {
+        next = cur->unk14;
+        if (D_8008ABE8[cur->unk1C][1] != -1) {
+            D_8008AB58[D_8008ABE8[cur->unk1C][1]](cur->unk10);
+        }
+        func_1516972C((struct102 *)cur);
+        cur = next;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514D3B0.s")
 
@@ -428,7 +452,23 @@ void func_1514F110(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514F194.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514F308.s")
+struct func_1514F308_s {
+    f32 x;
+    f32 y;
+    f32 z;
+};
+
+extern struct func_1514F308_s D_800A5970;
+extern struct func_1514F308_s D_800A597C;
+extern f32 D_800A5E58;
+void func_15160CDC(s32 arg0, s32 arg1, struct func_1514F308_s *arg2, struct func_1514F308_s *arg3, f32 arg4, s32 arg5, s32 arg6, s32 arg7, s32 arg8, s32 arg9, s32 argA, s32 argB, s32 argC, s32 argD, s32 argE, s32 argF);
+
+void func_1514F308(s32 arg0) {
+    struct func_1514F308_s sp54 = D_800A5970;
+    struct func_1514F308_s sp48 = D_800A597C;
+
+    func_15160CDC(arg0, 5, &sp54, &sp48, D_800A5E58, 2, 300, 0xFF, 0xFF, 0xFF, 0xFF, 1, 0, 0, 0xFF, 1);
+}
 
 struct func_1514F3CC_s {
     struct127 *unk0;
