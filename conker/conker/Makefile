@@ -238,6 +238,7 @@ $(TARGET).bin: $(TARGET).elf
 # extract
 $(BUILD_DIR)/splat: check $(BASENAME).$(VERSION).yaml
 	$(PYTHON) ../tools/n64splat/split.py $(BASENAME).$(VERSION).yaml
+	$(PYTHON) rodata_migrate.py inject
 
 %.ok: %.bin
 	@echo "$$(cat $(BASENAME).$(VERSION).sha1)  $<" | sha1sum --check

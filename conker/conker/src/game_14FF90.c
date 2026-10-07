@@ -540,7 +540,22 @@ s32 func_151253CC(struct108 *arg0) {
 //     }
 //     return 1;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_14FF90/func_15125490.s")
+s32 func_15125490(s32 arg0) {
+    s32 v0 = *(s32 *) (arg0 + 0x3D0);
+    s32 v1;
+
+    if (*(u8 *) (v0 + 0xAD) == 1) {
+        v1 = fabsf(*(f32 *) (v0 + 0x18) - *(f32 *) (v0 + 0x118));
+        if (v1 < 100) {
+            return 0;
+        }
+        if (v1 >= 301) {
+            return 1;
+        }
+    } else {
+        return 0;
+    }
+}
 
 // NON-MATCHING: mips_to_c reconstruction, hand-typed. Scales unk380/388
 // into unk3A0/398 by D_800A352C, calls func_15124AB4 then

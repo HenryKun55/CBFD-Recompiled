@@ -123,7 +123,34 @@ void func_1507DE4C(struct127 *arg0) {
 // segment, where a switch provoked a jump table target DIDN'T have.
 // struct127 and its unk94/unk9C/unk2E4 fields already established by
 // the neighboring func_1507DE4C.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A9D90/func_1507DF10.s")
+void func_1507DF10(struct127 *arg0, s32 arg1) {
+    switch (arg1) {
+        case 9:
+            arg0->unk94 |= 0x20;
+            arg0->unk9C |= 0x78;
+            arg0->unk2E4 = 1;
+            break;
+        case 8:
+            arg0->unk94 |= 0x40;
+            arg0->unk94 &= ~0x200;
+            arg0->unk9C |= 0xF00;
+            arg0->unk2E4 = 2;
+            break;
+        case 6:
+        case 7:
+            arg0->unk94 |= 0xE;
+            arg0->unk94 &= ~0x410;
+            arg0->unk9C |= 0xEE0000;
+            arg0->unk2E4 = 4;
+            break;
+        case 4:
+        case 5:
+            arg0->unk94 |= 0x80;
+            arg0->unk94 &= ~0x500;
+            arg0->unk2E4 = 8;
+            break;
+    }
+}
 // void func_1507DF10(struct127 *arg0, s32 arg1) {
 //     switch (arg1) {
 //         case 9:

@@ -104,7 +104,19 @@ void func_15141250(struct210 *arg0) {
 // target leaves empty), so still not byte-perfect. Whatever the real
 // source form is, it must produce a "wasted" nop in the delay slot
 // that these reconstructions won't reproduce.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16DC80/func_1514143C.s")
+struct func_1514143C_s { char pad[0x44]; f32 *p; };
+void func_1514143C(struct210 *arg0) {
+    struct func_1514143C_s *s;
+    if (*(s32 *)((char *)arg0 + 0x154) != 0) {
+L:
+        s = (struct func_1514143C_s *)((char *)arg0 + 0x110);
+        goto M;
+M:
+        s->p[0] = *(f32 *)((char *)arg0 + 0x34);
+        s->p[1] = *(f32 *)((char *)arg0 + 0x38);
+        s->p[2] = *(f32 *)((char *)arg0 + 0x3C);
+    }
+}
 // void func_1514143C(struct210 *arg0) {
 //     if (arg0->unk154 != 0) {
 //         arg0->unk154->x = arg0->unk34;
@@ -188,7 +200,18 @@ void func_15141250(struct210 *arg0) {
 // words into scratch registers first, spills them to different stack
 // offsets, and computes the arg0-byte address differently) - this wasn't
 // close enough to be a simple ordering tweak, needs a fresh look.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16DC80/func_151417C4.s")
+struct func_151417C4_s {
+    s32 a[2];
+};
+
+void func_151417C4(u8 arg0, u8 arg1) {
+    u8 local2[4];
+    struct func_151417C4_s local1;
+
+    local1 = *(struct func_151417C4_s *)D_8008A074;
+    local2[0] = arg0;
+    func_15169260(&local1, 2, local2, arg1);
+}
 // void func_151417C4(s32 arg0, u8 arg1) {
 //     s32 local1[2];
 //     u8 local2;

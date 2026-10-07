@@ -13,7 +13,14 @@
 // making the reconstruction 4 bytes (1 instruction) short - tried plain
 // literals, a shared local, and a chained assignment, all collapse to the
 // same (wrong) codegen.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_3D9A0/func_150104F0.s")
+extern u8 D_800D9950[3];
+void *func_151149AC();
+
+void func_150104F0(void) {
+    D_800D9950[0] = D_800D9950[1] = D_800D9950[2] = 0;
+    *(f32 *)((char *) func_151149AC(0xF6) + 0x7C) = 2.0f;
+    D_80088980 = 0;
+}
 // extern u8 D_800D9950[3];
 // void *func_151149AC();
 //

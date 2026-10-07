@@ -1405,7 +1405,15 @@ void func_15079F50(void) {
 // D_800D2104[gCurrentObject->unk13F], offset by D_800D1890*8 +
 // D_800D1891*2 + 8. Register allocation differs substantially from
 // target throughout.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A28B0/func_1507A100.s")
+struct func_1507A100_s {
+    u8 pad[8];
+    s16 unk8[1][4];
+};
+
+void func_1507A100(void) {
+    s32 val = ((s8)D_800D1892 << 8) | D_800D1893;
+    ((struct func_1507A100_s *)D_800D2104[gCurrentObject->unk13F])->unk8[D_800D1890][D_800D1891] = val;
+}
 // void func_1507A100(void) {
 //     void *base = (void *) D_800D2104[gCurrentObject->unk13F];
 //     s16 packed = ((s8) D_800D1892 << 8) | D_800D1893;

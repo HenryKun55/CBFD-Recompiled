@@ -642,7 +642,21 @@ void func_15143874(s16 arg0, f32 arg1, f32 *arg2, f32 *arg3) {
 //     }
 //     return 0;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15143DA8.s")
+s32 func_15143DA8(s32 *arg0, s32 arg1, s32 arg2) {
+    s32 **p = &arg0;
+    if (arg2 < arg1) {
+        arg1 ^= arg2 ^= arg1 ^= arg2;
+    }
+    if (**p < arg1) {
+        **p = arg1;
+        return 1;
+    }
+    if (arg2 < **p) {
+        **p = arg2;
+        return 2;
+    }
+    return 0;
+}
 // s32 func_15143DA8(s32 *arg0, s32 arg1, s32 arg2) {
 //     s32 v0;
 //     s32 tmp;
@@ -1311,7 +1325,17 @@ u8 func_15145C90(s32 arg0) {
 //     x = *(s16 *) ((char *) arg0 + 2) & mask;
 //     return x == 0;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_151464B8.s")
+u8 func_151464B8(void *arg0) {
+    s32 i;
+    s16 mask;
+    s32 x;
+
+    for (i = 0, mask = 0; i <= D_80082FA0; i++) {
+        mask = mask | (1 << i);
+    }
+    x = (*(s16 *) ((char *) arg0 + 2) & mask) == 0;
+    return x;
+}
 // s32 func_151464B8(void *arg0) {
 //     s32 v0 = 0;
 //     s32 v1 = 0;

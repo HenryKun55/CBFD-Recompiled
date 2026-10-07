@@ -1511,7 +1511,22 @@ void func_15071764(s32 arg0) {
 //         func_151494E0(p, 0x43);
 //     }
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_150717E0.s")
+void func_150717E0(s32 arg0) {
+    struct {
+        struct127 *ptr;
+        u8 id;
+    } tmp;
+    struct127 *temp_v0;
+
+    temp_v0 = func_15083E90(0x12);
+    if (temp_v0 != 0) {
+        arg0 = (s32)&tmp;
+        tmp.ptr = temp_v0;
+        tmp.id = temp_v0->unique_id;
+        func_15131D4C(arg0, 0x43);
+        func_151494E0(arg0, 0x43);
+    }
+}
 // void func_150717E0(s32 arg0) {
 //     struct {
 //         struct127 *ptr;
@@ -1715,7 +1730,14 @@ struct127 *func_150721E8(struct127 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_15072208.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_150722F0.s")
+void func_150722F0(void) {
+    struct127 *temp_v0 = func_150721E8(gCurrentObject);
+    if (temp_v0 != 0) {
+        u8 tmp0 = (D_800D1580 >> 8);
+        u8 tmp1 = D_800D1580 & 0xFF;
+        func_1506160C(temp_v0, 2, tmp0, tmp1, 0);
+    }
+}
 // NON-MATCHING: the C below matches except that the original loads D_800D1580 into $t0
 // instead of $v0 (register allocation only, 3 words). Variants with s32 locals,
 // inline masks, a u8 prototype for func_1506160C or an early return change the
@@ -2182,7 +2204,16 @@ void func_15074644(void) {
 // gObjects[gCurrentObject->unk65 - 1].unk218 and sets its unk232 to the
 // low byte of D_800D1580, gated on unk65 != 0. Register allocation and
 // instruction ordering differ substantially from target throughout.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_150747E4.s")
+void func_150747E4(void) {
+    s32 idx;
+    struct127 *obj;
+
+    if ((idx = gCurrentObject->unk65) != 0) {
+        obj = &gObjects[--idx];
+        obj->unk232 = D_800D1580;
+        obj->unk218 = NULL;
+    }
+}
 // void func_150747E4(void) {
 //     u8 idx;
 //     struct127 *obj;

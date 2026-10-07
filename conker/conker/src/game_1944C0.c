@@ -92,7 +92,16 @@ extern void (*D_8008CB70)(void);
 //         p++;
 //     } while (p != D_8008CB70);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_1516706C.s")
+void func_1516706C(void) {
+    s32 i;
+    i = 0;
+    do {
+        if (D_8008CB64[i] != NULL) {
+            D_8008CB64[i]();
+        }
+        i++;
+    } while (&D_8008CB70 != &D_8008CB64[i]);
+}
 // void func_1516706C(void) {
 //     void (**p)(void) = D_8008CB64;
 //
@@ -244,7 +253,26 @@ extern u8 D_800DCE50[];
 // reconstruction lands it in $a2 in every variant tried (original,
 // separate slot/t0 locals, swapped declaration order) - same
 // stubborn-register-choice category as func_15168A9C above.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15168A4C.s")
+struct func_15168A4C_s {
+    u8 unk0;
+    u8 unk1;
+    u8 pad2[2];
+    struct func_15168A4C_s *unk4;
+    struct func_15168A4C_s *unk8;
+};
+
+int func_15168A4C(struct func_15168A4C_s *arg0, s32 arg1) {
+    u8 unk1 = arg0->unk1;
+    struct func_15168A4C_s **slot = &((struct func_15168A4C_s *(*)[0x68]) D_800DCE50)[unk1][arg1];
+
+    arg0->unk8 = *slot;
+    if (arg0->unk8 != 0) {
+        arg0->unk8->unk4 = arg0;
+    }
+    arg0->unk0 = arg1;
+    arg0->unk4 = 0;
+    *slot = arg0;
+}
 // void func_15168A4C(void *arg0, s32 arg1) {
 //     u8 unk1 = *((u8 *) arg0 + 1);
 //     void **slot = (void **) (D_800DCE50 + unk1 * 0x1A0 + arg1 * 4);
@@ -490,7 +518,11 @@ void func_15168F84(s32 arg0, s32 *arg1, s32 *arg2) {
 // void func_15169040(void *arg0, u8 arg1) {
 //     func_15169070(0, 0x68, arg0, arg1);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15169040.s")
+void func_15169070(s32, s32, void *, u8);
+
+void func_15169040(void *arg0, u8 arg1) {
+    func_15169070(0, 0x68, arg0, arg1);
+}
 // void func_15169040(void *arg0, u8 arg1) {
 //     func_15169070(0, 0x68, arg0, arg1);
 // }
@@ -559,7 +591,16 @@ void func_151695F0(void *arg0, u8 arg1) {
 //     local.flag = arg1->unk3B;
 //     func_1516944C(arg0, &local, arg2);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_1516962C.s")
+void func_1516962C(s32 arg0, void *arg1, u8 arg2) {
+    struct {
+        void *ptr;
+        u8 flag;
+    } local;
+
+    local.ptr = arg1;
+    local.flag = *(u8 *) ((char *) arg1 + 0x3B);
+    func_1516944C(arg0, &local, arg2);
+}
 extern u8 D_800D2DAB;
 
 void *func_15169668(void *arg0, s32 arg1, s32 arg2, s32 arg3) {
@@ -581,7 +622,17 @@ void func_1516968C(struct102 *arg0, u8 *arg1, u8 arg2) {
 // existing zero-arg call sites (yacc stack overflow at parse time) -
 // fixing it properly would mean also touching those call sites, which
 // is riskier than a single-function revert.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_151696DC.s")
+void func_151696DC(arg0)
+    s32 *arg0;
+{
+    s8 i;
+
+    for (i = 0; i < D_800DD190; i++) {
+        if (arg0 == ((s32 **) D_800DD198)[i]) {
+            ((s32 **) D_800DD198)[i] = (s32 *) arg0[2];
+        }
+    }
+}
 // s32 func_151696DC(void *arg0) {
 //     s8 v0 = 0;
 //     void *elem;

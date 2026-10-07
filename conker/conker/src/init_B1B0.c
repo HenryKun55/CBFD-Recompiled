@@ -41,7 +41,22 @@ struct151 *func_1000B1B0(s32 arg0) {
 //     return NULL;
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_B1B0/func_1000B294.s")
+void func_1000B294(s32 *arg0) {
+    s32 i;
+    struct151 *tmp;
+
+    for (i = 0; i < 3; i++) {
+        if (D_800417B0[i] != NULL) {
+            if (arg0 == D_800417B0[i]->unk10) {
+                D_800417B0[i]->unk10 = (s32 *)D_800417B0[i];
+            }
+            tmp = (struct151 *)D_800417B0[i]->unk60;
+            if (tmp != NULL && arg0 == tmp->unk10) {
+                tmp->unk10 = (s32 *)tmp;
+            }
+        }
+    }
+}
 // NON-MATCHING: no idea.
 // struct151 * func_1000B294(s32 *arg0) {
 //     s32 i;
@@ -271,7 +286,21 @@ void func_1000CBA8(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_B1B0/func_1000CBF0.s")
+void func_1000CBF0(s32 arg0, s32 arg1, s32 arg2) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        if (arg2 & (1 << i)) {
+            if (D_800417B0[i] != NULL) {
+                D_800417B0[i]->unk5A = arg0;
+                D_800417B0[i]->unk5C = arg1;
+                if (arg1 == 0) {
+                    D_800417B0[i]->unk58 = arg0;
+                }
+            }
+        }
+    }
+}
 // NON-MATCHING: JUSTREG? need some love
 // void func_1000CBF0(s32 *arg0, s32 *arg1, s32 arg2) {
 //     struct151 *tmp;

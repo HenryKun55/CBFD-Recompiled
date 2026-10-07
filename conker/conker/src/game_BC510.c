@@ -12,7 +12,14 @@
 // to the array base) rather than folding the constant index into each
 // store's displacement - tried an explicit `idx` local to force that,
 // but IDO still folded everything into direct combined offsets instead.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_BC510/func_1508F060.s")
+void func_1508F060(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        D_800D2460[i][0xD] = 0;
+    }
+    D_800D24C0 = 0;
+}
 // void func_1508F060(void) {
 //     D_800D246D = 0;
 //     D_800D247D = 0;

@@ -250,7 +250,19 @@ void func_151D9FC0(u8 arg0, f32 arg1, u8 arg2, s32 arg3, s32 arg4, u8 arg5, s32 
 // remainder-count prologue) - a real loop-unrolling-heuristic mismatch,
 // not a simple register/ordering issue. Needs a source structure that
 // discourages unrolling; didn't find one this round.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DA6A8.s")
+s32 func_151DA6A8(struct210 *arg0) {
+    s32 count;
+    f32 *p;
+
+    if (arg0->unk58 & 1) {
+        p = (f32 *) ((char *) arg0 + 0x128);
+        count = D_800BE9E4;
+        while (count--) {
+            p[4] *= p[5];
+        }
+    }
+    return 1;
+}
 // s32 func_151DA6A8(struct210 *arg0) {
 //     s32 count;
 //     f32 *unk138 = (f32 *) ((char *) arg0 + 0x138);

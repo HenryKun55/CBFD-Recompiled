@@ -1100,7 +1100,39 @@ void func_1505DFDC(struct127 *arg0) {
 // a save-previous-frame pattern), then bcopy's a 0x1D0-byte block from
 // +0x40 to +0x210. Register allocation differs substantially from
 // target throughout.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505E060.s")
+struct func_1505E060_s {
+    u16 unk0;
+    u16 unk2;
+    u16 unk4;
+    u16 unk6;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    f32 unk20;
+    f32 unk24;
+    s32 unk28;
+    s32 unk2C;
+    u8 pad30[8];
+    s8 unk38;
+    s8 unk39;
+    u8 pad3A[6];
+    u8 unk40[0x1D0];
+    u8 unk210[0x1D0];
+};
+
+void func_1505E060(struct func_1505E060_s *arg0) {
+    arg0->unk6 = arg0->unk4;
+    arg0->unkC = arg0->unk8;
+    arg0->unk14 = arg0->unk10;
+    arg0->unk24 = arg0->unk20;
+    arg0->unk1C = arg0->unk18;
+    arg0->unk39 = arg0->unk38;
+    arg0->unk2C = arg0->unk28;
+    bcopy(arg0->unk40, arg0->unk210, 0x1D0);
+}
 // void func_1505E060(void *arg0) {
 //     u16 unk4 = *(u16 *) ((char *) arg0 + 4);
 //     f32 unk8 = *(f32 *) ((char *) arg0 + 8);
@@ -1195,7 +1227,19 @@ void func_1505DFDC(struct127 *arg0) {
 // target's tighter loop (21 vs target's 17), with a different overall
 // loop test/comparison strategy. A prior session's for-loop attempt
 // (kept below) wasn't confirmed working either.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1505EEB0.s")
+struct127 *func_1505EEB0(s32 state, s32 *arg1) {
+    struct127 *tmp;
+    s32 i;
+
+    tmp = &gObjects[0];
+    i = 0;
+    while (i < 25 && state != tmp->interaction_state) {
+        i++;
+        tmp++;
+    }
+    *arg1 = i;
+    return tmp;
+}
 // struct127 *func_1505EEB0(s32 state, s32 *arg1) {
 //     struct127 *tmp = gObjects;
 //     s32 i = 0;
@@ -1389,7 +1433,16 @@ void func_15060B70(s32 arg0, void *arg1) {
 // was already 6. Tried both an explicit local pointer (extra address
 // computation IDO doesn't reproduce) and repeated direct offset access
 // (register numbering still differs throughout) - neither matched.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_15060BA4.s")
+s32 func_15060BA4(u8 *arg0, s32 arg1) {
+    if (arg0[0x1CA] == 6) {
+        return 0;
+    }
+    arg0[0x1CA] += arg1;
+    if (arg0[0x1CA] >= 7) {
+        arg0[0x1CA] = 6;
+    }
+    return 1;
+}
 // s32 func_15060BA4(void *arg0, s32 arg1) {
 //     u8 v0 = *((u8 *) arg0 + 0x1CA);
 //     s32 t6;
@@ -1430,7 +1483,23 @@ void func_150615DC(struct127 *arg0) {
 // reproduced - register allocation also differs throughout. Needs the
 // same kind of "faithfully reproduce a dead branch" treatment as
 // func_1513A594 above; didn't crack the exact source form this round.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_1506196C.s")
+struct func_1506196C_s {
+    u8 pad0[7];
+    u8 unk7;
+    u8 pad8[3];
+    u8 unkB[1];
+};
+
+s32 func_1506196C(struct func_1506196C_s *arg0, s32 arg1) {
+    s32 v1 = arg0->unkB[arg1] * arg0->unk7;
+
+    if (v1 == 0xFE01) {
+        v1 = 0xFF;
+    } else {
+        v1 = v1 >> 8;
+    }
+    return v1;
+}
 // s32 func_1506196C(void *arg0, s32 arg1) {
 //     u8 t7 = *((u8 *) arg0 + arg1 + 0xB);
 //     u8 t8 = *((u8 *) arg0 + 7);

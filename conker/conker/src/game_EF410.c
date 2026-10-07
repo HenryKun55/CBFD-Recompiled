@@ -143,7 +143,21 @@
 //     }
 //     return 1;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C251C.s")
+s32 func_150C251C(void *arg0) {
+    void *v0 = *(void **) ((char *) arg0 + 0x98);
+    s32 v1 = *(s16 *) ((char *) arg0 + 0x1C);
+
+    v1 = v1 << 3;
+    if (v1 >= 0x100) {
+        v1 = 0xFF;
+    }
+
+    *(u8 *) ((char *) v0 + 0x1B) = (u8) v1;
+    if ((u8) v1 < 0) {
+        return 0;
+    }
+    return 1;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C2558.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C2700.s")
 void func_150C2804(s32 arg0, s32 arg1, s32 arg2, s16 arg3, u8 arg4, s32 arg5) {

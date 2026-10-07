@@ -68,7 +68,23 @@ void func_150AED4C(struct114 *arg0) {
 // (it tests a value already masked to a byte against >=0, always true),
 // same class of dead-branch issue as func_1506196C above - reproducing it
 // explicitly still left register allocation different throughout.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_DBA60/func_150AED9C.s")
+struct func_150AED9C_t { char pad[0x1B]; u8 unk1B; };
+struct func_150AED9C_s { char pad[0x1C]; s16 unk1C; char pad2[0x98 - 0x1E]; struct func_150AED9C_t *unk98; };
+
+s32 func_150AED9C(struct func_150AED9C_s *arg0) {
+    s32 v;
+    struct func_150AED9C_t *t = arg0->unk98;
+
+    v = arg0->unk1C * 8;
+    if (v >= 0x100) {
+        v = 0xFF;
+    }
+    t->unk1B = v;
+    if ((u8)v < 0) {
+        return 0;
+    }
+    return 1;
+}
 // s32 func_150AED9C(void *arg0) {
 //     s16 unk1C = *(s16 *) ((char *) arg0 + 0x1C);
 //     void *unk98 = *(void **) ((char *) arg0 + 0x98);
