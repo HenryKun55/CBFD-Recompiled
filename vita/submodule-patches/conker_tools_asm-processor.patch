@@ -1,0 +1,14 @@
+diff --git a/prelude.inc b/prelude.inc
+index 7487b7c..8717663 100644
+--- a/prelude.inc
++++ b/prelude.inc
+@@ -19,6 +19,9 @@
+ .macro endlabel label
+ .endm
+ 
++.macro enddlabel label
++.endm
++
+ # Float register aliases (o32 ABI, odd ones are rarely used)
+ 
+ .set $fv0,          $f0

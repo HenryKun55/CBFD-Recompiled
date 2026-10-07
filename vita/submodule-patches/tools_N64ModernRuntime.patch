@@ -1,0 +1,1416 @@
+diff --git a/librecomp/CMakeLists.txt b/librecomp/CMakeLists.txt
+index 716d48b..fed5660 100644
+--- a/librecomp/CMakeLists.txt
++++ b/librecomp/CMakeLists.txt
+@@ -50,11 +50,13 @@ target_include_directories(librecomp PRIVATE
+     "${CMAKE_CURRENT_SOURCE_DIR}/include/librecomp"
+ )
+ 
+-target_compile_options(librecomp PRIVATE
+-#    -Wall
+-#    -Wextra
+-    -Wno-unused-parameter
+-)
++if (NOT MSVC)
++    target_compile_options(librecomp PRIVATE
++    #    -Wall
++    #    -Wextra
++        -Wno-unused-parameter
++    )
++endif()
+ 
+ if (WIN32)
+     add_compile_definitions(NOMINMAX)
+diff --git a/librecomp/include/librecomp/addresses.hpp b/librecomp/include/librecomp/addresses.hpp
+index b1b50cb..8bb45a3 100644
+--- a/librecomp/include/librecomp/addresses.hpp
++++ b/librecomp/include/librecomp/addresses.hpp
+@@ -6,10 +6,19 @@
+ #include "recomp.h"
+ 
+ namespace recomp {
++#if defined(__vita__)
++    // The Vita has a 32-bit address space: recomp.h folds every address into a 64MB
++    // block (RECOMP_ADDR). The runtime's memory is its first 16MB: 8MB of RDRAM, the
++    // PI handles and patch area, and the mod/recomp heap; the TLB-mapped code
++    // segments are copied to 16MB and 32MB.
++    constexpr size_t mem_size = 16ULL * 1024ULL * 1024ULL;
++    constexpr size_t allocation_size = 64ULL * 1024ULL * 1024ULL;
++#else
+     // 512GB (kseg0 size)
+     constexpr size_t mem_size = 512ULL * 1024ULL * 1024ULL;
+     // 4GB (the full address space)
+     constexpr size_t allocation_size = 4096ULL * 1024ULL * 1024ULL;
++#endif
+     // We need a place in rdram to hold the PI handles, so pick an address in extended rdram
+     constexpr int32_t cart_handle = 0x80800000;
+     constexpr int32_t drive_handle = (int32_t)(cart_handle + sizeof(OSPiHandle));
+@@ -17,7 +26,11 @@ namespace recomp {
+     constexpr int32_t flash_handle_end = (int32_t)(flash_handle + sizeof(OSPiHandle));
+     constexpr int32_t patch_rdram_start = 0x80801000;
+     static_assert(patch_rdram_start >= flash_handle_end);
++#if defined(__vita__)
++    constexpr int32_t mod_rdram_start = 0x80C00000;
++#else
+     constexpr int32_t mod_rdram_start = 0x81000000;
++#endif
+ 
+     // Flashram occupies the same physical address as sram, but that issue is avoided because libultra exposes
+     // a high-level interface for flashram. Because that high-level interface is reimplemented, low level accesses
+diff --git a/librecomp/include/librecomp/game.hpp b/librecomp/include/librecomp/game.hpp
+index a4cf7e8..8bb9ad2 100644
+--- a/librecomp/include/librecomp/game.hpp
++++ b/librecomp/include/librecomp/game.hpp
+@@ -38,6 +38,10 @@ namespace recomp {
+ 
+         void (*on_init_callback)(uint8_t* rdram, recomp_context* context) = nullptr;
+ 
++        // Optional: decides whether a ROM (big-endian) is this game's, in place of comparing
++        // its hash with rom_hash. Lets a game accept ROM hacks that leave its code alone.
++        bool (*accept_rom)(std::span<const uint8_t> rom) = nullptr;
++
+         std::u8string stored_filename() const;
+     };
+     struct Version {
+diff --git a/librecomp/include/librecomp/mods.hpp b/librecomp/include/librecomp/mods.hpp
+index 37556bd..7a4e142 100644
+--- a/librecomp/include/librecomp/mods.hpp
++++ b/librecomp/include/librecomp/mods.hpp
+@@ -50,12 +50,15 @@ template <>
+ struct std::hash<recomp::mods::HookDefinition>
+ {
+     std::size_t operator()(const recomp::mods::HookDefinition& def) const {
+-        // This hash packing only works if the resulting value is 64 bits.
+-        static_assert(sizeof(std::size_t) == 8);
+-        // Combine the three values into a single 64-bit value.
+         // The lower 2 bits of a function address will always be zero, so pack
+         // the value of at_return into the lowest bit.
+-        return (size_t(def.section_rom) << 32) | size_t(def.function_vram) | size_t(def.at_return ? 1 : 0);
++        if constexpr (sizeof(std::size_t) == 8) {
++            // Combine the three values into a single 64-bit value.
++            return (size_t(uint64_t(def.section_rom) << 32)) | size_t(def.function_vram) | size_t(def.at_return ? 1 : 0);
++        }
++        else {
++            return (size_t(def.section_rom) * 0x9E3779B1u) ^ size_t(def.function_vram) ^ size_t(def.at_return ? 1 : 0);
++        }
+     }
+ };
+ 
+@@ -337,6 +340,8 @@ namespace recomp {
+         public:
+             ModContext();
+             ~ModContext();
++            // Starts the thread that saves mods' configuration, if it isn't running yet.
++            void start_configuration_thread();
+ 
+             void register_game(const std::string& mod_game_id);
+             void register_embedded_mod(const std::string& mod_id, std::span<const uint8_t> mod_bytes);
+diff --git a/librecomp/include/librecomp/rsp.hpp b/librecomp/include/librecomp/rsp.hpp
+index 748558c..09c42a0 100644
+--- a/librecomp/include/librecomp/rsp.hpp
++++ b/librecomp/include/librecomp/rsp.hpp
+@@ -2,6 +2,15 @@
+ #define __RSP_H__
+ 
+ #include <cstdio>
++#include <cstring>
++
++#ifndef RSP_FAST_DMEM
++#define RSP_FAST_DMEM 1
++#endif
++// Word-wise vector loads/stores and DMAs of any length (see rsp_vu_impl.hpp).
++#ifndef RSP_FAST_VU
++#define RSP_FAST_VU 1
++#endif
+ 
+ #include "rsp_vu.hpp"
+ #include "recomp.h"
+@@ -44,7 +53,13 @@ extern uint16_t rspInverseSquareRoots[512];
+ #define RSP_MEM_BU(offset, addr) \
+     (*reinterpret_cast<uint8_t*>(dmem + (0xFFF & (((offset) + (addr)) ^ 3))))
+ 
++// DMEM keeps 32-bit words in host order (byte a at a ^ 3): an aligned word or
++// halfword is one access.
+ static inline uint32_t RSP_MEM_W_LOAD(uint32_t offset, uint32_t addr) {
++    const uint32_t a = (offset + addr) & 0xFFF;
++    if (RSP_FAST_DMEM && (a & 3) == 0) {
++        return *reinterpret_cast<uint32_t*>(dmem + a);
++    }
+     uint32_t out;
+     for (int i = 0; i < 4; i++) {
+         reinterpret_cast<uint8_t*>(&out)[i ^ 3] = RSP_MEM_BU(offset + i, addr);
+@@ -53,12 +68,21 @@ static inline uint32_t RSP_MEM_W_LOAD(uint32_t offset, uint32_t addr) {
+ }
+ 
+ static inline void RSP_MEM_W_STORE(uint32_t offset, uint32_t addr, uint32_t val) {
++    const uint32_t a = (offset + addr) & 0xFFF;
++    if (RSP_FAST_DMEM && (a & 3) == 0) {
++        *reinterpret_cast<uint32_t*>(dmem + a) = val;
++        return;
++    }
+     for (int i = 0; i < 4; i++) {
+         RSP_MEM_BU(offset + i, addr) = reinterpret_cast<uint8_t*>(&val)[i ^ 3];
+     }
+ }
+ 
+ static inline uint32_t RSP_MEM_HU_LOAD(uint32_t offset, uint32_t addr) {
++    const uint32_t a = (offset + addr) & 0xFFF;
++    if (RSP_FAST_DMEM && (a & 1) == 0) {
++        return *reinterpret_cast<uint16_t*>(dmem + (a ^ 2));
++    }
+     uint16_t out;
+     for (int i = 0; i < 2; i++) {
+         reinterpret_cast<uint8_t*>(&out)[(i + 2) ^ 3] = RSP_MEM_BU(offset + i, addr);
+@@ -67,6 +91,10 @@ static inline uint32_t RSP_MEM_HU_LOAD(uint32_t offset, uint32_t addr) {
+ }
+ 
+ static inline uint32_t RSP_MEM_H_LOAD(uint32_t offset, uint32_t addr) {
++    const uint32_t a = (offset + addr) & 0xFFF;
++    if (RSP_FAST_DMEM && (a & 1) == 0) {
++        return (uint32_t)(int32_t)*reinterpret_cast<int16_t*>(dmem + (a ^ 2));
++    }
+     int16_t out;
+     for (int i = 0; i < 2; i++) {
+         reinterpret_cast<uint8_t*>(&out)[(i + 2) ^ 3] = RSP_MEM_BU(offset + i, addr);
+@@ -75,6 +103,11 @@ static inline uint32_t RSP_MEM_H_LOAD(uint32_t offset, uint32_t addr) {
+ }
+ 
+ static inline void RSP_MEM_H_STORE(uint32_t offset, uint32_t addr, uint32_t val) {
++    const uint32_t a = (offset + addr) & 0xFFF;
++    if (RSP_FAST_DMEM && (a & 1) == 0) {
++        *reinterpret_cast<uint16_t*>(dmem + (a ^ 2)) = (uint16_t)val;
++        return;
++    }
+     for (int i = 0; i < 2; i++) {
+         RSP_MEM_BU(offset + i, addr) = reinterpret_cast<uint8_t*>(&val)[(i + 2) ^ 3];
+     }
+@@ -97,7 +130,16 @@ static inline void RSP_MEM_H_STORE(uint32_t offset, uint32_t addr, uint32_t val)
+ static inline void dma_rdram_to_dmem(uint8_t* rdram, uint32_t dmem_addr, uint32_t dram_addr, uint32_t rd_len) {
+     rd_len += 1; // Read length is inclusive
+     dram_addr &= 0xFFFFF8;
+-    assert(dmem_addr + rd_len <= 0x1000);
++    // Both sides keep words in host order: whole words copy as they are, the bytes
++    // left one by one.
++    if (RSP_FAST_DMEM && (dmem_addr & 3) == 0 && (dmem_addr & 0xFFF) + rd_len <= 0x1000 && (RSP_FAST_VU || (rd_len & 3) == 0)) {
++        const uint32_t words = rd_len & ~3u;
++        memcpy(dmem + (dmem_addr & 0xFFF), rdram + dram_addr, words);
++        for (uint32_t i = words; i < rd_len; i++) {
++            dmem[((dmem_addr & 0xFFF) + i) ^ 3] = rdram[(dram_addr + i) ^ 3];
++        }
++        return;
++    }
+     for (uint32_t i = 0; i < rd_len; i++) {
+         RSP_MEM_B(i, dmem_addr) = MEM_B(0, (int64_t)(int32_t)(dram_addr + i + 0x80000000));
+     }
+@@ -106,7 +148,14 @@ static inline void dma_rdram_to_dmem(uint8_t* rdram, uint32_t dmem_addr, uint32_
+ static inline void dma_dmem_to_rdram(uint8_t* rdram, uint32_t dmem_addr, uint32_t dram_addr, uint32_t wr_len) {
+     wr_len += 1; // Write length is inclusive
+     dram_addr &= 0xFFFFF8;
+-    assert(dmem_addr + wr_len <= 0x1000);
++    if (RSP_FAST_DMEM && (dmem_addr & 3) == 0 && (dmem_addr & 0xFFF) + wr_len <= 0x1000 && (RSP_FAST_VU || (wr_len & 3) == 0)) {
++        const uint32_t words = wr_len & ~3u;
++        memcpy(rdram + dram_addr, dmem + (dmem_addr & 0xFFF), words);
++        for (uint32_t i = words; i < wr_len; i++) {
++            rdram[(dram_addr + i) ^ 3] = dmem[((dmem_addr & 0xFFF) + i) ^ 3];
++        }
++        return;
++    }
+     for (uint32_t i = 0; i < wr_len; i++) {
+         MEM_B(0, (int64_t)(int32_t)(dram_addr + i + 0x80000000)) = RSP_MEM_B(i, dmem_addr);
+     }
+diff --git a/librecomp/include/librecomp/rsp_vu.hpp b/librecomp/include/librecomp/rsp_vu.hpp
+index 2fbbd8a..03a6500 100644
+--- a/librecomp/include/librecomp/rsp_vu.hpp
++++ b/librecomp/include/librecomp/rsp_vu.hpp
+@@ -24,7 +24,8 @@
+ #define ARCHITECTURE_SUPPORTS_SSE4_1 1
+ #include <nmmintrin.h>
+ using v128 = __m128i;
+-#elif defined(__aarch64__) || defined(_M_ARM64)
++#elif (defined(__aarch64__) || defined(_M_ARM64) || (defined(__arm__) && defined(__ARM_NEON))) && !defined(RSP_FORCE_SISD)
++// 32-bit ARM with NEON (e.g. the PS Vita's Cortex-A9) too: sse2neon covers ARMv7.
+ #define ARCHITECTURE_SUPPORTS_SSE4_1 1
+ #include <sse2neon.h>
+ using v128 = __m128i;
+diff --git a/librecomp/include/librecomp/rsp_vu_impl.hpp b/librecomp/include/librecomp/rsp_vu_impl.hpp
+index dbf46b2..220ca62 100644
+--- a/librecomp/include/librecomp/rsp_vu_impl.hpp
++++ b/librecomp/include/librecomp/rsp_vu_impl.hpp
+@@ -37,6 +37,35 @@ using u32 = uint32_t;
+ #define DIVDP  vpu.divdp
+ 
+ auto RSP::r128::operator()(u32 index) const -> r128 {
++#if defined(__arm__) && defined(__ARM_NEON) && !defined(RSP_FORCE_SISD)
++    // 32-bit ARM: lane moves instead of sse2neon's two-table shuffle. Element e is
++    // 16-bit lane 7 - e.
++    {
++        const uint16x8_t v = vreinterpretq_u16_m128i(v128);
++        const uint16x4_t lo = vget_low_u16(v), hi = vget_high_u16(v);
++        uint16x8_t out;
++        switch (index) {
++        case  2: out = vtrnq_u16(v, v).val[1]; break;
++        case  3: out = vtrnq_u16(v, v).val[0]; break;
++        case  4: out = vcombine_u16(vdup_lane_u16(lo, 3), vdup_lane_u16(hi, 3)); break;
++        case  5: out = vcombine_u16(vdup_lane_u16(lo, 2), vdup_lane_u16(hi, 2)); break;
++        case  6: out = vcombine_u16(vdup_lane_u16(lo, 1), vdup_lane_u16(hi, 1)); break;
++        case  7: out = vcombine_u16(vdup_lane_u16(lo, 0), vdup_lane_u16(hi, 0)); break;
++        case  8: out = vdupq_lane_u16(hi, 3); break;
++        case  9: out = vdupq_lane_u16(hi, 2); break;
++        case 10: out = vdupq_lane_u16(hi, 1); break;
++        case 11: out = vdupq_lane_u16(hi, 0); break;
++        case 12: out = vdupq_lane_u16(lo, 3); break;
++        case 13: out = vdupq_lane_u16(lo, 2); break;
++        case 14: out = vdupq_lane_u16(lo, 1); break;
++        case 15: out = vdupq_lane_u16(lo, 0); break;
++        default: return *this;
++        }
++        r128 r;
++        r.v128 = vreinterpretq_m128i_u16(out);
++        return r;
++    }
++#endif
+     if constexpr (Accuracy::RSP::SISD) {
+         r128 v{ *this };
+         switch (index) {
+@@ -165,6 +194,171 @@ auto RSP::CTC2(cr32& rt, u8 rd) -> void {
+     }
+ }
+ 
++#if RSP_FAST_DMEM
++// Fast paths of the RSP's vector loads and stores, and of its DMAs.
++//
++// DMEM keeps 32-bit words in host order (byte a at a ^ 3), and a vector register's
++// byte i is byte 15 - i of its storage: the 4 bytes from a word-aligned address A to
++// elements 4m..4m+3 are the word at A put in the register's host word 3 - m. So a
++// load or store of whole words moves words instead of bytes. They return false when
++// the access isn't word-aligned (and the byte-by-byte version does it).
++#if defined(__ARM_NEON)
++#include <arm_neon.h>
++#endif
++namespace rsp_fast {
++#if defined(__ARM_NEON)
++    // A 16-byte line's 4 words in reverse order (DMEM <-> a register, both ways).
++    inline uint32x4_t reverse_words(uint32x4_t w) {
++        w = vrev64q_u32(w);
++        return vcombine_u32(vget_high_u32(w), vget_low_u32(w));
++    }
++#endif
++    inline uint32_t dmem_word(uint32_t a) {
++        uint32_t w;
++        std::memcpy(&w, dmem + (a & 0xFFC), 4);
++        return w;
++    }
++    inline void set_dmem_word(uint32_t a, uint32_t w) {
++        std::memcpy(dmem + (a & 0xFFC), &w, 4);
++    }
++    template<typename R> inline uint32_t reg_word(const R& v, uint32_t j) {
++        uint32_t w;
++        std::memcpy(&w, reinterpret_cast<const uint8_t*>(&v.u128) + 4 * j, 4);
++        return w;
++    }
++    template<typename R> inline void set_reg_word(R& v, uint32_t j, uint32_t w) {
++        std::memcpy(reinterpret_cast<uint8_t*>(&v.u128) + 4 * j, &w, 4);
++    }
++
++    // 128 bits as two halves (hi: the register's bytes 0..7, the first in the top byte).
++    struct Wide {
++        uint64_t hi, lo;
++        void shl(uint32_t b) { // 0 < b < 128
++            if (b >= 64) { hi = lo << (b - 64); lo = 0; }
++            else { hi = (hi << b) | (lo >> (64 - b)); lo <<= b; }
++        }
++        void shr(uint32_t b) {
++            if (b >= 64) { lo = hi >> (b - 64); hi = 0; }
++            else { lo = (lo >> b) | (hi << (64 - b)); hi >>= b; }
++        }
++    };
++    inline Wide low_bytes(uint32_t a) { // a mask of the last a bytes (0 < a < 16)
++        if (a >= 8) return Wide{ a == 8 ? 0 : ~0ull >> (128 - 8 * a), ~0ull };
++        return Wide{ 0, (1ull << (8 * a)) - 1 };
++    }
++    inline Wide dmem_line(uint32_t base) {
++        return Wide{ ((uint64_t)dmem_word(base) << 32) | dmem_word(base + 4),
++                     ((uint64_t)dmem_word(base + 8) << 32) | dmem_word(base + 12) };
++    }
++    // The 8 bytes from any address (wrapping around DMEM), the first in the top byte.
++    inline uint64_t dmem_be64(uint32_t a) {
++        const uint32_t sh = 8 * (a & 3);
++        const uint64_t v = ((uint64_t)dmem_word(a) << 32) | dmem_word(a + 4);
++        return sh == 0 ? v : (v << sh) | (dmem_word(a + 8) >> (32 - sh));
++    }
++    template<typename R> inline Wide get_reg(const R& v) {
++        Wide w;
++        std::memcpy(&w.hi, reinterpret_cast<const uint8_t*>(&v.u128) + 8, 8);
++        std::memcpy(&w.lo, reinterpret_cast<const uint8_t*>(&v.u128), 8);
++        return w;
++    }
++    template<typename R> inline void set_reg(R& v, const Wide& w) {
++        std::memcpy(reinterpret_cast<uint8_t*>(&v.u128) + 8, &w.hi, 8);
++        std::memcpy(reinterpret_cast<uint8_t*>(&v.u128), &w.lo, 8);
++    }
++
++    // LQV: from the address to the end of its 16-byte line.
++    template<uint8_t e, typename R> inline bool LQV_bytes(R& vt, uint32_t address);
++    template<uint8_t e, typename R> inline bool LQV(R& vt, uint32_t address) {
++        if (e != 0) return false;
++        if ((address & 3) != 0) return LQV_bytes<e>(vt, address);
++#if defined(__ARM_NEON)
++        if ((address & 15) == 0) {
++            const uint32x4_t w = vld1q_u32(reinterpret_cast<const uint32_t*>(dmem + (address & 0xFF0)));
++            vst1q_u32(reinterpret_cast<uint32_t*>(&vt.u128), reverse_words(w));
++            return true;
++        }
++#endif
++        const uint32_t words = (16 - (address & 15)) / 4;
++        for (uint32_t m = 0; m < words; m++) set_reg_word(vt, 3 - m, dmem_word(address + 4 * m));
++        return true;
++    }
++    // LQV at any other offset: the line's bytes from it become the register's first ones.
++    template<uint8_t e, typename R> inline bool LQV_bytes(R& vt, uint32_t address) {
++        if (e != 0) return false;
++        const uint32_t a = address & 15;
++        Wide line = dmem_line(address & ~15u), keep = low_bytes(a), reg = get_reg(vt);
++        line.shl(8 * a);
++        set_reg(vt, Wide{ line.hi | (reg.hi & keep.hi), line.lo | (reg.lo & keep.lo) });
++        return true;
++    }
++    template<uint8_t e, typename R> inline bool SQV(const R& vt, uint32_t address) {
++        if (e != 0 || (address & 3) != 0) return false;
++#if defined(__ARM_NEON)
++        if ((address & 15) == 0) {
++            const uint32x4_t w = vld1q_u32(reinterpret_cast<const uint32_t*>(&vt.u128));
++            vst1q_u32(reinterpret_cast<uint32_t*>(dmem + (address & 0xFF0)), reverse_words(w));
++            return true;
++        }
++#endif
++        const uint32_t words = (16 - (address & 15)) / 4;
++        for (uint32_t m = 0; m < words; m++) set_dmem_word(address + 4 * m, reg_word(vt, 3 - m));
++        return true;
++    }
++    // LRV: the line's bytes before the address, to the register's last elements.
++    template<uint8_t e, typename R> inline bool LRV(R& vt, uint32_t address) {
++        if (e != 0) return false;
++        const uint32_t a = address & 15, base = address & ~15u;
++        if ((a & 3) == 0) {
++            const uint32_t first = (16 - a) / 4; // the register word index of the first byte
++            for (uint32_t g = 0; g < a / 4; g++) set_reg_word(vt, 3 - (first + g), dmem_word(base + 4 * g));
++            return true;
++        }
++        // Any other offset: the line's first a bytes become the register's last a.
++        Wide line = dmem_line(base), keep = low_bytes(a), reg = get_reg(vt);
++        line.shr(8 * (16 - a));
++        set_reg(vt, Wide{ (reg.hi & ~keep.hi) | line.hi, (reg.lo & ~keep.lo) | line.lo });
++        return true;
++    }
++    // LDV: 8 bytes to elements e.. (up to the register's end).
++    template<uint8_t e, typename R> inline bool LDV(R& vt, uint32_t address) {
++        if ((e & 3) != 0) return false;
++        const uint64_t v = dmem_be64(address);
++        set_reg_word(vt, 3 - e / 4, (uint32_t)(v >> 32));
++        if (e <= 8) set_reg_word(vt, 3 - (e / 4 + 1), (uint32_t)v);
++        return true;
++    }
++    // SDV: 8 bytes from elements e.. (wrapping around the register).
++    template<uint8_t e, typename R> inline bool SDV(const R& vt, uint32_t address) {
++        if ((e & 3) != 0 || (address & 3) != 0) return false;
++        for (uint32_t g = 0; g < 2; g++) set_dmem_word(address + 4 * g, reg_word(vt, 3 - ((e / 4 + g) & 3)));
++        return true;
++    }
++    template<uint8_t e, typename R> inline bool LLV(R& vt, uint32_t address) {
++        if ((e & 3) != 0 || (address & 3) != 0) return false;
++        set_reg_word(vt, 3 - e / 4, dmem_word(address));
++        return true;
++    }
++    template<uint8_t e, typename R> inline bool SLV(const R& vt, uint32_t address) {
++        if ((e & 3) != 0 || (address & 3) != 0) return false;
++        set_dmem_word(address, reg_word(vt, 3 - e / 4));
++        return true;
++    }
++    // LSV/SSV: a halfword (big-endian in DMEM, an element in the register).
++    template<uint8_t e, typename R> inline bool LSV(R& vt, uint32_t address) {
++        if ((e & 1) != 0 || (address & 1) != 0) return false;
++        vt.u16(e / 2) = (uint16_t)RSP_MEM_HU_LOAD(0, address);
++        return true;
++    }
++    template<uint8_t e, typename R> inline bool SSV(const R& vt, uint32_t address) {
++        if ((e & 1) != 0 || (address & 1) != 0) return false;
++        RSP_MEM_H_STORE(0, address, vt.u16(e / 2));
++        return true;
++    }
++
++}
++#endif
++
+ template<u8 e>
+ auto RSP::LBV(r128& vt, cr32& rs, s8 imm) -> void {
+     auto address = rs + imm;
+@@ -173,6 +367,9 @@ auto RSP::LBV(r128& vt, cr32& rs, s8 imm) -> void {
+ 
+ template<u8 e>
+ auto RSP::LDV(r128& vt, cr32& rs, s8 imm) -> void {
++#if RSP_FAST_DMEM && RSP_FAST_VU
++    if (rsp_fast::LDV<e>(vt, rs + imm * 8)) return;
++#endif
+     auto address = rs + imm * 8;
+     auto start = e;
+     auto end = std::min(start + 8, 16);
+@@ -210,6 +407,9 @@ auto RSP::LHV(r128& vt, cr32& rs, s8 imm) -> void {
+ 
+ template<u8 e>
+ auto RSP::LLV(r128& vt, cr32& rs, s8 imm) -> void {
++#if RSP_FAST_DMEM && RSP_FAST_VU
++    if (rsp_fast::LLV<e>(vt, rs + imm * 4)) return;
++#endif
+     auto address = rs + imm * 4;
+     auto start = e;
+     auto end = std::min(start + 4, 16);
+@@ -230,6 +430,9 @@ auto RSP::LPV(r128& vt, cr32& rs, s8 imm) -> void {
+ 
+ template<u8 e>
+ auto RSP::LQV(r128& vt, cr32& rs, s8 imm) -> void {
++#if RSP_FAST_DMEM && RSP_FAST_VU
++    if (rsp_fast::LQV<e>(vt, rs + imm * 16)) return;
++#endif
+     auto address = rs + imm * 16;
+     auto start = e;
+     auto end = std::min((u32)(16 + e - (address & 15)), (u32)16);
+@@ -240,6 +443,9 @@ auto RSP::LQV(r128& vt, cr32& rs, s8 imm) -> void {
+ 
+ template<u8 e>
+ auto RSP::LRV(r128& vt, cr32& rs, s8 imm) -> void {
++#if RSP_FAST_DMEM && RSP_FAST_VU
++    if (rsp_fast::LRV<e>(vt, rs + imm * 16)) return;
++#endif
+     auto address = rs + imm * 16;
+     auto index = e;
+     auto start = 16 - ((address & 15) - index);
+@@ -251,6 +457,9 @@ auto RSP::LRV(r128& vt, cr32& rs, s8 imm) -> void {
+ 
+ template<u8 e>
+ auto RSP::LSV(r128& vt, cr32& rs, s8 imm) -> void {
++#if RSP_FAST_DMEM && RSP_FAST_VU
++    if (rsp_fast::LSV<e>(vt, rs + imm * 2)) return;
++#endif
+     auto address = rs + imm * 2;
+     auto start = e;
+     auto end = std::min(start + 2, 16);
+@@ -317,6 +526,9 @@ auto RSP::SBV(cr128& vt, cr32& rs, s8 imm) -> void {
+ 
+ template<u8 e>
+ auto RSP::SDV(cr128& vt, cr32& rs, s8 imm) -> void {
++#if RSP_FAST_DMEM && RSP_FAST_VU
++    if (rsp_fast::SDV<e>(vt, rs + imm * 8)) return;
++#endif
+     auto address = rs + imm * 8;
+     auto start = e;
+     auto end = start + 8;
+@@ -396,6 +608,9 @@ auto RSP::SHV(cr128& vt, cr32& rs, s8 imm) -> void {
+ 
+ template<u8 e>
+ auto RSP::SLV(cr128& vt, cr32& rs, s8 imm) -> void {
++#if RSP_FAST_DMEM && RSP_FAST_VU
++    if (rsp_fast::SLV<e>(vt, rs + imm * 4)) return;
++#endif
+     auto address = rs + imm * 4;
+     auto start = e;
+     auto end = start + 4;
+@@ -420,6 +635,9 @@ auto RSP::SPV(cr128& vt, cr32& rs, s8 imm) -> void {
+ 
+ template<u8 e>
+ auto RSP::SQV(cr128& vt, cr32& rs, s8 imm) -> void {
++#if RSP_FAST_DMEM && RSP_FAST_VU
++    if (rsp_fast::SQV<e>(vt, rs + imm * 16)) return;
++#endif
+     auto address = rs + imm * 16;
+     auto start = e;
+     auto end = start + (16 - (address & 15));
+@@ -442,6 +660,9 @@ auto RSP::SRV(cr128& vt, cr32& rs, s8 imm) -> void {
+ 
+ template<u8 e>
+ auto RSP::SSV(cr128& vt, cr32& rs, s8 imm) -> void {
++#if RSP_FAST_DMEM && RSP_FAST_VU
++    if (rsp_fast::SSV<e>(vt, rs + imm * 2)) return;
++#endif
+     auto address = rs + imm * 2;
+     auto start = e;
+     auto end = start + 2;
+diff --git a/librecomp/src/files.cpp b/librecomp/src/files.cpp
+index af6f18d..4d6c14f 100644
+--- a/librecomp/src/files.cpp
++++ b/librecomp/src/files.cpp
+@@ -28,6 +28,49 @@ std::ofstream recomp::open_output_file_with_backup(const std::filesystem::path&
+     return temp_file_out;
+ }
+ 
++#if defined(__vita__)
++#include <cstdio>
++#include <vector>
++
++// newlib's std::filesystem::copy_file can't overwrite a file on the Vita: copy by hand.
++static bool copy_file_contents(const std::filesystem::path& from, const std::filesystem::path& to) {
++    FILE* in = std::fopen(from.c_str(), "rb");
++    if (in == nullptr) {
++        return false;
++    }
++    std::vector<char> data;
++    char buffer[4096];
++    size_t n;
++    while ((n = std::fread(buffer, 1, sizeof(buffer), in)) > 0) {
++        data.insert(data.end(), buffer, buffer + n);
++    }
++    std::fclose(in);
++    std::remove(to.c_str());
++    FILE* out = std::fopen(to.c_str(), "wb");
++    if (out == nullptr) {
++        return false;
++    }
++    const bool ok = std::fwrite(data.data(), 1, data.size(), out) == data.size();
++    return (std::fclose(out) == 0) && ok;
++}
++
++bool recomp::finalize_output_file_with_backup(const std::filesystem::path& filepath) {
++    std::filesystem::path backup_path{filepath};
++    backup_path += backup_suffix;
++    std::filesystem::path temp_path{filepath};
++    temp_path += temp_suffix;
++
++    std::error_code ec;
++    if (std::filesystem::exists(filepath, ec) && !copy_file_contents(filepath, backup_path)) {
++        return false;
++    }
++    if (!copy_file_contents(temp_path, filepath)) {
++        return false;
++    }
++    std::remove(temp_path.c_str());
++    return true;
++}
++#else
+ bool recomp::finalize_output_file_with_backup(const std::filesystem::path& filepath) {
+     std::filesystem::path backup_path{filepath};
+     backup_path += backup_suffix;
+@@ -49,3 +92,4 @@ bool recomp::finalize_output_file_with_backup(const std::filesystem::path& filep
+     std::filesystem::remove(temp_path, ec);
+     return true;
+ }
++#endif
+diff --git a/librecomp/src/mods.cpp b/librecomp/src/mods.cpp
+index 0f7de83..484beeb 100644
+--- a/librecomp/src/mods.cpp
++++ b/librecomp/src/mods.cpp
+@@ -74,6 +74,9 @@ bool get_to_vec(const nlohmann::json& val, std::vector<T2>& out) {
+ // MSVC/GCC/Clang ARM64
+ #elif defined(__ARM_ARCH_ISA_A64)
+ #   define IS_ARM64
++#elif defined(__vita__)
++// 32-bit ARM: code mods (function patching) aren't supported.
++#   define IS_ARM32
+ #else
+ #   error "Unsupported architecture!"
+ #endif
+@@ -149,9 +152,11 @@ private:
+ 
+ void unprotect(void* target_func, uint64_t* old_flags) {
+     DWORD old_flags_dword;
++    // Keep the page executable while it's patched: other threads may be running code on the same page (an
++    // incrementally linked executable's jump thunks share pages), and without execute access they crash.
+     BOOL result = VirtualProtect(target_func,
+         16,
+-        PAGE_READWRITE,
++        PAGE_EXECUTE_READWRITE,
+         &old_flags_dword);
+     *old_flags = old_flags_dword;
+     (void)result;
+@@ -233,7 +238,13 @@ void unprotect(void* target_func, uint64_t* old_flags) {
+     int page_size = getpagesize();
+     page_start = (page_start / page_size) * page_size;
+ 
++#if defined(__APPLE__)
++    // Apple Silicon doesn't allow pages both writable and executable.
+     int result = mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE);
++#else
++    // Keep the page executable while it's patched: other threads may be running code on it.
++    int result = mprotect((void*)page_start, page_size, PROT_READ | PROT_WRITE | PROT_EXEC);
++#endif
+     *old_flags = 0;
+     (void)result;
+ }
+@@ -585,6 +596,10 @@ void patch_func(recomp_func_t* target_func, recomp::mods::GenericFunction replac
+            write_bytes(&native_func, sizeof(&native_func));
+         }
+     }, replacement_func);
++#elif defined(IS_ARM32)
++    (void)write_bytes;
++    (void)replacement_func;
++    fprintf(stderr, "[mods] function patching isn't supported on this platform\n");
+ #else
+ #   error "Unsupported architecture"
+ #endif
+@@ -919,7 +934,17 @@ recomp::mods::ModContext::ModContext() {
+     // Register the default mod container type (.nrm) and allow it to have any content type by passing an empty vector.
+     register_container_type(std::string{ modpaths::default_mod_extension }, {}, true);
+ 
+-    mod_configuration_thread = std::make_unique<std::thread>(&ModContext::dirty_mod_configuration_thread_process, this);
++#if !defined(__vita__)
++    // On the Vita, threads can't start before main() (this object is a global): it's
++    // started by initialize_mods() instead.
++    start_configuration_thread();
++#endif
++}
++
++void recomp::mods::ModContext::start_configuration_thread() {
++    if (!mod_configuration_thread) {
++        mod_configuration_thread = std::make_unique<std::thread>(&ModContext::dirty_mod_configuration_thread_process, this);
++    }
+ }
+ 
+ void recomp::mods::ModContext::on_code_mod_enabled(ModContext& context, const ModHandle& mod) {
+@@ -933,9 +958,11 @@ void recomp::mods::ModContext::on_code_mod_enabled(ModContext& context, const Mo
+ }
+ 
+ recomp::mods::ModContext::~ModContext() {
+-    mod_configuration_thread_queue.enqueue(ModConfigQueueEnd());
+-    mod_configuration_thread->join();
+-    mod_configuration_thread.reset();
++    if (mod_configuration_thread) {
++        mod_configuration_thread_queue.enqueue(ModConfigQueueEnd());
++        mod_configuration_thread->join();
++        mod_configuration_thread.reset();
++    }
+ }
+ 
+ recomp::mods::ModContentTypeId recomp::mods::ModContext::register_content_type(const ModContentType& type) {
+diff --git a/librecomp/src/overlays.cpp b/librecomp/src/overlays.cpp
+index 8c8e5d1..4f4913b 100644
+--- a/librecomp/src/overlays.cpp
++++ b/librecomp/src/overlays.cpp
+@@ -37,6 +37,9 @@ static std::unordered_map<uint32_t, uint16_t> code_sections_by_rom{};
+ static std::unordered_map<uint32_t, uint16_t> patch_code_sections_by_rom{};
+ static std::vector<LoadedSection> loaded_sections{};
+ static std::unordered_map<int32_t, recomp_func_t*> func_map{};
++// Bumped whenever func_map changes (overlays load and unload): get_function's cache is
++// valid while it stays the same.
++static uint32_t func_map_generation = 1;
+ static std::unordered_map<std::string, recomp_func_t*> base_exports{};
+ static std::unordered_map<std::string, recomp_func_ext_t*> ext_base_exports{};
+ static std::unordered_map<std::string, size_t> base_events;
+@@ -147,7 +150,7 @@ std::span<const RelocEntry> recomp::overlays::get_section_relocs(uint16_t code_s
+ }
+ 
+ void recomp::overlays::add_loaded_function(int32_t ram, recomp_func_t* func) {
+-    func_map[ram] = func;
++    func_map[ram] = func; ++func_map_generation;
+ }
+ 
+ void load_overlay(size_t section_table_index, int32_t ram) {
+@@ -155,7 +158,7 @@ void load_overlay(size_t section_table_index, int32_t ram) {
+ 
+     for (size_t function_index = 0; function_index < section.num_funcs; function_index++) {
+         const FuncEntry& func = section.funcs[function_index];
+-        func_map[ram + func.offset] = func.func;
++        func_map[ram + func.offset] = func.func; ++func_map_generation;
+     }
+ 
+     loaded_sections.emplace_back(ram, section_table_index);
+@@ -165,7 +168,7 @@ void load_overlay(size_t section_table_index, int32_t ram) {
+ static void load_special_overlay(const SectionTableEntry& section, int32_t ram) {
+     for (size_t function_index = 0; function_index < section.num_funcs; function_index++) {
+         const FuncEntry& func = section.funcs[function_index];
+-        func_map[ram + func.offset] = func.func;
++        func_map[ram + func.offset] = func.func; ++func_map_generation;
+     }
+ }
+ 
+@@ -215,7 +218,7 @@ extern "C" void unload_overlay_by_id(uint32_t id) {
+         for (size_t func_index = 0; func_index < section.num_funcs; func_index++) {
+             const auto& func = section.funcs[func_index];
+             uint32_t func_address = func.offset + find_it->loaded_ram_addr;
+-            func_map.erase(func_address);
++            func_map.erase(func_address); ++func_map_generation;
+         }
+         // Reset the section's address in the address table
+         section_addresses[section.index] = section.ram_addr;
+@@ -258,7 +261,7 @@ extern "C" void unload_overlays(int32_t ram_addr, uint32_t size) {
+             for (size_t func_index = 0; func_index < section.num_funcs; func_index++) {
+                 const auto& func = section.funcs[func_index];
+                 uint32_t func_address = func.offset + it->loaded_ram_addr;
+-                func_map.erase(func_address);
++                func_map.erase(func_address); ++func_map_generation;
+             }
+             // Reset the section's address in the address table
+             section_addresses[section.index] = section.ram_addr;
+@@ -272,7 +275,7 @@ extern "C" void unload_overlays(int32_t ram_addr, uint32_t size) {
+ }
+ 
+ void recomp::overlays::init_overlays() {
+-    func_map.clear();
++    func_map.clear(); ++func_map_generation;
+     section_addresses = (int32_t *)calloc(sections_info.total_num_sections, sizeof(int32_t));
+ 
+     // Sort the executable sections by rom address
+@@ -362,12 +365,21 @@ recomp_func_t* recomp::overlays::get_func_by_section_rom_function_vram(uint32_t
+ }
+ 
+ extern "C" recomp_func_t * get_function(int32_t addr) {
++    // Indirect calls look their target up every time: a direct-mapped cache saves the
++    // hash map's lookup (and its division, slow on CPUs without one).
++    struct CacheEntry { int32_t addr; uint32_t generation; recomp_func_t* func; };
++    static CacheEntry cache[4096];
++    CacheEntry& entry = cache[((uint32_t)addr >> 2) & 4095];
++    if (entry.generation == func_map_generation && entry.addr == addr) {
++        return entry.func;
++    }
+     auto func_find = func_map.find(addr);
+     if (func_find == func_map.end()) {
+         fprintf(stderr, "Failed to find function at 0x%08X\n", addr);
+         assert(false);
+         std::exit(EXIT_FAILURE);
+     }
++    entry = { addr, func_map_generation, func_find->second };
+     return func_find->second;
+ }
+ 
+diff --git a/librecomp/src/pi.cpp b/librecomp/src/pi.cpp
+index 43509ba..d1e672e 100644
+--- a/librecomp/src/pi.cpp
++++ b/librecomp/src/pi.cpp
+@@ -128,6 +128,12 @@ void update_save_file() {
+     if (!saving_failed) {
+         saving_failed = !recomp::finalize_output_file_with_backup(ultramodern::get_save_file_path());
+     }
++    {
++        uint32_t h = 0x811C9DC5u;
++        for (char c : save_context.save_buffer) h = (h ^ (uint8_t)c) * 0x01000193u;
++        fprintf(stderr, "[save] wrote %s: %s (hash %08X)\n", (const char*)ultramodern::get_save_file_path().u8string().c_str(),
++            saving_failed ? "FAILED" : "ok", h);
++    }
+     if (saving_failed) {
+         ultramodern::error_handling::message_box("Failed to write to the save file. Check your file permissions and whether the save folder has been moved to Dropbox or similar, as this can cause issues.");
+     }
+@@ -233,6 +239,9 @@ void read_save_file() {
+     std::ifstream save_file = recomp::open_input_file_with_backup(save_file_path, std::ios_base::binary);
+     if (save_file.good()) {
+         save_file.read(save_context.save_buffer.data(), save_context.save_buffer.size());
++        uint32_t h = 0x811C9DC5u;
++        for (char c : save_context.save_buffer) h = (h ^ (uint8_t)c) * 0x01000193u;
++        fprintf(stderr, "[save] read %s (hash %08X)\n", (const char*)save_file_path.u8string().c_str(), h);
+     }
+     else {
+         // Otherwise clear the save file to all zeroes.
+@@ -266,7 +275,9 @@ void ultramodern::join_saving_thread() {
+     }
+ }
+ 
+-void do_dma(RDRAM_ARG PTR(OSMesgQueue) mq, gpr rdram_address, uint32_t physical_addr, uint32_t size, uint32_t direction) {
++// `mesg` is what the transfer's completion posts to `mq`: libultra's PI manager
++// sends the request's OSIoMesg pointer, and some games (Conker) read it.
++void do_dma(RDRAM_ARG PTR(OSMesgQueue) mq, OSMesg mesg, gpr rdram_address, uint32_t physical_addr, uint32_t size, uint32_t direction) {
+     // TODO asynchronous transfer
+     // TODO implement unaligned DMA correctly
+     if (direction == 0) {
+@@ -275,7 +286,7 @@ void do_dma(RDRAM_ARG PTR(OSMesgQueue) mq, gpr rdram_address, uint32_t physical_
+             recomp::do_rom_read(rdram, rdram_address, physical_addr, size);
+ 
+             // Send a message to the mq to indicate that the transfer completed
+-            ultramodern::enqueue_external_message_src(mq, 0, false, ultramodern::EventMessageSource::Pi);
++            ultramodern::enqueue_external_message_src(mq, mesg, false, ultramodern::EventMessageSource::Pi);
+         } else if (physical_addr >= recomp::sram_base) {
+             if (!recomp::sram_allowed()) {
+                 ultramodern::error_handling::message_box("Attempted to use SRAM saving with other save type");
+@@ -285,7 +296,7 @@ void do_dma(RDRAM_ARG PTR(OSMesgQueue) mq, gpr rdram_address, uint32_t physical_
+             save_read(rdram, rdram_address, physical_addr - recomp::sram_base, size);
+ 
+             // Send a message to the mq to indicate that the transfer completed
+-            ultramodern::enqueue_external_message_src(mq, 0, false, ultramodern::EventMessageSource::Pi);
++            ultramodern::enqueue_external_message_src(mq, mesg, false, ultramodern::EventMessageSource::Pi);
+         } else {
+             fprintf(stderr, "[WARN] PI DMA read from unknown region, phys address 0x%08X\n", physical_addr);
+         }
+@@ -302,7 +313,7 @@ void do_dma(RDRAM_ARG PTR(OSMesgQueue) mq, gpr rdram_address, uint32_t physical_
+             save_write(rdram, rdram_address, physical_addr - recomp::sram_base, size);
+ 
+             // Send a message to the mq to indicate that the transfer completed
+-            ultramodern::enqueue_external_message_src(mq, 0, false, ultramodern::EventMessageSource::Pi);
++            ultramodern::enqueue_external_message_src(mq, mesg, false, ultramodern::EventMessageSource::Pi);
+         } else {
+             fprintf(stderr, "[WARN] PI DMA write to unknown region, phys address 0x%08X\n", physical_addr);
+         }
+@@ -321,7 +332,17 @@ extern "C" void osPiStartDma_recomp(RDRAM_ARG recomp_context* ctx) {
+ 
+     debug_printf("[pi] DMA from 0x%08X into 0x%08X of size 0x%08X\n", devAddr, dramAddr, size);
+ 
+-    do_dma(PASS_RDRAM mq, dramAddr, physical_addr, size, direction);
++    // Fill in the request as libultra does: games can read it back from the
++    // completion message (e.g. Conker matches finished DMAs by mb->dramAddr).
++    OSIoMesg* io = TO_PTR(OSIoMesg, ctx->r4);
++    io->hdr.type = (direction == 0) ? 11 : 12; // OS_MESG_TYPE_DMAREAD / OS_MESG_TYPE_DMAWRITE
++    io->hdr.pri = (u8)pri;
++    io->hdr.retQueue = mq;
++    io->dramAddr = dramAddr;
++    io->devAddr = ctx->r7;
++    io->size = size;
++
++    do_dma(PASS_RDRAM mq, (OSMesg)mb, dramAddr, physical_addr, size, direction);
+ 
+     ctx->r2 = 0;
+ }
+@@ -338,7 +359,7 @@ extern "C" void osEPiStartDma_recomp(RDRAM_ARG recomp_context* ctx) {
+ 
+     debug_printf("[pi] DMA from 0x%08X into 0x%08X of size 0x%08X\n", devAddr, dramAddr, size);
+ 
+-    do_dma(PASS_RDRAM mq, dramAddr, physical_addr, size, direction);
++    do_dma(PASS_RDRAM mq, (OSMesg)ctx->r5, dramAddr, physical_addr, size, direction);
+ 
+     ctx->r2 = 0;
+ }
+diff --git a/librecomp/src/recomp.cpp b/librecomp/src/recomp.cpp
+index 850689d..48e1a2b 100644
+--- a/librecomp/src/recomp.cpp
++++ b/librecomp/src/recomp.cpp
+@@ -28,6 +28,8 @@
+ #ifdef _WIN32
+ #    define WIN32_LEAN_AND_MEAN
+ #    include <Windows.h>
++#elif defined(__vita__)
++#    include <malloc.h>
+ #else
+ #    include <sys/mman.h>
+ #endif
+@@ -90,6 +92,7 @@ bool recomp::register_game(const recomp::GameEntry& entry) {
+ }
+ 
+ void recomp::mods::initialize_mods() {
++    mod_context->start_configuration_thread();
+     N64Recomp::live_recompiler_init();
+     std::filesystem::create_directories(config_path / mods_directory);
+     std::filesystem::create_directories(config_path / mod_config_directory);
+@@ -166,6 +169,14 @@ bool check_hash(const std::vector<uint8_t>& rom_data, uint64_t expected_hash) {
+     return calculated_hash == expected_hash;
+ }
+ 
++// Whether a ROM is the game's: its accept_rom if it has one, otherwise its hash.
++static bool rom_matches(const std::vector<uint8_t>& rom_data, const recomp::GameEntry& game_entry) {
++    if (game_entry.accept_rom != nullptr) {
++        return game_entry.accept_rom(rom_data);
++    }
++    return check_hash(rom_data, game_entry.rom_hash);
++}
++
+ static std::vector<uint8_t> read_file(const std::filesystem::path& path) {
+     std::vector<uint8_t> ret;
+ 
+@@ -197,7 +208,7 @@ bool write_file(const std::filesystem::path& path, const std::vector<uint8_t>& d
+ bool check_stored_rom(const recomp::GameEntry& game_entry) {
+     std::vector stored_rom_data = read_file(config_path / game_entry.stored_filename());
+ 
+-    if (!check_hash(stored_rom_data, game_entry.rom_hash)) {
++    if (!rom_matches(stored_rom_data, game_entry)) {
+         // Incorrect hash, remove the stored ROM file if it exists.
+         std::filesystem::remove(config_path / game_entry.stored_filename());
+         return false;
+@@ -229,7 +240,7 @@ bool recomp::load_stored_rom(const std::u8string& game_id) {
+     
+     std::vector<uint8_t> stored_rom_data = read_file(config_path / find_it->second.stored_filename());
+ 
+-    if (!check_hash(stored_rom_data, find_it->second.rom_hash)) {
++    if (!rom_matches(stored_rom_data, find_it->second)) {
+         // The ROM no longer has the right hash, delete it.
+         std::filesystem::remove(config_path / find_it->second.stored_filename());
+         return false;
+@@ -390,7 +401,7 @@ recomp::RomValidationError recomp::select_rom(const std::filesystem::path& rom_p
+             break;
+     }
+ 
+-    if (!check_hash(rom_data, game_entry.rom_hash)) {
++    if (!rom_matches(rom_data, game_entry)) {
+         const std::string_view name{ reinterpret_cast<const char*>(rom_data.data()) + 0x20, game_entry.internal_name.size()};
+         if (name == game_entry.internal_name) {
+             return recomp::RomValidationError::IncorrectVersion;
+@@ -946,6 +957,13 @@ void recomp::start(const recomp::Configuration& cfg) {
+             VirtualFree(rdram, 0, MEM_RELEASE);
+         }
+     }
++#elif defined(__vita__)
++    // No virtual memory tricks on the Vita: a plain zeroed block, without a guard region.
++    rdram = (uint8_t*)memalign(4096, allocation_size);
++    alloc_failed = (rdram == nullptr);
++    if (!alloc_failed) {
++        memset(rdram, 0, allocation_size);
++    }
+ #else
+     rdram = (uint8_t*)mmap(NULL, allocation_size, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+     alloc_failed = rdram == reinterpret_cast<uint8_t*>(MAP_FAILED);
+@@ -1001,6 +1019,9 @@ void recomp::start(const recomp::Configuration& cfg) {
+ #ifdef _WIN32
+     // VirtualFree returns zero on failure.
+     free_failed = (VirtualFree(rdram, 0, MEM_RELEASE) == 0);
++#elif defined(__vita__)
++    ::free(rdram);
++    free_failed = false;
+ #else
+     // munmap returns -1 on failure.
+     free_failed = (munmap(rdram, allocation_size) == -1);
+diff --git a/librecomp/src/rsp.cpp b/librecomp/src/rsp.cpp
+index 1cb3f6a..93d2ce3 100644
+--- a/librecomp/src/rsp.cpp
++++ b/librecomp/src/rsp.cpp
+@@ -1,5 +1,6 @@
+ #include <cassert>
+ #include <cstring>
++#include <cmath>
+ #include <cinttypes>
+ 
+ #include "rsp.hpp"
+@@ -25,8 +26,11 @@ void recomp::rsp::constants_init() {
+ 
+     for (u16 index = 0; index < 512; index++) {
+         u64 a = (index + 512) >> ((index % 2 == 1) ? 1 : 0);
+-        u64 b = 1 << 17;
+-        //find the largest b where b < 1.0 / sqrt(a)
++        //find the largest b where b < 1.0 / sqrt(a): start just below it (the linear
++        //search from 1 << 17 took most of a second on 32-bit hosts)
++        u64 b = (u64)std::sqrt((double)(u64(1) << 44) / (double)a);
++        if (b > 2) b -= 2;
++        if (b < (u64(1) << 17)) b = u64(1) << 17;
+         while (a * (b + 1) * (b + 1) < (u64(1) << 44)) b++;
+         rspInverseSquareRoots[index] = u16(b >> 1);
+     }
+diff --git a/thirdparty/concurrentqueue/concurrentqueue.h b/thirdparty/concurrentqueue/concurrentqueue.h
+index bcb06a1..4cb4817 100644
+--- a/thirdparty/concurrentqueue/concurrentqueue.h
++++ b/thirdparty/concurrentqueue/concurrentqueue.h
+@@ -105,6 +105,16 @@ namespace moodycamel { namespace details {
+ 	static const thread_id_t invalid_thread_id2 = 0xFFFFFFFFU;	// Not technically guaranteed to be invalid, but is never used in practice. Note that all Win32 thread IDs are presently multiples of 4.
+ 	static inline thread_id_t thread_id() { return static_cast<thread_id_t>(::GetCurrentThreadId()); }
+ } }
++#elif defined(__vita__)
++// PS Vita: the kernel's thread ID, unique per thread (pthread-embedded's std::thread::id
++// isn't reliable for threads it didn't create).
++#include <psp2/kernel/threadmgr.h>
++namespace moodycamel { namespace details {
++	typedef std::uint32_t thread_id_t;
++	static const thread_id_t invalid_thread_id  = 0;
++	static const thread_id_t invalid_thread_id2 = 0xFFFFFFFFU;
++	static inline thread_id_t thread_id() { return static_cast<thread_id_t>(sceKernelGetThreadId()); }
++} }
+ #elif defined(__arm__) || defined(_M_ARM) || defined(__aarch64__) || (defined(__APPLE__) && TARGET_OS_IPHONE) || defined(MOODYCAMEL_NO_THREAD_LOCAL)
+ namespace moodycamel { namespace details {
+ 	static_assert(sizeof(std::thread::id) == 4 || sizeof(std::thread::id) == 8, "std::thread::id is expected to be either 4 or 8 bytes");
+diff --git a/thirdparty/concurrentqueue/lightweightsemaphore.h b/thirdparty/concurrentqueue/lightweightsemaphore.h
+index 41ba094..bff9fa0 100644
+--- a/thirdparty/concurrentqueue/lightweightsemaphore.h
++++ b/thirdparty/concurrentqueue/lightweightsemaphore.h
+@@ -24,6 +24,8 @@ extern "C" {
+ }
+ #elif defined(__MACH__)
+ #include <mach/mach.h>
++#elif defined(__vita__)
++#include <psp2/kernel/threadmgr.h>
+ #elif defined(__unix__)
+ #include <semaphore.h>
+ 
+@@ -253,6 +255,58 @@ public:
+ 		}
+ 	}
+ };
++#elif defined(__vita__)
++//---------------------------------------------------------
++// Semaphore (PS Vita: the kernel's semaphores)
++//---------------------------------------------------------
++class Semaphore
++{
++private:
++	SceUID m_sema;
++
++	Semaphore(const Semaphore& other) MOODYCAMEL_DELETE_FUNCTION;
++	Semaphore& operator=(const Semaphore& other) MOODYCAMEL_DELETE_FUNCTION;
++
++public:
++	Semaphore(int initialCount = 0) : m_sema()
++	{
++		assert(initialCount >= 0);
++		m_sema = sceKernelCreateSema("moodycamel", 0, initialCount, 0x7FFFFFFF, nullptr);
++		assert(m_sema >= 0);
++	}
++
++	~Semaphore()
++	{
++		sceKernelDeleteSema(m_sema);
++	}
++
++	bool wait()
++	{
++		return sceKernelWaitSema(m_sema, 1, nullptr) == 0;
++	}
++
++	bool try_wait()
++	{
++		return sceKernelPollSema(m_sema, 1) == 0;
++	}
++
++	bool timed_wait(std::uint64_t usecs)
++	{
++		SceUInt timeout = (SceUInt)(usecs > 0xFFFFFFFFull ? 0xFFFFFFFFull : usecs);
++		return sceKernelWaitSema(m_sema, 1, &timeout) == 0;
++	}
++
++	void signal()
++	{
++		sceKernelSignalSema(m_sema, 1);
++	}
++
++	void signal(int count)
++	{
++		if (count > 0)
++			sceKernelSignalSema(m_sema, count);
++	}
++};
+ #else
+ #error Unsupported platform! (No semaphore wrapper available)
+ #endif
+diff --git a/ultramodern/CMakeLists.txt b/ultramodern/CMakeLists.txt
+index 5593172..70d4706 100644
+--- a/ultramodern/CMakeLists.txt
++++ b/ultramodern/CMakeLists.txt
+@@ -30,11 +30,13 @@ target_include_directories(ultramodern PUBLIC
+     "${PROJECT_SOURCE_DIR}/../thirdparty/sse2neon"
+ )
+ 
+-target_compile_options(ultramodern PRIVATE
+-#    -Wall
+-#    -Wextra
+-    -Wno-unused-parameter
+-)
++if (NOT MSVC)
++    target_compile_options(ultramodern PRIVATE
++    #    -Wall
++    #    -Wextra
++        -Wno-unused-parameter
++    )
++endif()
+ 
+ if (WIN32)
+     add_compile_definitions(NOMINMAX)
+diff --git a/ultramodern/include/ultramodern/renderer_context.hpp b/ultramodern/include/ultramodern/renderer_context.hpp
+index d60c4ec..794b570 100644
+--- a/ultramodern/include/ultramodern/renderer_context.hpp
++++ b/ultramodern/include/ultramodern/renderer_context.hpp
+@@ -54,6 +54,12 @@ namespace ultramodern {
+             auto operator<=>(const WindowHandle&) const = default;
+         };
+ // TODO add a native window handle option here (Display/Window for x11 and ANativeWindow for Android) as a compile-time option.
++#elif defined(__vita__)
++        // The Vita renderer owns the display; there's no window to pass.
++        struct WindowHandle {
++            void* unused = nullptr;
++            auto operator<=>(const WindowHandle&) const = default;
++        };
+ #elif defined(__linux__) || defined(__ANDROID__)
+         using WindowHandle = SDL_Window*;
+ #elif defined(__APPLE__)
+diff --git a/ultramodern/include/ultramodern/ultramodern.hpp b/ultramodern/include/ultramodern/ultramodern.hpp
+index 46aea61..b23bb09 100644
+--- a/ultramodern/include/ultramodern/ultramodern.hpp
++++ b/ultramodern/include/ultramodern/ultramodern.hpp
+@@ -96,6 +96,9 @@ enum class ThreadPriority {
+ void set_native_thread_name(const std::string& name);
+ void set_native_thread_priority(ThreadPriority pri);
+ PTR(OSThread) this_thread();
++// Some games read libultra's __osRunningThread directly. When set, the address of
++// that variable in game memory is kept pointing at the running game thread.
++void set_running_thread_variable(PTR(PTR(OSThread)) address);
+ void set_entrypoint_thread();
+ bool is_entrypoint_thread();
+ bool is_game_thread();
+@@ -144,6 +147,9 @@ struct gfx_callbacks_t {
+ };
+ 
+ bool is_game_started();
++// Waits until no RSP task (audio) runs: on platforms where tasks are reported done as they
++// start, before a buffer they produce is used.
++void wait_for_rsp_idle();
+ void quit();
+ void join_event_threads();
+ void join_thread_cleaner_thread();
+@@ -174,7 +180,11 @@ void set_callbacks(
+ 
+ #define MIN(a, b) ((a) < (b) ? (a) : (b))
+ 
++#if defined(CONKER_VITA_TRACE)
++#define debug_printf(...) fprintf(stderr, __VA_ARGS__)
++#else
+ #define debug_printf(...)
++#endif
+ //#define debug_printf(...) printf(__VA_ARGS__);
+ 
+ #endif
+diff --git a/ultramodern/src/audio.cpp b/ultramodern/src/audio.cpp
+index 3198be0..fa9384b 100644
+--- a/ultramodern/src/audio.cpp
++++ b/ultramodern/src/audio.cpp
+@@ -29,6 +29,9 @@ void ultramodern::queue_audio_buffer(RDRAM_ARG PTR(int16_t) audio_data_, uint32_
+     // Calculate the number of samples from the number of bytes.
+     uint32_t sample_count = byte_count / sizeof(int16_t);
+ 
++    // The buffer may still be being mixed by an audio task (see wait_for_rsp_idle).
++    ultramodern::wait_for_rsp_idle();
++
+     // Queue the swapped audio data.
+     if (sample_count > 0 && audio_callbacks.queue_samples) {
+         audio_callbacks.queue_samples(TO_PTR(int16_t, audio_data_), sample_count);
+diff --git a/ultramodern/src/error_handling.cpp b/ultramodern/src/error_handling.cpp
+index 8ca779e..1e250b8 100644
+--- a/ultramodern/src/error_handling.cpp
++++ b/ultramodern/src/error_handling.cpp
+@@ -21,7 +21,7 @@ void ultramodern::error_handling::message_box(const char* msg) {
+ void ultramodern::error_handling::quick_exit(const char* filename, int line, const char *func, int exit_status) {
+     fprintf(stderr, "Exiting with exit status '%i'. Function %s, at file %s:%i\n", exit_status, func, filename, line);
+ 
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__vita__)
+     std::_Exit(exit_status);
+ #else
+     std::quick_exit(exit_status);
+diff --git a/ultramodern/src/events.cpp b/ultramodern/src/events.cpp
+index 17d7a47..d29aedb 100644
+--- a/ultramodern/src/events.cpp
++++ b/ultramodern/src/events.cpp
+@@ -6,6 +6,7 @@
+ #include <unordered_map>
+ #include <utility>
+ #include <mutex>
++#include <condition_variable>
+ #include <queue>
+ #include <cstring>
+ 
+@@ -184,6 +185,31 @@ extern moodycamel::LightweightSemaphore graphics_shutdown_ready;
+ 
+ void set_dummy_vi(bool odd);
+ 
++#if defined(__vita__)
++// A trace of the RCP events (Vita debugging): a ring dumped when the game's scheduler stalls.
++#include <atomic>
++#include <psp2/kernel/processmgr.h>
++namespace {
++    struct TraceEvent { uint64_t t; const char* what; uint32_t arg; };
++    TraceEvent trace_ring[65536];
++    std::atomic<uint32_t> trace_pos{0};
++}
++void ultramodern_trace(const char* what, uint32_t arg) {
++    const uint32_t i = trace_pos.fetch_add(1) & 65535;
++    trace_ring[i] = { sceKernelGetProcessTimeWide(), what, arg };
++}
++void ultramodern_trace_dump() {
++    const uint32_t end = trace_pos.load();
++    for (uint32_t k = end > 65536 ? end - 65536 : 0; k < end; k++) {
++        const TraceEvent& e = trace_ring[k & 65535];
++        fprintf(stderr, "[trace] %10llu %s %08X\n", (unsigned long long)e.t, e.what, e.arg);
++    }
++}
++#define TRACE(what, arg) ultramodern_trace(what, arg)
++#else
++#define TRACE(what, arg)
++#endif
++
+ void vi_thread_func() {
+     ultramodern::set_native_thread_name("VI Thread");
+     // This thread should be prioritized over every other thread in the application, as it's what allows
+@@ -247,6 +273,7 @@ void vi_thread_func() {
+                     ultramodern::enqueue_external_message_src(cur_state->mq, cur_state->msg, false, ultramodern::EventMessageSource::Vi);
+                 }
+                 remaining_retraces = cur_state->retrace_count;
++                TRACE("vi msg", (uint32_t)total_vis);
+             }
+             if (events_context.ai.mq != NULLPTR) {
+                 // Send a message to the VI queue, and do not set it to be requeued if the queue was full for the same reason as the VI message above.
+@@ -260,18 +287,42 @@ void vi_thread_func() {
+     }
+ }
+ 
++
+ void sp_complete() {
++    debug_printf("[Events] sp_complete\n");
++    TRACE("sp_complete", 0);
+     uint8_t* rdram = events_context.rdram;
+     std::lock_guard lock{ events_context.message_mutex };
+     ultramodern::enqueue_external_message_src(events_context.sp.mq, events_context.sp.msg, false, ultramodern::EventMessageSource::Sp);
+ }
+ 
+ void dp_complete() {
++    debug_printf("[Events] dp_complete\n");
++    TRACE("dp_complete", 0);
+     uint8_t* rdram = events_context.rdram;
+     std::lock_guard lock{ events_context.message_mutex };
+     ultramodern::enqueue_external_message_src(events_context.dp.mq, events_context.dp.msg, false, ultramodern::EventMessageSource::Dp);
+ }
+ 
++#if defined(__vita__)
++// On the Vita an audio task takes several milliseconds (on the N64, one or two), and
++// the game's scheduler starts no graphics task while one is running: the game is told
++// the task finished as it starts, and the audio interface waits for it before taking
++// the buffer it produced (wait_for_rsp_idle, from osAiSetNextBuffer).
++static std::mutex rsp_idle_mutex;
++static std::condition_variable rsp_idle_cv;
++static int rsp_tasks_running = 0;
++// Set by the host (on by default).
++bool ultramodern_early_rsp_completion = true;
++
++void ultramodern::wait_for_rsp_idle() {
++    std::unique_lock lock{rsp_idle_mutex};
++    rsp_idle_cv.wait_for(lock, std::chrono::milliseconds(100), [] { return rsp_tasks_running == 0; });
++}
++#else
++void ultramodern::wait_for_rsp_idle() {}
++#endif
++
+ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_ready) {
+     ultramodern::set_native_thread_name("SP Task Thread");
+     ultramodern::set_native_thread_priority(ultramodern::ThreadPriority::Normal);
+@@ -288,6 +339,28 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
+             return;
+         }
+ 
++#if defined(__vita__)
++        // The game may reuse the task structure once it's told the task is done.
++        OSTask local_task = *task;
++        TRACE("aud start", (uint32_t)local_task.t.data_ptr);
++        {
++            std::lock_guard lock{rsp_idle_mutex};
++            rsp_tasks_running++;
++        }
++        if (ultramodern_early_rsp_completion) sp_complete();
++        const bool ran = ultramodern::rsp::run_task(PASS_RDRAM &local_task);
++        if (!ultramodern_early_rsp_completion) sp_complete();
++        TRACE("aud end", (uint32_t)local_task.t.data_ptr);
++        {
++            std::lock_guard lock{rsp_idle_mutex};
++            rsp_tasks_running--;
++        }
++        rsp_idle_cv.notify_all();
++        if (!ran) {
++            fprintf(stderr, "Failed to execute task type: %" PRIu32 "\n", local_task.t.type);
++            ULTRAMODERN_QUICK_EXIT();
++        }
++#else
+         if (!ultramodern::rsp::run_task(PASS_RDRAM task)) {
+             fprintf(stderr, "Failed to execute task type: %" PRIu32 "\n", task->t.type);
+             ULTRAMODERN_QUICK_EXIT();
+@@ -295,6 +368,7 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
+ 
+         // Tell the game that the RSP has completed
+         sp_complete();
++#endif
+     }
+ }
+ 
+@@ -362,8 +436,12 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+         // Try to pull an action from the queue
+         Action action;
+         if (events_context.action_queue.wait_dequeue_timed(action, 1ms)) {
++            TRACE("gfx action", (uint32_t)action.index());
++            static unsigned dequeued = 0;
++            if (++dequeued < 400 || action.index() != 1) debug_printf("[Events] gfx thread got action %u (queue ~%u)\n", (unsigned)action.index(), (unsigned)events_context.action_queue.size_approx());
+             // Determine the action type and act on it
+             if (const auto* task_action = std::get_if<SpTaskAction>(&action)) {
++                TRACE("gfx start", (uint32_t)task_action->task.t.data_ptr);
+                 // Tell the game that the RSP completed instantly. This will allow it to queue other task types, but it won't
+                 // start another graphics task until the RDP is also complete. Games usually preserve the RSP inputs until the RDP
+                 // is finished as well, so sending this early shouldn't be an issue in most cases.
+@@ -567,10 +645,13 @@ void ultramodern::submit_rsp_task(RDRAM_ARG PTR(OSTask) task_) {
+ 
+     // Send gfx tasks to the graphics action queue
+     if (task->t.type == M_GFXTASK) {
+-        events_context.action_queue.enqueue(SpTaskAction{ *task });
++        TRACE("gfx submit", (uint32_t)task_);
++        bool ok = events_context.action_queue.enqueue(SpTaskAction{ *task });
++        debug_printf("[Events] gfx task submitted: %d, queue ~%u\n", (int)ok, (unsigned)events_context.action_queue.size_approx());
+     }
+     // Set all other tasks as the RSP task
+     else {
++        TRACE("aud submit", (uint32_t)task_);
+         events_context.sp_task_queue.enqueue(task);
+     }
+ }
+diff --git a/ultramodern/src/mesgqueue.cpp b/ultramodern/src/mesgqueue.cpp
+index 9944a02..1feb369 100644
+--- a/ultramodern/src/mesgqueue.cpp
++++ b/ultramodern/src/mesgqueue.cpp
+@@ -28,6 +28,7 @@ void ultramodern::set_message_queue_control(const ultramodern::MessageQueueContr
+ }
+ 
+ void ultramodern::enqueue_external_message_src(PTR(OSMesgQueue) mq, OSMesg msg, bool jam, EventMessageSource src) {
++    if (src != EventMessageSource::Vi) debug_printf("[External] src %d -> queue 0x%08X msg 0x%08X\n", (int)src, (uint32_t)mq, (uint32_t)msg);
+     external_messages.enqueue({mq, msg, jam, requeue_enabled[static_cast<int>(src)]});
+ }
+ 
+@@ -41,8 +42,9 @@ void dequeue_external_messages(RDRAM_ARG1) {
+     QueuedMessage to_send;
+     std::vector<QueuedMessage> requeued_messages{};
+     while (external_messages.try_dequeue(to_send)) {
+-        if (!do_send(PASS_RDRAM to_send.mq, to_send.mesg, to_send.jam, false) && to_send.requeue_if_blocked) {
+-            requeued_messages.push_back(to_send);
++        if (!do_send(PASS_RDRAM to_send.mq, to_send.mesg, to_send.jam, false)) {
++            debug_printf("[External] queue 0x%08X full, msg 0x%08X %s\n", (uint32_t)to_send.mq, (uint32_t)to_send.mesg, to_send.requeue_if_blocked ? "requeued" : "DROPPED");
++            if (to_send.requeue_if_blocked) requeued_messages.push_back(to_send);
+         }
+     }
+     for (QueuedMessage& cur_mesg : requeued_messages) {
+diff --git a/ultramodern/src/threads.cpp b/ultramodern/src/threads.cpp
+index 6e3ed18..26a29b8 100644
+--- a/ultramodern/src/threads.cpp
++++ b/ultramodern/src/threads.cpp
+@@ -137,6 +137,22 @@ void ultramodern::set_native_thread_priority(ThreadPriority pri) {
+     //         break;
+     // }
+ }
++#elif defined(__vita__)
++#include <psp2/kernel/cpu.h>
++#include <psp2/kernel/threadmgr.h>
++
++// The Vita's scheduler keeps a thread on the cores its mask allows: the renderer gets a
++// core of its own, the RSP's audio tasks another, and the game's threads (one runs at a
++// time) the first.
++void ultramodern::set_native_thread_name(const std::string& name) {
++    int mask = SCE_KERNEL_CPU_MASK_USER_0;
++    if (name == "Gfx Thread") mask = SCE_KERNEL_CPU_MASK_USER_1;
++    else if (name == "SP Task Thread") mask = SCE_KERNEL_CPU_MASK_USER_2;
++    else if (name == "VI Thread" || name == "Timer Thread") mask = SCE_KERNEL_CPU_MASK_USER_0 | SCE_KERNEL_CPU_MASK_USER_2;
++    sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), mask);
++}
++
++void ultramodern::set_native_thread_priority(ThreadPriority pri) {}
+ #elif defined(__APPLE__)
+ void ultramodern::set_native_thread_name(const std::string& name) {
+     if (name.length() > 15) {
+@@ -150,8 +166,18 @@ void ultramodern::set_native_thread_name(const std::string& name) {
+ void ultramodern::set_native_thread_priority(ThreadPriority pri) {}
+ #endif
+ 
++static PTR(PTR(OSThread)) running_thread_variable = NULLPTR;
++
++void ultramodern::set_running_thread_variable(PTR(PTR(OSThread)) address) {
++    running_thread_variable = address;
++}
++
+ void wait_for_resumed(RDRAM_ARG UltraThreadContext* thread_context) {
+     thread_context->running.wait();
++    // This thread is now the one running: mirror that into the game's __osRunningThread.
++    if (running_thread_variable != NULLPTR) {
++        *TO_PTR(PTR(OSThread), running_thread_variable) = thread_self;
++    }
+     // If this thread's context was replaced by another thread or deleted, destroy it again from its own context.
+     // This will trigger thread cleanup instead.
+     if (TO_PTR(OSThread, ultramodern::this_thread())->context != thread_context) {
+diff --git a/ultramodern/src/timer.cpp b/ultramodern/src/timer.cpp
+index ee26c45..6feea55 100644
+--- a/ultramodern/src/timer.cpp
++++ b/ultramodern/src/timer.cpp
+@@ -119,6 +119,9 @@ void timer_thread(RDRAM_ARG1) {
+ 
+         // Determine how long to wait to reach the timer's timestamp
+         auto wait_duration = ticks_to_timepoint(cur_timer->timestamp) - std::chrono::high_resolution_clock::now();
++        debug_printf("[Timer] next 0x%08X timestamp %llu now %llu interval %llu wait %lld us\n", (uint32_t)cur_timer_,
++            (unsigned long long)cur_timer->timestamp, (unsigned long long)time_now(), (unsigned long long)cur_timer->interval,
++            (long long)std::chrono::duration_cast<std::chrono::microseconds>(wait_duration).count());
+ 
+         // Wait for either the duration to complete or a new action to come through
+         if (wait_duration.count() >= 0 && timer_context.action_queue.wait_dequeue_timed(cur_action, wait_duration)) {

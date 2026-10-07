@@ -1,0 +1,311 @@
+diff --git a/recompinput/src/input_events.cpp b/recompinput/src/input_events.cpp
+index c76a1dc..e17c26f 100644
+--- a/recompinput/src/input_events.cpp
++++ b/recompinput/src/input_events.cpp
+@@ -238,6 +238,21 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
+         // Always queue button up events to avoid missing them during binding.
+         recompui::queue_event(*event);
+         break;
++    case SDL_EventType::SDL_MOUSEBUTTONDOWN:
++        // Mouse buttons are bound with the keyboard, or in single player with the controller too
++        // (both profiles are read then; in multiplayer a controller is one player's). The click
++        // that starts binding has already gone by when scanning begins, so the next press is the
++        // one bound.
++        if (binding::is_binding()) {
++            const InputDevice device = binding::get_scanning_device();
++            if (device == InputDevice::Keyboard || (device == InputDevice::Controller && players::is_single_player_mode())) {
++                binding::set_scanned_input({ InputType::Mouse, event->button.button });
++            }
++        }
++        else {
++            queue_if_enabled(event);
++        }
++        break;
+     default:
+         queue_if_enabled(event);
+         break;
+diff --git a/recompinput/src/input_state.cpp b/recompinput/src/input_state.cpp
+index 03ed871..d6e76c9 100644
+--- a/recompinput/src/input_state.cpp
++++ b/recompinput/src/input_state.cpp
+@@ -18,6 +18,7 @@ static struct {
+     const Uint8* keys = nullptr;
+     SDL_Keymod keymod = SDL_Keymod::KMOD_NONE;
+     int numkeys = 0;
++    Uint32 mouse_buttons = 0; // SDL_BUTTON() mask, read with the keyboard's state each poll.
+     std::atomic_int32_t mouse_wheel_pos = 0;
+     std::mutex controllers_mutex;
+     std::vector<SDL_GameController*> detected_controllers{};
+@@ -34,6 +35,7 @@ static struct {
+ void recompinput::poll_inputs() {
+     InputState.keys = SDL_GetKeyboardState(&InputState.numkeys);
+     InputState.keymod = SDL_GetModState();
++    InputState.mouse_buttons = SDL_GetMouseState(nullptr, nullptr);
+     static bool first_poll = true;
+ 
+     {
+@@ -215,6 +217,11 @@ bool recompinput::should_override_keystate(SDL_Scancode key, SDL_Keymod mod) {
+     return false;
+ }
+ 
++// Mouse buttons are numbered as SDL numbers them (SDL_BUTTON_LEFT is 1).
++static bool mouse_button_state(int button) {
++    return button >= 1 && button <= 32 && (InputState.mouse_buttons & SDL_BUTTON(button)) != 0;
++}
++
+ float recompinput::get_input_analog(int controller_num, const InputField& field) {
+     switch (field.input_type) {
+     case InputType::Keyboard:
+@@ -230,8 +237,7 @@ float recompinput::get_input_analog(int controller_num, const InputField& field)
+     case InputType::ControllerAnalog:
+         return controller_axis_state(controller_num, field.input_id, true);
+     case InputType::Mouse:
+-        // TODO mouse support
+-        return 0.0f;
++        return mouse_button_state(field.input_id) ? 1.0f : 0.0f;
+     case InputType::None:
+         return false;
+     }
+@@ -261,8 +267,7 @@ bool recompinput::get_input_digital(int controller_num, const InputField& field)
+         // TODO adjustable threshold
+         return controller_axis_state(controller_num, field.input_id, true) >= recompinput::axis_digital_threshold;
+     case InputType::Mouse:
+-        // TODO mouse support
+-        return false;
++        return mouse_button_state(field.input_id);
+     case InputType::None:
+         return false;
+     }
+diff --git a/recompinput/src/input_types.cpp b/recompinput/src/input_types.cpp
+index c6786e6..7db1735 100644
+--- a/recompinput/src/input_types.cpp
++++ b/recompinput/src/input_types.cpp
+@@ -250,6 +250,29 @@ static std::string controller_axis_to_string(int axis) {
+     }
+ }
+ 
++static std::string mouse_button_to_string(int button) {
++    switch (button) {
++    case SDL_BUTTON_LEFT:
++        return PF_MOUSE_LEFT;
++    case SDL_BUTTON_MIDDLE:
++        return PF_MOUSE_MIDDLE;
++    case SDL_BUTTON_RIGHT:
++        return PF_MOUSE_RIGHT;
++    case SDL_BUTTON_X1:
++        return PF_MOUSE_4;
++    case SDL_BUTTON_X2:
++        return PF_MOUSE_5;
++    case 6:
++        return PF_MOUSE_6;
++    case 7:
++        return PF_MOUSE_7;
++    case 8:
++        return PF_MOUSE_8;
++    default:
++        return recompinput::unknown_device_input;
++    }
++}
++
+ std::string recompinput::InputField::to_string() const {
+     switch (input_type) {
+     case InputType::None:
+@@ -260,6 +283,8 @@ std::string recompinput::InputField::to_string() const {
+         return controller_axis_to_string(input_id);
+     case InputType::Keyboard:
+         return keyboard_input_to_string((SDL_Scancode)input_id);
++    case InputType::Mouse:
++        return mouse_button_to_string(input_id);
+     default:
+         return recompinput::unknown_device_input;
+     }
+diff --git a/recompui/include/recompui/recompui.h b/recompui/include/recompui/recompui.h
+index 30c463b..c64bc9e 100644
+--- a/recompui/include/recompui/recompui.h
++++ b/recompui/include/recompui/recompui.h
+@@ -90,6 +90,14 @@ namespace recompui {
+     void close_prompt();
+     bool is_prompt_open();
+     void update_mod_list(bool scan_mods = true);
++    // A kind of file (its extension, e.g. ".htc") the game handles itself: the mod installer copies it
++    // into the mods folder as it is, instead of rejecting it as not a mod.
++    void register_mod_file_extension(const std::string& extension);
++    // Called when the Mods menu rescans the mods folder (its refresh button, or after installing mods),
++    // before the runtime scans it.
++    void register_mod_scan_callback(std::function<void()> callback);
++    // A unit shown after a number option's value in the settings (e.g. a degree sign), by the option's id.
++    void set_number_option_suffix(const std::string& option_id, const std::string& suffix);
+     void process_game_started();
+ 
+     void apply_color_hack();
+diff --git a/recompui/src/composites/ui_mod_installer.cpp b/recompui/src/composites/ui_mod_installer.cpp
+index 1f98b3c..c91df6f 100644
+--- a/recompui/src/composites/ui_mod_installer.cpp
++++ b/recompui/src/composites/ui_mod_installer.cpp
+@@ -1,6 +1,9 @@
+ #include "ui_mod_installer.h"
+ 
+ #include "librecomp/mods.hpp"
++#include "recompui/recompui.h"
++
++#include <algorithm>
+ 
+ namespace recompui {
+     static const std::string ManifestFilename = "mod.json";
+@@ -20,6 +23,37 @@ namespace recompui {
+ #endif
+     }
+ 
++    // Extensions of files the game handles itself (register_mod_file_extension).
++    static std::vector<std::string> game_file_extensions;
++
++    void register_mod_file_extension(const std::string &extension) {
++        game_file_extensions.push_back(extension);
++    }
++
++    static bool is_game_file(const std::filesystem::path &file_path) {
++        const std::string extension = file_path.extension().string();
++        return std::find(game_file_extensions.begin(), game_file_extensions.end(), extension) != game_file_extensions.end();
++    }
++
++    // A file the game handles itself is copied into the mods folder as it is.
++    void start_game_file_installation(const std::filesystem::path &file_path, ModInstaller::Result &result) {
++        std::filesystem::path target_path = recomp::mods::get_mods_directory() / file_path.filename();
++        std::filesystem::path target_write_path = target_path.u8string() + NewExtension;
++        std::error_code ec;
++        std::filesystem::copy_file(file_path, target_write_path, std::filesystem::copy_options::overwrite_existing, ec);
++        if (ec) {
++            result.error_messages.emplace_back("Unable to install " + file_path.filename().string() + " to mod directory.");
++            std::filesystem::remove(target_write_path, ec);
++            return;
++        }
++
++        ModInstaller::Installation installation;
++        installation.display_name = file_path.filename().string();
++        installation.mod_version = recomp::Version{0, 0, 0, ""};
++        installation.mod_file = target_path;
++        result.pending_installations.emplace_back(installation);
++    }
++
+     size_t zip_write_func(void *opaque, mz_uint64 offset, const void *bytes, size_t count) {
+         std::ofstream &stream = *(std::ofstream *)(opaque);
+         stream.seekp(offset, std::ios::beg);
+@@ -313,6 +347,11 @@ namespace recompui {
+         }
+ 
+         for (const std::filesystem::path &path : file_paths) {
++            if (is_game_file(path)) {
++                start_game_file_installation(path, result);
++                continue;
++            }
++
+             recomp::mods::ModOpenError open_error;
+             recomp::mods::ZipModFileHandle file_handle(path, open_error);
+             if (open_error != recomp::mods::ModOpenError::Good) {
+diff --git a/recompui/src/composites/ui_mod_menu.cpp b/recompui/src/composites/ui_mod_menu.cpp
+index 02455fd..35a9952 100644
+--- a/recompui/src/composites/ui_mod_menu.cpp
++++ b/recompui/src/composites/ui_mod_menu.cpp
+@@ -30,6 +30,13 @@ static bool is_mod_enabled_or_auto(const std::string &mod_id) {
+     return recomp::mods::is_mod_enabled(mod_id) || recomp::mods::is_mod_auto_enabled(mod_id);
+ }
+ 
++// The game's callback before a rescan of the mods folder (register_mod_scan_callback).
++static std::function<void()> mod_scan_callback;
++
++void register_mod_scan_callback(std::function<void()> callback) {
++    mod_scan_callback = std::move(callback);
++}
++
+ Modal *mod_config_modal = nullptr;
+ void create_mod_config_modal() {
+     if (mod_config_modal == nullptr) {
+@@ -281,6 +288,9 @@ void ModMenu::refresh_mods(bool scan_mods) {
+ 
+     // Prevent scanning mods after starting the game.
+     if (scan_mods && !ultramodern::is_game_started()) {
++        if (mod_scan_callback) {
++            mod_scan_callback();
++        }
+         recomp::mods::scan_mods();
+     }
+     mod_details = recomp::mods::get_all_mod_details(game_mod_id);
+diff --git a/recompui/src/config/ui_config_option.cpp b/recompui/src/config/ui_config_option.cpp
+index 86428c9..39f7d0e 100644
+--- a/recompui/src/config/ui_config_option.cpp
++++ b/recompui/src/config/ui_config_option.cpp
+@@ -1,7 +1,18 @@
+ #include "ui_config_option.h"
+ 
++#include <unordered_map>
++
++#include "recompui/recompui.h"
++
+ namespace recompui {
+ 
++// Units shown after number options' values (set_number_option_suffix), by option id.
++static std::unordered_map<std::string, std::string> number_option_suffixes;
++
++void set_number_option_suffix(const std::string& option_id, const std::string& suffix) {
++    number_option_suffixes[option_id] = suffix;
++}
++
+ constexpr float config_option_element_margin_vertical = 12.0f;
+ ConfigOptionElement::ConfigOptionElement(
+     ResourceId rid,
+@@ -206,6 +217,9 @@ ConfigOptionNumber::ConfigOptionNumber(
+     slider->set_max_value(num_opt.max);
+     slider->set_step_value(num_opt.step);
+     slider->set_precision(num_opt.precision);
++    if (auto suffix = number_option_suffixes.find(option_id); suffix != number_option_suffixes.end()) {
++        slider->set_suffix(suffix->second);
++    }
+     slider->add_value_changed_callback([this](double v){
+         this->set_option_value(this->option_id, v);
+     });
+diff --git a/recompui/src/elements/ui_slider.cpp b/recompui/src/elements/ui_slider.cpp
+index 7a50da4..c3d736d 100644
+--- a/recompui/src/elements/ui_slider.cpp
++++ b/recompui/src/elements/ui_slider.cpp
+@@ -44,6 +44,11 @@ namespace recompui {
+         set_value_internal(min_value + ratio * (max_value - min_value), false, true);
+     }
+ 
++    void Slider::set_suffix(const std::string& s) {
++        suffix = s;
++        update_label_text();
++    }
++
+     void Slider::update_circle_position() {
+         double ratio = std::clamp((value - min_value) / (max_value - min_value), 0.0, 1.0);
+         circle_element->set_left(ratio * 100.0, Unit::Percent);
+@@ -53,7 +58,7 @@ namespace recompui {
+         char text_buffer[32];
+ 
+         if (type == SliderType::Double) {
+-            std::snprintf(text_buffer, sizeof(text_buffer), "%.*f", precision, value);
++            std::snprintf(text_buffer, sizeof(text_buffer), "%.*f%s", precision, value, suffix.c_str());
+         } else if (type == SliderType::Percent) {
+             std::snprintf(text_buffer, sizeof(text_buffer), "%d%%", static_cast<int>(value));
+         } else {
+diff --git a/recompui/src/elements/ui_slider.h b/recompui/src/elements/ui_slider.h
+index 4d8c41e..da94d42 100644
+--- a/recompui/src/elements/ui_slider.h
++++ b/recompui/src/elements/ui_slider.h
+@@ -23,6 +23,7 @@ namespace recompui {
+         double max_value = 100.0;
+         double step_value = 0.0;
+         int precision = 0;
++        std::string suffix;
+         std::vector<std::function<void(double)>> value_changed_callbacks;
+         std::function<void(bool)> focus_callback = nullptr;
+ 
+@@ -53,6 +54,8 @@ namespace recompui {
+         double get_step_value() const;
+         void set_precision(int p);
+         int get_precision() const;
++        // Text shown after the value (Double sliders), e.g. a unit.
++        void set_suffix(const std::string& s);
+         void add_value_changed_callback(std::function<void(double)> callback);
+         void do_step(bool increment);
+         void set_focus_callback(std::function<void(bool)> callback);

@@ -28,3 +28,12 @@ __pycache__/
 /.claude/
 /.venv/
 /tools/macos/
+# Vita port builds (they hold the game's code) and generated sources
+/vita/build*/
+/vita/debug/audio_ucode_traced.cpp
+/host/build-headless/
+/host/headless-*.log
+# Decomp: logs and the rodata reference split (disassembled from the ROM)
+/conker/extract_log.txt
+/conker/conker/*_log*.txt
+/conker/conker/rodata_src/

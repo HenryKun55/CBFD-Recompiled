@@ -60,6 +60,11 @@ void conker::register_tlb_mapped_code() {
 // but only maps RDRAM, so make the matching part of the reservation readable and
 // fill it with the original segment contents.
 static bool map_segment(uint8_t* rdram, uint32_t vram, const uint32_t* words, size_t size) {
+#if defined(__vita__)
+    // The Vita's memory block already covers where recomp.h folds these addresses to.
+    std::memcpy(rdram + RECOMP_ADDR(vram), words, size);
+    return true;
+#endif
     uint8_t* host = rdram + ((int64_t)(int32_t)vram + 0x80000000LL);
     constexpr uintptr_t page = 0x10000;
     uint8_t* begin = (uint8_t*)((uintptr_t)host & ~(page - 1));

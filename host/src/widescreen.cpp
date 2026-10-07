@@ -56,6 +56,10 @@ namespace {
     // How much wider than the game's 4:3 the window shows: RT64 widens the 3D
     // view to the window's aspect ratio unless the aspect ratio is set to Original.
     float widescreen_ratio() {
+#if defined(__vita__)
+        // The Vita's screen (960x544) when its widescreen setting is on.
+        return conker::vita_widescreen_ratio();
+#endif
         if (ultramodern::renderer::get_graphics_config().ar_option == ultramodern::renderer::AspectRatio::Original || window == nullptr) {
             return 1.0f;
         }
