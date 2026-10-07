@@ -39,7 +39,24 @@ void func_15156FE4(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157010.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_151571C4.s")
+struct func_151571C4_s {
+    u8 pad0[0x104];
+    s32 unk104[4];
+    s32 unk114;
+};
+
+void func_151571C4(void *arg0) {
+    s32 i;
+
+    for (i = 0; i <= D_80082FA0; i++) {
+        if (((struct func_151571C4_s *)arg0)->unk104[i]) {
+            func_100043B4(((struct func_151571C4_s *)arg0)->unk104[i], 4);
+        }
+    }
+    if (((struct func_151571C4_s *)arg0)->unk114 != 0) {
+        func_100043B4(((struct func_151571C4_s *)arg0)->unk114, 4);
+    }
+}
 
 void func_151571C4(void *arg0);
 void func_1518CA04(s32 arg0);
@@ -87,7 +104,18 @@ s32 func_15157860(struct func_15157860_s *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157898.s")
+void *func_15157010(void *, s32, f32, s32, s32, void *, s32, s32);
+
+void *func_15157898(void *arg0, void *arg1, s32 arg2, f32 arg3, s32 arg4, s32 arg5, u8 *arg6, u8 arg7, s32 arg8) {
+    u8 *temp_v0;
+
+    temp_v0 = func_15157010(arg0, arg2, arg3, arg4, arg5, arg6 + 0x38, arg7, arg8);
+    if (temp_v0 == NULL) {
+        return NULL;
+    }
+    memcpy(temp_v0 + 0x120, arg1, 0x38);
+    return temp_v0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157918.s")
 
@@ -104,7 +132,14 @@ s32 func_15157DC8(u8 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157DEC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157F80.s")
+extern Mtx D_80089470;
+
+Gfx *func_15157F80(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3, u8 *arg4) {
+    gSPMatrix(gdl++, &D_80089470, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(gdl++, (Mtx *)D_800DCC10 + arg2, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    *arg4 = 1;
+    return gdl;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_183640/func_15157FE8.s")
 

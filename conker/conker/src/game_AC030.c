@@ -10,7 +10,18 @@ void func_1507EB80(u8 *buf, s32 *len, u8 c) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507EBB8.s")
+extern u8 *D_80086C24[];
+extern u8 D_8009BBF0[];
+
+void func_1507EBB8(u8 *buf, s32 *len, s32 idx) {
+    u8 *src = D_80086C24[idx];
+    s32 n = D_8009BBF0[idx];
+
+    if (*len + n < 40) {
+        bcopy(src, buf + *len, n);
+        *len += n;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507EC38.s")
 
@@ -38,9 +49,45 @@ void func_1507EFA0(s32 arg0, u8 *arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507EFD0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507F454.s")
+extern u8 *D_80086BA0[];
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507F4C0.s")
+s32 func_1507F454(void) {
+    u8 *p = (u8 *)gCurrentObject->unk31C + 0x58;
+    u8 c;
+
+    if (p[4] == 0) {
+        return 1;
+    }
+    p[5]++;
+    c = *(p[5] + D_80086BA0[p[4]]);
+    if (c == 0) {
+        p[4] = 0;
+        p[5] = 0;
+        return 1;
+    }
+    return 0;
+}
+
+s32 func_1507F4C0(s32 arg0) {
+    u32 ret;
+    u32 base;
+    u32 range;
+
+    if (arg0 == 0) {
+        base = 180;
+        range = 60;
+    } else if (D_800BE9F0 == 0x31) {
+        return 0;
+    } else if (arg0 == 1) {
+        base = 60;
+        range = 60;
+    } else {
+        base = 0;
+        range = 30;
+    }
+    ret = (func_150ADA20() % range) + base;
+    return ret;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507F54C.s")
 

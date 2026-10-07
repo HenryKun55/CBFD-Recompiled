@@ -3,7 +3,21 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_68C70/func_1503B7C0.s")
+void *allocate_memory(s32, s32, s32, s32);
+
+struct func_1503B7C0_s {
+    u8 pad0[0x44];
+    f32 unk44;
+    u8 pad48[4];
+    s16 unk4C;
+};
+
+void func_1503B7C0(u8 *arg0) {
+    (*(struct func_1503B7C0_s **)(*(u8 **)(arg0 + 0x31C) + 0x11C)) = allocate_memory(0x50, 1, 0, 0);
+    bzero(*(struct func_1503B7C0_s **)(*(u8 **)(arg0 + 0x31C) + 0x11C), 0x50);
+    (*(struct func_1503B7C0_s **)(*(u8 **)(arg0 + 0x31C) + 0x11C))->unk44 = 30.0f;
+    (*(struct func_1503B7C0_s **)(*(u8 **)(arg0 + 0x31C) + 0x11C))->unk4C = (u32) func_150ADA20() % 30;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_68C70/func_1503B840.s")
 

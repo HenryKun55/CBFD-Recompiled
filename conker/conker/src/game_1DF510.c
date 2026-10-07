@@ -13,7 +13,25 @@ void func_151B220C(void) {
     func_151B222C();
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1DF510/func_151B222C.s")
+struct func_151B222C_s {
+    u8 pad0[0x10];
+    struct102 *unk10[3];
+    struct102 *unk1C;
+};
+
+void func_151B222C(u8 *arg0) {
+    struct func_151B222C_s *s = (struct func_151B222C_s *)(arg0 + 0x28);
+    u8 i;
+
+    for (i = 0; i < 3; i++) {
+        if (s->unk10[i] != NULL) {
+            func_1516972C(s->unk10[i]);
+        }
+    }
+    if (s->unk1C != NULL) {
+        func_1516972C(s->unk1C);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1DF510/func_151B229C.s")
 

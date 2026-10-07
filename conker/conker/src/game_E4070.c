@@ -24,7 +24,23 @@ void func_150B6D34(void) {
     D_800D9890 = 3;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_E4070/func_150B6D78.s")
+extern struct102 *D_800D9894;
+
+void func_150B6D78(void) {
+    s32 i;
+
+    if (D_800D9894 != NULL) {
+        func_1516972C(D_800D9894);
+        D_800D9894 = NULL;
+    }
+    for (i = 0; i < 10; i++) {
+        if (D_800D9898[i] != NULL) {
+            func_1516972C((struct102 *)D_800D9898[i]);
+            D_800D9898[i] = NULL;
+        }
+    }
+    D_800D9890 = 3;
+}
 
 struct func_150B6DFC_s {
     u8 pad0[0x34];
@@ -42,7 +58,25 @@ void func_150B6DFC(struct func_150B6DFC_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_E4070/func_150B709C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_E4070/func_150B71A8.s")
+struct func_150B71A8_s {
+    u8 pad0[0x38];
+    s16 unk38;
+    s16 unk3A;
+};
+
+void func_150B71A8(struct func_150B71A8_s *arg0) {
+    if (arg0->unk38 != 0x1000) {
+        arg0->unk38 += D_800BE9E4 << 8;
+        if (arg0->unk38 > 0x1000) {
+            arg0->unk38 = 0x1000;
+        }
+    } else if (arg0->unk3A != 0x1000) {
+        arg0->unk3A += D_800BE9E4 << 8;
+        if (arg0->unk3A > 0x1000) {
+            arg0->unk3A = 0x1000;
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_E4070/func_150B7220.s")
 

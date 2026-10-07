@@ -35,7 +35,12 @@ s32 func_150FF6B4(u8 *arg0, s32 arg1, s32 arg2) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_12C1E0/func_150FF840.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_12C1E0/func_150FFB6C.s")
+void func_1505D1C4(f32 arg0, f32 arg1, f32 arg2, s32 arg3, s32 arg4, u16 arg5, s32 arg6, s32 arg7);
+
+void func_150FFB6C(f32 *arg0, s32 arg1, struct127 *arg2, s32 arg3) {
+    u16 temp = *(u16 *)((u8 *)arg2 + 0x7A);
+    func_1505D1C4(arg0[0], arg0[1], arg0[2], arg3 | 0x60000, arg2 - gObjects, temp, 0, arg1);
+}
 
 extern u8 D_800A2130[];
 void func_15145EA4();

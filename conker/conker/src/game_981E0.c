@@ -2067,7 +2067,9 @@ void func_15073C48(void) {
 // gObjects-indexing pattern elsewhere) to (f32)D_800D1580, truncates,
 // stores to gCurrentObject->unk224. Register allocation differs
 // substantially from target throughout.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_15073C50.s")
+void func_15073C50(void) {
+    gCurrentObject->unk224 = (s16)(*(f32 *)((u8 *)D_800CC2E8 + gCurrentObject->unk222 * 812) + (f32)D_800D1580);
+}
 // void func_15073C50(void) {
 //     u8 idx = *((u8 *) gCurrentObject + 0x222);
 //     f32 val = *(f32 *) ((char *) D_800CC2E8 + idx * 812) + (f32) D_800D1580;
@@ -2242,7 +2244,18 @@ void func_15074870(void) {
 // packed D_800D1580 color) XORed with another packed bit, and if set,
 // adjusts gCurrentObject->unk138 by the packed color's high byte.
 // Register allocation differs substantially from target throughout.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_1507488C.s")
+void func_1507488C(void) {
+    u8 b2 = D_800D1580 >> 16;
+    u8 b1 = D_800D1580 >> 8;
+    u8 flag = D_800D1580 & 1;
+
+    if ((&gCurrentObject->unk2E4)[b2] & b1) {
+        flag ^= 1;
+    }
+    if (flag) {
+        gCurrentObject->unk138 += (u8)(D_800D1580 >> 24);
+    }
+}
 // void func_1507488C(void) {
 //     s32 packed = D_800D1580;
 //     u8 byte2 = packed >> 16;

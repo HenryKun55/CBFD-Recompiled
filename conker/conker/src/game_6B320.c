@@ -16,7 +16,18 @@ void func_1503DF0C(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503DF48.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503E1F4.s")
+s32 func_1503E1F4(s32 arg0, s32 arg1) {
+    if (arg0 < 32) {
+        if (D_800C6660[arg1].unk4 & (1 << arg0)) {
+            return 1;
+        }
+    } else {
+        if (D_800C6660[arg1].unk8 & (1 << arg0)) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_6B320/func_1503E260.s")
 

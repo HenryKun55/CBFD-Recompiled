@@ -195,7 +195,39 @@ void func_151D1368(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1FA770/func_151D13B4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1FA770/func_151D13E0.s")
+struct func_151D13E0_s {
+    u8 pad0[0x1C];
+    u16 unk1C;
+    u16 unk1E;
+    u8 pad20[0x10];
+    u8 unk30;
+    u8 pad31[0x98 - 0x31];
+    s32 *unk98;
+};
+
+struct func_151D13E0_t {
+    s32 unk0;
+    s32 unk4;
+    struct func_151D13E0_s *unk8;
+};
+int func_151D13E0(s32 arg0) {
+    struct func_151D13E0_t *s;
+    s32 *p;
+
+    s = (struct func_151D13E0_t *)(arg0 + 0x28);
+    if (s->unk8 != NULL) {
+        p = s->unk8->unk98;
+        s->unk8->unk30 = 0;
+        s->unk8->unk1E &= ~2;
+        s->unk8->unk1E |= 8;
+        s->unk8->unk1E |= 1;
+        s->unk8->unk1C = 0x28;
+        *p = 0;
+        s->unk8 = NULL;
+    }
+    if (*(s32 *)(arg0 + 0x30) != 0) {
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1FA770/func_151D1448.s")
 

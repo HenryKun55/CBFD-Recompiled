@@ -87,17 +87,43 @@ void func_15044E88(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_150450CC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_1504530C.s")
+s32 func_1504530C(s32 arg0, s32 arg1, s32 arg2) {
+    switch (func_150470B0(arg0, arg1, arg2)) {
+    case 0:
+        return func_15044ED0(arg0, arg1, arg2);
+    case 1:
+        return 0;
+    case 2:
+        return 1;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15045384.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_1504554C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15045714.s")
+s32 func_150A6500(s16 arg0, s16 arg1, s32 arg2, u16 arg3);
+
+void func_15045714(f32 *arg0, u16 arg1, s32 *arg2, s32 arg3) {
+    func_1510F800(2);
+    *arg2 = func_150A6500(arg0[0], arg0[2], arg3, arg1);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15045780.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15045800.s")
+u8 func_15047004(void *arg0, f32 arg1, f32 *arg2);
+u8 func_15045780(void *arg0, u16 arg1, f32 arg2, f32 *arg3);
+
+u8 func_15045800(void *arg0, u16 arg1, f32 arg2, f32 *arg3) {
+    switch (func_15047004(arg0, arg2, arg3)) {
+    case 0:
+        return func_15045780(arg0, arg1, arg2, arg3);
+    case 1:
+        return 0;
+    case 2:
+        return 1;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15045880.s")
 
@@ -121,7 +147,19 @@ void func_15044E88(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15046D00.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15046F84.s")
+u8 func_15047004(void *arg0, f32 arg1, f32 *arg2);
+u8 func_15046D00(void *arg0, u16 arg1, f32 arg2, f32 *arg3);
+
+u8 func_15046F84(void *arg0, u16 arg1, f32 arg2, f32 *arg3) {
+    switch (func_15047004(arg0, arg2, arg3)) {
+    case 0:
+        return func_15046D00(arg0, arg1, arg2, arg3);
+    case 1:
+        return 0;
+    case 2:
+        return 1;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15047004.s")
 
@@ -133,7 +171,14 @@ void func_15044E88(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15047390.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15047688.s")
+void func_15047390(float mf[4][4], float xEye, float yEye, float zEye, float xAt, float yAt, float zAt, float xUp, float yUp, float zUp);
+
+void func_15047688(Mtx *m, float xEye, float yEye, float zEye, float xAt, float yAt, float zAt, float xUp, float yUp, float zUp) {
+    float mf[4][4];
+
+    func_15047390(mf, xEye, yEye, zEye, xAt, yAt, zAt, xUp, yUp, zUp);
+    guMtxF2L(mf, m);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15047700.s")
 

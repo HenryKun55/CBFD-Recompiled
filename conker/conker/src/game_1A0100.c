@@ -5,7 +5,16 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1A0100/func_15172C50.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1A0100/func_15172CA8.s")
+extern s8 D_800DD2B0[];
+void func_1517EE40(s32, s32, s32, s32, s32, s32);
+
+void func_15172CA8(s32 arg0) {
+    if (D_800DD2B0[arg0] != -1) {
+        D_800DD2B0[arg0] = -1;
+        func_1517EE40(0, 0, 0, 0, 1, arg0);
+        func_1517EE40(0, 0, 0, 0x32, 0, arg0);
+    }
+}
 
 struct func_15172D28_s {
     u8 pad0[0x2F8];

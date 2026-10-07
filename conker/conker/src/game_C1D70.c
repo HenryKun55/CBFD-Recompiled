@@ -24,7 +24,43 @@ Gfx *func_15094F40(Gfx *gdl) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_15094FE8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_15095060.s")
+struct func_15095060_s {
+    u32 unk0;
+    u16 unk4;
+    u16 unk6;
+    u8 unk8;
+    u8 unk9;
+    u8 unkA;
+};
+struct func_15095060_src {
+    u32 unk0;
+    u8 unk4;
+    u8 pad5;
+    u16 unk6;
+    u16 unk8;
+    u8 unkA;
+    u8 unkB;
+};
+extern struct func_15095060_s D_800D2C90;
+
+void func_15095060(struct func_15095060_src *arg0, s32 arg1, void *arg2) {
+    u32 temp_v0;
+
+    if (arg2 != NULL) {
+        *(struct func_15095060_s **)((char *)arg2 + 0x10) = &D_800D2C90;
+    }
+    temp_v0 = arg0->unk0;
+    if (temp_v0 < 0x10000000U) {
+        D_800D2C90.unk0 = temp_v0;
+    } else {
+        D_800D2C90.unk0 = ((u32 *)temp_v0)[arg1 >> 8];
+    }
+    D_800D2C90.unk4 = arg0->unk6;
+    D_800D2C90.unk6 = arg0->unk8;
+    D_800D2C90.unk8 = arg0->unkA;
+    D_800D2C90.unk9 = arg0->unkB;
+    D_800D2C90.unkA = arg0->unk4;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C1D70/func_150950D4.s")
 

@@ -31,7 +31,41 @@ s32 func_150CB7CC(struct func_150CB7CC_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_F8590/func_150CB800.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_F8590/func_150CBA30.s")
+struct func_150CBA30_s {
+    u8 pad0[0x1C];
+    s16 unk1C;
+    u8 pad1E[0x2C - 0x1E];
+    f32 unk2C;
+    f32 unk30;
+    u8 pad34[0x58 - 0x34];
+    s32 unk58;
+    u8 unk5C;
+    u8 pad5D[0x128 - 0x5D];
+    s16 unk128;
+    u8 pad12A[2];
+    f32 unk12C;
+};
+
+s32 func_150CBA30(struct func_150CBA30_s *arg0) {
+    s32 tmp;
+    f32 f;
+
+    arg0->unk128 -= D_800BE9E4;
+    if (arg0->unk128 > 0) {
+        f = arg0->unk12C * D_800BE9A4;
+        arg0->unk2C += f;
+        arg0->unk30 += f;
+    }
+    if (arg0->unk58 & 1) {
+        if (arg0->unk1C < 32) {
+            tmp = arg0->unk1C * 8;
+            if (tmp < arg0->unk5C) {
+                arg0->unk5C = tmp;
+            }
+        }
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_F8590/func_150CBABC.s")
 

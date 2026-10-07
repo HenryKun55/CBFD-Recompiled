@@ -7,13 +7,41 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_15081C20.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_15081E0C.s")
+void func_15081E0C(struct127 *arg0, u16 arg1, u8 arg2) {
+    if (D_800BE616 == 0) {
+        if (arg0->health != 0) {
+            arg0->health = 7;
+        }
+        if ((arg2 == 0) || (arg1 != 10)) {
+            func_1507DF10(arg0, arg1);
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_15081E78.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_150825C0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_1508295C.s")
+extern u8 D_800D2100;
+extern u8 D_800D2101;
+void func_150825C0(s32, s32);
+
+void func_1508295C(s32 arg0, s32 arg1, s32 arg2) {
+    s32 i;
+    s32 start;
+    s32 end;
+
+    if (arg2) {
+        start = 0;
+        end = D_800D2101;
+    } else {
+        start = D_800D2101;
+        end = D_800D2100;
+    }
+    for (i = start; i < end; i++) {
+        func_150825C0(i, arg1);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_150829D8.s")
 
@@ -35,7 +63,28 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_15083AC8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_15083DA0.s")
+struct func_15083DA0_s {
+    u8 pad0[0x28];
+    u8 unk28;
+    u8 pad29[0x7];
+};
+extern u8 D_800D2100;
+
+s32 func_15083DA0(void) {
+    s32 i;
+    s32 count = 1;
+
+    for (i = 0; i < D_800D2100; i++) {
+        if (count == ((struct func_15083DA0_s *)D_800D20FC)[i].unk28) {
+            count++;
+            i = 0;
+        }
+    }
+    if (count >= 0x100) {
+        count = 0xFF;
+    }
+    return count;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_15083E0C.s")
 
@@ -116,7 +165,23 @@ u8 func_150849CC(struct func_150849CC_s *arg0, s32 *arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_15084A18.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AEB40/func_15084C30.s")
+struct func_15084C30_s {
+    u8 pad0[8];
+    f32 unk8;
+    u8 padC[0x18 - 0xC];
+    f32 unk18;
+};
+
+void func_15084C30(u8 *arg0) {
+    struct func_15084C30_s *temp;
+    f32 f;
+
+    if (arg0[4] == 0x94) {
+        temp = *(struct func_15084C30_s **)(arg0 + 0x2D0);
+        f = (u32)func_150ADA20() % (s32)temp->unk18;
+        temp->unk8 = f;
+    }
+}
 
 extern u8 D_800BE590;
 extern u16 D_800BE598[];

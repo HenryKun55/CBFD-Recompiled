@@ -3,7 +3,23 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_B21B0/func_15084D00.s")
+extern u8 D_8009D954[];
+extern u8 *D_80087240[];
+
+s32 func_15084D00(u8 *arg0) {
+    s32 val = arg0[4];
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 7; i++) {
+        for (j = 0; j < D_8009D954[i]; j++) {
+            if (val == D_80087240[i][j]) {
+                return D_80087240[i][0];
+            }
+        }
+    }
+    return val;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_B21B0/func_15084D70.s")
 

@@ -51,7 +51,24 @@ void func_1513259C(s32 arg0) {
     func_15169824(arg0);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_15F680/func_151325C8.s")
+struct func_151325C8_s {
+    u8 pad0[0x154];
+    s32 unk154[4];
+    s32 unk164;
+};
+
+void func_151325C8(struct func_151325C8_s *arg0) {
+    s32 i;
+
+    for (i = 0; i <= D_80082FA0; i++) {
+        if (arg0->unk154[i] != 0) {
+            func_100043B4((void *)arg0->unk154[i], 4);
+        }
+    }
+    if (arg0->unk164 != 0) {
+        func_100043B4((void *)arg0->unk164, 4);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_15F680/func_1513264C.s")
 
@@ -69,7 +86,28 @@ s32 **func_15132A4C(void *arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, s32 arg5)
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_15F680/func_151332DC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_15F680/func_15133510.s")
+struct func_15133510_s {
+    u8 pad0[0x18];
+    s32 unk18;
+    s32 unk1C;
+    s32 unk20;
+    f32 unk24;
+    f32 unk28;
+    f32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+    f32 unk40;
+};
+
+void func_151424F4(s32, s32, s32, s32, f32, f32, f32, f32, f32, f32, f32, f32);
+
+s32 func_15133510(s32 arg0, struct func_15133510_s *arg1) {
+    func_151424F4(arg0, arg1->unk18, arg1->unk1C, arg1->unk20, arg1->unk24, arg1->unk28, arg1->unk2C,
+                  arg1->unk30, arg1->unk34, arg1->unk38, arg1->unk3C, arg1->unk40);
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_15F680/func_15133588.s")
 
@@ -99,7 +137,34 @@ s32 func_15133760(Mtx *arg0, struct func_15133760_s *arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_15F680/func_15133894.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_15F680/func_151339D4.s")
+struct func_151339D4_s {
+    u8 pad0[0x10];
+    f32 unk10;
+    f32 unk14;
+    u8 pad18[0x24];
+    f32 unk3C;
+    u8 pad40[0x4];
+    f32 unk44;
+    f32 unk48;
+    f32 unk4C;
+    f32 unk50;
+    f32 unk54;
+    f32 unk58;
+};
+
+s32 func_151339D4(struct func_151339D4_s *arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4) {
+    f32 temp;
+
+    arg0->unk3C = arg0->unk10 + arg4;
+    temp = arg0->unk14;
+    arg0->unk44 = arg0->unk44 * temp;
+    arg0->unk48 = arg0->unk48 * -temp;
+    arg0->unk4C = arg0->unk4C * temp;
+    arg0->unk50 = arg0->unk50 * temp;
+    arg0->unk54 = arg0->unk54 * temp;
+    arg0->unk58 = arg0->unk58 * temp;
+    return 1;
+}
 
 struct func_15133A50_s {
     u8 pad0[0x10];

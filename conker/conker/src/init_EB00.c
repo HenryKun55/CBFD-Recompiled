@@ -303,7 +303,17 @@ s32 func_1000FE88(struct15 *entries, s32 index, s32 *count) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000FF90.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1001001C.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_100100E0.s")
+void func_100100E0(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5) {
+    s32 i;
+
+    for (i = 0; i < D_80042760; i++) {
+        if ((arg0 == D_80041FE0[i].unk14) && (arg1 == D_80041FE0[i].unk18) && (arg2 == D_80041FE0[i].unk1C)) {
+            D_80041FE0[i].unk14 = arg3;
+            D_80041FE0[i].unk18 = arg4;
+            D_80041FE0[i].unk1C = arg5;
+        }
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_10010154.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_10010344.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_10010558.s")

@@ -67,7 +67,19 @@ void func_1514FEFC(s32 arg0, s32 arg1, s32 arg2, u8 arg3, s32 arg4) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_15152874.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_15152ABC.s")
+extern u8 D_800A5FE0[][3];
+
+void func_15152ABC(u8 *arg0) {
+    u8 idx;
+    u8 *c;
+
+    idx = func_150ADA20() % 5U;
+    c = D_800A5FE0[idx];
+    arg0[3] = (func_150ADA20() % 101U) + 155;
+    arg0[0] = c[0];
+    arg0[1] = c[1];
+    arg0[2] = c[2];
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_17CAF0/func_15152B38.s")
 

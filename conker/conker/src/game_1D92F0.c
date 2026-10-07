@@ -98,7 +98,23 @@ void func_151ACB94(u8 *arg0, void *arg1, u8 arg2) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D92F0/func_151AD92C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D92F0/func_151AE06C.s")
+void func_151AE0E4(u8 *arg0, u8 arg1);
+void func_151AE264();
+
+void func_151AE06C(u8 *arg0, u8 *arg1) {
+    u8 sp1F;
+    u8 new;
+
+    if (func_151ACB38(arg0, &sp1F)) {
+        new = arg1[0x1B];
+        if ((*(u8 **)(arg0 + 0x31C))[0x98] == 0) {
+            func_151AE0E4(arg0, new);
+        } else if (new != (*(u8 **)(arg0 + 0x31C))[0x98]) {
+            func_151AE264(arg0);
+            func_151AE0E4(arg0, new);
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D92F0/func_151AE0E4.s")
 

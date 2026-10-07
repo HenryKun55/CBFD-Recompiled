@@ -126,7 +126,13 @@ void func_1502EA98(struct func_1502EA98_s *arg0, s32 arg1, s32 arg2, s32 arg3, s
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502EC34.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502EE8C.s")
+extern u8 D_800CC33A[];
+s32 func_1502EE8C(s32 arg0, s32 arg1) {
+    s32 v = D_800CC33A[arg0 * 0x32C + arg1];
+    s32 ret;
+    if (v >= 2) { ret = (v >= 4) ? 2 : v - 2; } else { ret = v; }
+    return ret;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502EEF4.s")
 

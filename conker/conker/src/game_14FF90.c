@@ -362,7 +362,34 @@ s32 func_15123934(struct108 *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
 // frame to the correct -0x20 moves the spill to 0x18 instead - the two
 // seem coupled through the same unidentified IDO heuristic documented
 // for func_15141564 above. Best candidate kept below for reference.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_14FF90/func_151239CC.s")
+struct func_151239CC_s {
+    /* 0x000 */ u16 unk0;
+    /* 0x002 */ u16 unk2[0x15];
+    /* 0x02C */ s32 unk2C[0x16];
+    /* 0x084 */ s32 unk84[0x16];
+    /* 0x0DC */ s32 unkDC[0x16];
+    /* 0x134 */ s32 unk134[0x16];
+    /* 0x18C */ u8 pad18C[0x1B4 - 0x18C];
+    /* 0x1B4 */ s16 unk1B4[0x16];
+    /* 0x1E0 */ s16 unk1E0[0x16];
+    /* 0x20C */ s16 unk20C[0x16];
+};
+
+s32 func_151239CC(struct func_151239CC_s *arg0, s32 arg1) {
+    if (arg0->unk20C[arg1] != 0) {
+        arg0->unk0 = arg0->unk2[arg1];
+        arg0->unk2C[0] = arg0->unk2C[arg1 + 1];
+        arg0->unkDC[0] = arg0->unkDC[arg1 + 1];
+        arg0->unk84[0] = arg0->unk84[arg1 + 1];
+        arg0->unk134[0] = arg0->unk134[arg1 + 1];
+        arg0->unk1B4[0] = arg0->unk1B4[arg1 + 1];
+        arg0->unk1E0[0] = arg0->unk1E0[arg1 + 1];
+        func_15124B18(arg0);
+        arg0->unk20C[arg1] = 0;
+        return 1;
+    }
+    return 0;
+}
 // s32 func_151239CC(struct108 *arg0, s32 arg1) {
 //     void *v1 = (char *) arg0 + arg1 * 2;
 //     void *v0;

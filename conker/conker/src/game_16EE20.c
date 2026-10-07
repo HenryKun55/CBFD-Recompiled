@@ -241,7 +241,21 @@ s32 func_151422F8(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
 // f32 func_151423D8(u8 arg0)) but the quadrant mask (arg0 & 0xC0) lands
 // in a reused $a0 instead of target's fresh $t0 - tried a separate
 // hoisted alias variable, didn't change the allocation.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_151423D8.s")
+f32 func_151423D8(u8 arg0) {
+    s32 idx;
+    u8 q;
+
+    if (arg0 & 0x40) {
+        idx = 0x40 - (arg0 & 0x3F);
+    } else {
+        idx = arg0 & 0x3F;
+    }
+    q = arg0 & 0xC0;
+    if (q == 0 || q == 0xC0) {
+        return D_8009A220[idx];
+    }
+    return -D_8009A220[idx];
+}
 // f32 func_151423D8(u8 arg0) {
 //     s32 idx;
 //
@@ -454,7 +468,18 @@ f32 func_15142B44(f32 arg0) {
 // separate v0=arg0 alias for the two stores where this reconstruction
 // gets CSE'd back down to using arg0 directly (same category as the
 // func_15142B7C/func_1513B0B8-adjacent aliasing quirks).
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142FBC.s")
+Gfx *func_15142FBC(Gfx *arg0, s32 arg1, s32 arg2, u8 *arg3) {
+    if ((arg1 != D_800DD218) || (arg2 != D_800DD21C)) {
+        if (*arg3 == 1) {
+            gDPPipeSync(arg0++);
+            *arg3 = 0;
+        }
+        gDPSetOtherMode(arg0++, arg1 | 0xF, arg2);
+        D_800DD218 = arg1;
+        D_800DD21C = arg2;
+    }
+    return arg0;
+}
 // void *func_15142FBC(void *arg0, s32 arg1, s32 arg2, u8 *arg3) {
 //     void *v0;
 //
@@ -757,7 +782,23 @@ s32 func_151444DC(s32 arg0, s32 arg1, s32 arg2) {
 //     }
 //     return arg0;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15144528.s")
+f32 func_15144528(f32 arg0, f32 arg1, f32 arg2) {
+    f32 range;
+
+    if (arg1 < arg0) {
+        range = arg1 - arg2;
+        do {
+            arg0 -= range;
+        } while (arg1 < arg0);
+    }
+    if (arg0 < arg2) {
+        range = arg1 - arg2;
+        do {
+            arg0 += range;
+        } while (arg0 < arg2);
+    }
+    return arg0;
+}
 // NON-MATCHING: mips_to_c reconstruction, hand-typed. Struct unidentified
 // here - raw offset casts. Selects a computation based on arg0's unk15 &
 // 3: cases 0 and 1 share the same tail (unk6^2 * D_800A5694), case 2

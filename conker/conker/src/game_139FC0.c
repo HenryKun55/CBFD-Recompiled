@@ -34,7 +34,23 @@ void func_1510D630(s16 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510D694.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510D720.s")
+extern u8 D_800D9F68[];
+
+void func_1510D720(s32 arg0) {
+    if (((s8 *)D_800BC448)[arg0] != 0) {
+        if (D_800D9F68[arg0] != 0) {
+            if (--D_800D9F68[arg0] == 0) {
+                if (arg0 < D_800D9F58) {
+                    D_800D9F58 = arg0;
+                }
+                if (D_800D9F5C < arg0) {
+                    D_800D9F5C = arg0;
+                }
+                func_1510D608(arg0, 2);
+            }
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_139FC0/func_1510D7AC.s")
 

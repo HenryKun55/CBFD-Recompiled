@@ -55,7 +55,34 @@
 //     return result;
 // }
 #pragma GLOBAL_ASM("asm/nonmatchings/debugger_256F80/func_16001700.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/debugger_256F80/func_16001830.s")
+extern u32 __osContPifRam[];
+extern u8 __osMaxControllers;
+
+struct func_16001830_s {
+    u8 dummy;
+    u8 txsize;
+    u8 rxsize;
+    u8 cmd;
+    u16 button;
+    s8 stick_x;
+    s8 stick_y;
+};
+
+void func_16001830(OSContPad *data) {
+    u8 *ptr = (u8 *)__osContPifRam;
+    struct func_16001830_s readformat;
+    s32 i;
+
+    for (i = 0; i < __osMaxControllers; i++, ptr += sizeof(struct func_16001830_s), data++) {
+        readformat = *(struct func_16001830_s *)ptr;
+        data->errno = (readformat.rxsize & 0xC0) >> 4;
+        if (data->errno == 0) {
+            data->button = readformat.button;
+            data->stick_x = readformat.stick_x;
+            data->stick_y = readformat.stick_y;
+        }
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/debugger_256F80/func_160018BC.s")
 
 // another __osSiDeviceBusy function

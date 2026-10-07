@@ -5,7 +5,26 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1AB530/func_1517E080.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1AB530/func_1517E134.s")
+struct func_1517E134_s {
+    u8 pad[0x24];
+    struct func_1517E134_s *next;
+};
+
+void func_1517E134(struct func_1517E134_s *arg0) {
+    struct func_1517E134_s *prev;
+
+    if (arg0 == (struct func_1517E134_s *)D_800DDD64) {
+        D_800DDD64 = arg0->next;
+    } else {
+        for (prev = D_800DDD64; prev != NULL && prev->next != arg0; prev = prev->next) {
+        }
+        if (prev == NULL) {
+            return;
+        }
+        prev->next = arg0->next;
+    }
+    func_10004074(arg0);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1AB530/func_1517E1AC.s")
 

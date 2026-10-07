@@ -7,9 +7,26 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_61490/func_150341BC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_61490/func_15034340.s")
+s16 *func_15034340(s16 *arg0, s32 arg1) {
+    struct127 *obj = &gObjects[arg1];
+    if (obj->unk1D1 != 0) {
+        arg0[0] = 6;
+        arg0[1] = obj->unk1D1 * 200;
+        arg0 += 2;
+    }
+    return arg0;
+}
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_61490/func_150343B0.s")
+s16 *func_150343B0(s16 *arg0, s32 arg1) {
+    struct127 *obj = &gObjects[arg1];
+
+    if (obj->unk1D1 != 0) {
+        arg0[0] = 6;
+        arg0[1] = obj->unk1D1 * 200;
+        arg0 += 2;
+    }
+    return arg0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_61490/func_15034420.s")
 

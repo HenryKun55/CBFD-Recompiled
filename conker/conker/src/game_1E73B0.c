@@ -148,7 +148,27 @@ void func_151BD7F4(u8 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BE0AC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BE138.s")
+struct func_151BE138_s {
+    u8 pad0[0x28];
+    struct102 *unk28[6];
+};
+
+void func_151BE138(struct func_151BE138_s *arg0) {
+    struct102 **p = arg0->unk28;
+
+    if (*(s32 *)&arg0->unk28[2] != 0) {
+        func_1516972C(arg0->unk28[2]);
+    }
+    if (p[3] != NULL) {
+        func_1516972C(p[3]);
+    }
+    if (p[4] != NULL) {
+        func_1516972C(p[4]);
+    }
+    if (p[5] != NULL) {
+        func_1516972C(p[5]);
+    }
+}
 
 void func_151BE1B8(s32 arg0) {
     func_151BE138(arg0);
@@ -276,7 +296,27 @@ s32 func_151BEE94(struct func_151BEE94_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BF81C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E73B0/func_151BFB2C.s")
+struct func_151BFB2C_s {
+    char pad0[0x28];
+    s32 unk28[3];
+};
+
+void func_151BFB2C(s32 arg0) {
+    struct102 **p;
+    s32 i;
+
+    if (((struct func_151BFB2C_s *)arg0)->unk28[0]) {
+        func_1516972C(*(struct102 **)((struct func_151BFB2C_s *)arg0)->unk28);
+    }
+    i = 0;
+    p = (struct102 **)((struct func_151BFB2C_s *)arg0)->unk28;
+    do {
+        if (p[i + 1] != NULL) {
+            func_1516972C(p[i + 1]);
+        }
+        i = (u8)(i + 1);
+    } while (i < 2);
+}
 
 void func_151BFB2C(s32 arg0);
 

@@ -5,7 +5,13 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_E1280/func_150B3DD0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_E1280/func_150B3E74.s")
+void func_1000FC18(s32, s16, s16, s16, s32);
+void func_151478F4(void *);
+
+void func_150B3E74(void *arg0) {
+    func_1000FC18(0x221, (s16)*(f32 *)((char *)arg0 + 0x10), (s16)*(f32 *)((char *)arg0 + 0x14), (s16)*(f32 *)((char *)arg0 + 0x18), 0xFA0);
+    func_151478F4(arg0);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_E1280/func_150B3EE8.s")
 

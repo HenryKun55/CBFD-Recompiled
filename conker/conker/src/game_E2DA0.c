@@ -43,6 +43,30 @@ void func_150B6450(struct102 *arg0, s32 arg1, u8 arg2) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_E2DA0/func_150B648C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_E2DA0/func_150B66DC.s")
+struct func_150B66DC_s {
+    u8 pad0[0x14];
+    u8 *unk14;
+    u8 *unk18;
+};
+
+s32 func_150B66DC(struct func_150B66DC_s *arg0) {
+    u8 *p = arg0->unk18;
+
+    switch (p[0x68] - 15) {
+        case 0:
+            arg0->unk14[9] = 1;
+            break;
+        case 1:
+            arg0->unk14[9] = 0;
+            arg0->unk14[0x2F] = 0x14;
+            break;
+        case 2:
+        default:
+            arg0->unk14[9] = 0;
+            arg0->unk14[0x2F] = 0x28;
+            break;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_E2DA0/func_150B6754.s")

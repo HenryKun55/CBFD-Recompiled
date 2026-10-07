@@ -39,6 +39,26 @@ s32 func_150B961C(struct func_150B961C_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_E5E90/func_150B963C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_E5E90/func_150B9D14.s")
+struct func_150B9D14_s {
+    u8 pad0[0x18];
+    s32 unk18;
+    s32 unk1C;
+    f32 unk20;
+    f32 unk24;
+    f32 unk28;
+    s32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+    f32 unk40;
+};
+
+void func_15142600(s32, s32, s32, s32, f32, f32, f32, f32, f32, f32, f32, f32);
+
+s32 func_150B9D14(s32 arg0, struct func_150B9D14_s *arg1) {
+    func_15142600(arg0, arg1->unk18, arg1->unk1C, arg1->unk2C, arg1->unk30, arg1->unk34, arg1->unk38, arg1->unk3C, arg1->unk40, arg1->unk20, arg1->unk24, arg1->unk28);
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_E5E90/func_150B9D8C.s")

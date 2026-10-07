@@ -17,7 +17,18 @@ void func_15147928(s32 arg0) {
     func_15169824(arg0);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_174BF0/func_1514795C.s")
+int func_1514795C(s32 arg0) {
+    s32 i;
+
+    for (i = 0; i <= D_80082FA0; i++) {
+        if (((s32 *)arg0)[i + 15]) {
+            func_100043B4(((s32 *)arg0)[i + 15], 4);
+        }
+    }
+    if (((s32 *)arg0)[19] != 0) {
+        func_100043B4(((s32 *)arg0)[19], 4);
+    }
+}
 
 extern void (*D_8008A2F0[])(void *);
 

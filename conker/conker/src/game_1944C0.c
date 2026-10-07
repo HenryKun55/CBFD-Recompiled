@@ -301,7 +301,30 @@ int func_15168A4C(struct func_15168A4C_s *arg0, s32 arg1) {
 // unk0/unk1 loads first, splitting into a separate short-lived local
 // for the first check) lands it in $v1 instead, adding one extra
 // "move v0,v1" before the final return that target doesn't have.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15168A9C.s")
+struct func_15168A9C_s {
+    u8 unk0;
+    u8 unk1;
+    u8 pad2[2];
+    struct func_15168A9C_s *unk4;
+    struct func_15168A9C_s *unk8;
+};
+
+void func_15168A9C(struct func_15168A9C_s *arg0) {
+    struct func_15168A9C_s **slot;
+    u8 unk1 = arg0->unk1;
+    u8 unk0 = arg0->unk0;
+
+    slot = &((struct func_15168A9C_s *(*)[0x68]) D_800DCE50)[unk1][unk0];
+    if (arg0 == *slot) {
+        *slot = arg0->unk8;
+    }
+    if (arg0->unk8 != 0) {
+        arg0->unk8->unk4 = arg0->unk4;
+    }
+    if (arg0->unk4 != 0) {
+        arg0->unk4->unk8 = arg0->unk8;
+    }
+}
 // void *func_15168A9C(struct12 *arg0) {
 //     void *temp_a1;
 //     void *temp_v0;

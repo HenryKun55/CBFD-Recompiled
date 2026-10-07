@@ -346,7 +346,34 @@ s32 func_151DA6A8(struct210 *arg0) {
 // reordered" category as the game_D5160/game_D5250 matrix-init
 // near-misses. Also target has a dead `addiu v0,zero,1` with no
 // corresponding source effect found.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DADA0.s")
+extern f32 D_800AB4B0;
+
+struct func_151DADA0_sub {
+    u8 unk0;
+    s8 unk1;
+    u8 pad2[2];
+    f32 unk4;
+    f32 unk8;
+};
+
+struct func_151DADA0_s {
+    u8 pad0[0x4C];
+    f32 unk4C;
+    f32 unk50;
+    u8 pad54[0x110 - 0x54];
+    struct func_151DADA0_sub unk110;
+};
+
+s32 func_151DADA0(struct func_151DADA0_s *arg0) {
+    struct func_151DADA0_sub *sub;
+    f32 f0;
+
+    sub = &arg0->unk110;
+    f0 = func_151423D8((sub->unk0 += sub->unk1 * D_800BE9E4) - 0x40);
+    arg0->unk4C = sub->unk4 * f0 + 1.0f;
+    arg0->unk50 = D_800AB4B0 - sub->unk8 * f0;
+    return 1;
+}
 // void func_151DADA0(void *arg0) {
 //     void *a1 = arg0;
 //     s32 t7 = D_800BE9E4;

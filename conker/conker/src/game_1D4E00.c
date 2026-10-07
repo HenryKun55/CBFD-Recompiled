@@ -83,7 +83,21 @@ s32 func_151A9060(u8 *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A91AC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A931C.s")
+void func_151A931C(u8 *arg0, s32 arg1, u8 arg2) {
+    if (arg2 == 0x17) {
+        u8 *p = &arg0[0x28];
+
+        if (*(u8 *)arg1 == arg0[0x80]) {
+            *p |= 1;
+        }
+    } else if (arg2 == 0x18) {
+        u8 *p = &arg0[0x28];
+
+        if (*(u8 *)arg1 == arg0[0x80]) {
+            *p &= ~1;
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D4E00/func_151A9390.s")
 

@@ -1305,7 +1305,31 @@ s32 func_15163F50(struct225 *arg0, struct225 *arg1) {
 // form here compiles to the same bnel too but is missing those two
 // spills. An explicit p0/p1 local-alias attempt got CSE'd straight back
 // to direct arg0/arg1 use - no difference in output.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18D770/func_151640C0.s")
+struct func_151640C0_s {
+    u8 *unk0;
+    u8 unk4;
+};
+
+void func_151640C0(struct102 *arg0, struct func_151640C0_s **arg1, u8 arg2) {
+    struct func_151640C0_s *v1;
+    struct func_151640C0_s *v0;
+    u8 *a0;
+    u8 *a1;
+    u8 a3;
+
+    if (arg2 == 0x29) {
+        v1 = arg1[1];
+        v0 = *(struct func_151640C0_s **) &arg0;
+        a0 = v1->unk0;
+        a1 = ((struct func_151640C0_s *) ((u8 *) v0 + 0x18))->unk0;
+        a3 = v1->unk4;
+        v0 = (struct func_151640C0_s *) ((u8 *) v0 + 0x18);
+        arg2 = v0->unk4;
+        if (a1 == a0 || arg2 == a3 || a3 == a1[0x3B]) {
+            func_1516972C(arg0);
+        }
+    }
+}
 // void func_151640C0(void *arg0, void *arg1, u8 arg2) {
 //     if (arg2 == 0x29) {
 //         void *v1 = *(void **) ((char *) arg1 + 4);
@@ -1395,7 +1419,17 @@ s32 func_151643F8(struct225 *arg0) {
 // reuses a single v0/v1 register for all three - same "redundant
 // reload gets distinct destination registers" category left unsolved
 // on func_1514143C above (game_16DC80.c).
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18D770/func_1516441C.s")
+int func_1516441C(struct225 *arg0, void *arg1) {
+    void *parg1 = arg1;
+    void *pbuf;
+    f32 buf[3];
+
+    pbuf = buf;
+    func_15145CD0(*(s32 *) ((char *) arg1 + 0xC), &parg1, &pbuf, 1);
+    arg0->unk14->unkE = buf[0];
+    arg0->unk14->unk10 = buf[1];
+    arg0->unk14->unk12 = buf[2];
+}
 // void func_1516441C(struct225 *arg0, void *arg1) {
 //     void *parg1 = arg1;
 //     void *pbuf;

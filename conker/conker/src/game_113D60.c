@@ -52,9 +52,27 @@ s32 func_150E8824(u8 *arg0, void *arg1) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_113D60/func_150E8854.s")
+void func_150E8854(void) {
+    struct260 *result;
+    f32 sp30;
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_113D60/func_150E88C0.s")
+    sp30 = 10.0f;
+    result = func_15149130(300, -1, 0x35, -1, 0, 0, (struct37 *) 4, 0xFF, 1);
+    if (result != 0) {
+        memcpy((char *) result + 0x28, &sp30, 4);
+    }
+}
+
+extern f32 D_800A1378;
+void func_150E8930();
+
+void func_150E88C0(u8 *arg0) {
+    *(f32 *)(arg0 + 0x28) -= D_800BE9A4;
+    if (*(f32 *)(arg0 + 0x28) < 0.0f) {
+        *(f32 *)(arg0 + 0x28) = (func_150ADA68() * D_800A1378) + 201.0f;
+        func_150E8930(arg0);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_113D60/func_150E8930.s")
 

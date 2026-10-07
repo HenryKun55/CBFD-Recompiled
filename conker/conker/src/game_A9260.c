@@ -28,6 +28,15 @@ void func_1507C324(u8 *arg0, u8 *arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_A9260/func_1507C370.s")
+void func_1507C370(void) {
+    struct127 *obj = gObjects;
+    s32 i;
+
+    for (i = 0; i < D_8008FD8C; i++, obj++) {
+        if (obj->unk31C != NULL) {
+            func_1507C3E0(obj, (u8 *)obj->unk31C + 0x114, (u8 *)obj->unk31C + 0x116, (u8 *)obj->unk31C + 0x118);
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_A9260/func_1507C3E0.s")

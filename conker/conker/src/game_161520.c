@@ -329,7 +329,31 @@ void func_1513530C(struct102 *arg0) {
 //
 //     D_80089B70[idx](a1);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_1513532C.s")
+extern void (*D_80089B70[])(void *);
+
+struct func_1513532C_s {
+    u8 pad0[0x44];
+    u16 unk44;
+    u8 pad46[0xA];
+    u8 unk50;
+};
+
+void func_1513532C(struct func_1513532C_s *arg0) {
+    u16 val;
+    s32 idx = arg0->unk50;
+
+    if (idx < 0) {
+        idx = 0;
+    } else if (idx >= 6) {
+        idx = 0;
+    }
+    val = arg0->unk44;
+    if (val != 0) {
+        func_100111C8(val);
+        arg0->unk44 = 0;
+    }
+    D_80089B70[idx](arg0);
+}
 
 // NON-MATCHING: identical shape to func_1513532C above, just
 // dispatching through D_80089B88 instead of D_80089B70 - same
@@ -354,7 +378,23 @@ void func_1513530C(struct102 *arg0) {
 //
 //     D_80089B88[idx](a1);
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_151353A8.s")
+extern void (*D_80089B88[])(void *);
+
+void func_151353A8(void *arg0) {
+    void *a1 = arg0;
+    s32 idx = *(u8 *) ((char *) a1 + 0x50);
+
+    if (idx < 0) {
+        idx = 0;
+    } else if (idx >= 6) {
+        idx = 0;
+    }
+    if (*(u16 *) ((char *) a1 + 0x44) != 0) {
+        func_100111C8(*(u16 *) ((char *) a1 + 0x44));
+        *(u16 *) ((char *) a1 + 0x44) = 0;
+    }
+    D_80089B88[idx](a1);
+}
 
 void func_15135424(void *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
     s32 local1[2];

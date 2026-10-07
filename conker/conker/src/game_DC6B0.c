@@ -55,7 +55,22 @@ void func_150AF790(s32 arg0, u8 *arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_DC6B0/func_150AF7C4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_DC6B0/func_150AFBF4.s")
+struct func_150AFBF4_s {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+};
+
+s32 func_150AFBF4(u8 *arg0) {
+    struct func_150AFBF4_s *temp_v1;
+
+    *(f32 *)(arg0 + 0x78) += *(f32 *)(arg0 + 0x7C) * D_800BE9A4;
+    temp_v1 = (struct func_150AFBF4_s *)(arg0 + 0x70);
+    temp_v1->unk8 = func_15144B68(*(f32 *)(arg0 + 0x78));
+    *(f32 *)(arg0 + 0x10) = (sinf(temp_v1->unk8) * temp_v1->unk4) + temp_v1->unk0;
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_DC6B0/func_150AFC68.s")
 

@@ -5,7 +5,15 @@
 
 
 // wtf?
-#pragma GLOBAL_ASM("asm/nonmatchings/game_76710/func_15049260.s")
+struct func_15049260_s {
+    s32 w[9];
+};
+
+void func_150AAD98(struct func_15049260_s);
+
+void func_15049260(struct func_15049260_s arg0) {
+    func_150AAD98(arg0);
+}
 
 void func_150492CC(f32 arg0, f32 arg1, f32 arg2) {
     D_800CC220 = arg0;

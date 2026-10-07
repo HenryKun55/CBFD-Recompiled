@@ -14,7 +14,21 @@ void func_15096970(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C3E20/func_15096A68.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C3E20/func_15096D08.s")
+s32 func_15096A68(s32 arg0);
+
+void func_15096D08(void) {
+    s32 i;
+
+    if (D_800C35EA != 1) {
+        for (i = 0; i != 3; i++) {
+            if (D_800D2DC0[i * 0x24] != 0) {
+                if (func_15096A68(i) != 0) {
+                    return;
+                }
+            }
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C3E20/func_15096D78.s")
 

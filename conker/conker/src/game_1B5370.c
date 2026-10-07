@@ -28,6 +28,15 @@ void func_15188010(s32 arg0, f32 *arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B5370/func_1518804C.s")
+void func_1518804C(s32 arg0, f32 arg1) {
+    if ((arg0 < D_800DF7B4) && (arg0 >= 0)) {
+        if (arg1 > 1.0f) {
+            arg1 = 1.0f;
+        } else if (arg1 < 0.0f) {
+            arg1 = 0.0f;
+        }
+        D_800DF70C[arg0].unk0 = arg1;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1B5370/func_151880C0.s")

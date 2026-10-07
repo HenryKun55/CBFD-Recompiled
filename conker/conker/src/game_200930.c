@@ -7,7 +7,24 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_200930/func_151D3D50.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_200930/func_151D3E04.s")
+struct func_151D3E04_s {
+    u8 pad0[0x14];
+    f32 x;
+    f32 y;
+    f32 z;
+    u8 pad20[0x1D4 - 0x20];
+    u8 *unk1D4;
+};
+
+void func_151D3E04(struct func_151D3E04_s *arg0, f32 *arg1, s32 arg2, u8 arg3, f32 arg4) {
+    if (arg0->unk1D4 != NULL) {
+        func_15143134(arg2, arg1, arg0->unk1D4 + (arg3 << 6));
+    } else {
+        arg1[0] = arg0->x;
+        arg1[1] = arg0->y + arg4;
+        arg1[2] = arg0->z;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_200930/func_151D3E6C.s")
 

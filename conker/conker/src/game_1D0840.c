@@ -29,7 +29,26 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D0840/func_151A4D88.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D0840/func_151A4E34.s")
+struct func_151A4E34_s {
+    void *obj;
+    u8 pad4;
+    u8 unk5;
+    u8 pad6[2];
+    u8 unk8[1];
+};
+
+s32 func_151A4E34(struct func_151A4E34_s *arg0, s32 arg1) {
+    void *obj = arg0->obj;
+
+    if (*(s32 *) ((char *) obj + 0x1D4) == 0) {
+        return 0;
+    }
+    if ((*(u8 *) ((char *) obj + 0x74) & 0xF) == 0xF) {
+        return 0;
+    }
+    func_15143134(arg0->unk8, arg1, *(s32 *) ((char *) obj + 0x1D4) + (arg0->unk5 << 6));
+    return 1;
+}
 
 struct func_151A4E9C_s {
     u8 pad0[0x1E];

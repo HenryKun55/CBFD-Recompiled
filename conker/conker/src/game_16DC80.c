@@ -143,7 +143,15 @@ M:
 // the two seem coupled through some IDO register-allocation heuristic
 // this session couldn't isolate further. Best candidate kept below for
 // reference; not activated since it isn't byte-perfect.
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16DC80/func_15141564.s")
+s32 func_15141564(struct210 *arg0) {
+    f32 *p = &arg0->unk170;
+    f32 *q = p;
+
+    arg0->unk158 = p[1] * sinf(arg0->unk178) + p[0];
+    q[2] = q[3] * D_800BE9A4 + q[2];
+    q[2] = func_15144B68(q[2]);
+    return 1;
+}
 // s32 func_15141564(struct210 *arg0) {
 //     f32 *p = &arg0->unk170;
 //

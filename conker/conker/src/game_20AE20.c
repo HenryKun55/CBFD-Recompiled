@@ -11,7 +11,25 @@ s32 func_151DDB94(s32 arg0) {
     return ~arg0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_20AE20/func_151DDBA0.s")
+extern u8 D_8008FDA4;
+extern u8 D_800D2E40;
+void func_151E557C(void);
+void func_1501C730(s32, s32, s32, s32, s32);
+void func_1000F1A8(void);
+void func_1000E934(void);
+
+void func_151DDBA0(void) {
+    D_800D2E40 = 0;
+    func_1501C730(6, 0x1D, 0, 0, 1);
+    D_800E0B94 = 3;
+    D_8008FDA4 = 0;
+    D_800BEAC1 = 0;
+    func_151E557C();
+    func_1000F1A8();
+    func_1000E934();
+    D_8008FD8C = 1;
+    D_8008FD90 = 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_20AE20/func_151DDC20.s")
 
@@ -130,7 +148,21 @@ void func_151E4E00(void) {
     func_1501C730(6, 0x1D, 0, 0, 1);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_20AE20/func_151E4E64.s")
+extern void (*D_800E0A88)(void);
+void func_151E55A8();
+
+void func_151E4E64(void) {
+    func_151E530C();
+    func_151E55A8();
+    if (D_800E0A90 > 1200) {
+        D_800E0B9A |= 0x8000;
+    }
+    if (D_800E0B9A != 0) {
+        D_800E0B94 = 7;
+        D_800E0A88 = func_151E4E00;
+        D_8008FD74 = 8;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_20AE20/func_151E4EE8.s")
 
@@ -153,7 +185,29 @@ void func_151E557C(void) {
     D_80084060[3] = 3;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_20AE20/func_151E55A8.s")
+extern u8 D_800E0B98;
+extern u8 D_800E0B97;
+
+void func_151E55A8(void) {
+    s32 delta;
+    s32 val;
+
+    if (D_800E0B98 == 0) {
+        delta = D_800BE9E4 * 8;
+    } else {
+        delta = -D_800BE9E4 * 8;
+    }
+    val = D_800E0B97;
+    val += delta;
+    if (val >= 256) {
+        val = 0x1FE - val;
+        D_800E0B98 ^= 1;
+    } else if (val < 0) {
+        val = -val;
+        D_800E0B98 ^= 1;
+    }
+    D_800E0B97 = val;
+}
 
 extern u8 D_800E0A8C;
 
@@ -227,7 +281,24 @@ void func_151E7E9C(void) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_20AE20/func_151E7EF8.s")
+void func_151DDC20();
+
+void func_151E7EF8(void) {
+    u32 *p;
+    u32 *end;
+    u32 sum;
+
+    func_151E7E9C();
+    p = (u32 *)func_151DDC20;
+    end = (u32 *)func_151DE7D4;
+    sum = 0;
+    while (p < end) {
+        sum += *p++;
+    }
+    if (sum != 0xBFC924E3) {
+        *(u32 *)osSpTaskLoad = 0;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_20AE20/func_151E7F60.s")
 

@@ -47,7 +47,18 @@ void func_151A6B10(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D2B10/func_151A6B3C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D2B10/func_151A6B68.s")
+void *func_151A6BD8(s32 arg0);
+
+void func_151A6B68(struct127 *arg0, s32 arg1) {
+    void *temp_v0;
+    struct127 *obj = NULL;
+
+    temp_v0 = func_151A6BD8(arg1);
+    if (temp_v0 != NULL) {
+        obj = *(struct127 **)((u8 *)temp_v0 + 0x38);
+    }
+    func_1505D024(arg0, 0x60034, arg0->unk7A, obj != NULL ? obj - gObjects : -1);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D2B10/func_151A6BD8.s")
 

@@ -22,11 +22,41 @@ void func_1503D45C(s32 *arg0, s32 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6A3D0/func_1503D484.s")
+struct func_1503D484_s {
+    u16 id;
+    s32 ptr;
+};
+
+void func_1503D484(struct func_1503D484_s *arg0, s32 arg1) {
+    struct func_1503D484_s *base = arg0;
+
+    while (arg0->id != 999) {
+        if (arg0->ptr != 0) {
+            func_1503D438(&arg0->ptr, (s32)base);
+        }
+        arg0++;
+    }
+    D_800C5A90[arg1] = arg0 - base;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_6A3D0/func_1503D510.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_6A3D0/func_1503D5F0.s")
+extern u8 *D_80084410[];
+extern u8 D_80098888[];
+
+s32 func_1503D5F0(s32 arg0) {
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 5; i++) {
+        for (j = 0; j < D_80098888[i]; j++) {
+            if (arg0 == D_80084410[i][j]) {
+                return D_80084410[i][0];
+            }
+        }
+    }
+    return arg0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_6A3D0/func_1503D660.s")
 

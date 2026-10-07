@@ -3,7 +3,26 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_15036C70.s")
+extern void *allocate_memory(s32, s32, s32, s32);
+extern f32 D_80098250;
+
+struct func_15036C70_s {
+    u8 pad[0x324];
+    f32 *unk324;
+};
+
+void func_15036C70(struct func_15036C70_s *arg0) {
+    s32 i;
+    f32 v;
+
+    arg0->unk324 = allocate_memory(0x48, 1, 0, 0);
+    bzero(arg0->unk324, 0x48);
+    v = D_80098250;
+    for (i = 0; i < 3; i++) {
+        arg0->unk324[i] = v;
+        arg0->unk324[i + 3] = v;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_15036CE8.s")
 
@@ -38,7 +57,19 @@ struct func_15039A54_s *func_15039A54(s32 arg0, s32 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_1503A08C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_1503A60C.s")
+struct func_1503A60C_s {
+    u8 pad0[0x30];
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+};
+
+void func_1503A60C(void) {
+    struct func_1503A60C_s *tmp = (struct func_1503A60C_s *)((u8 *)gObjects[gCurrentObjectIndex].unk1D4 + 0x40);
+    tmp->unk30 = *(f32 *)&gObjects[gCurrentObjectIndex].pad174;
+    tmp->unk34 = gObjects[gCurrentObjectIndex].y_position;
+    tmp->unk38 = *(f32 *)&gObjects[gCurrentObjectIndex].pad178;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_64120/func_1503A678.s")
 

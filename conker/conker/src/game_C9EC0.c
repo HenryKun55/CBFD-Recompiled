@@ -52,7 +52,17 @@ s32 func_1509CA78(s32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C9EC0/func_1509CA98.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_C9EC0/func_1509CB68.s")
+s32 func_1509CB68(void) {
+    s32 i;
+    s32 count = 0;
+
+    for (i = 0; i < 204; i++) {
+        if (D_80087430[i].unk0 != 0) {
+            count++;
+        }
+    }
+    return count;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_C9EC0/func_1509CBD4.s")
 
