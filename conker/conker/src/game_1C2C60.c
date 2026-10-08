@@ -63,7 +63,82 @@ void func_15195D00(void *arg0, s32 arg1, s32 arg2, s32 arg3) {
     n->next = NULL;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1C2C60/func_15195DD4.s")
+struct func_15195DD4_s {
+    u8 pad0[4];
+    struct func_15195DD4_s *next;
+    s16 unk8;
+    u8 padA[8];
+    u8 unk12;
+    u8 unk13;
+    u8 unk14;
+};
+
+typedef struct {
+    s32 unk0;
+    s32 unk4;
+} func_15195DD4_e;
+
+s32 func_15195868(void *, s32, s32, s32 *);
+struct func_15195DD4_s *func_15195984(s32, s32, s32, s32);
+
+void *func_15195DD4(func_15195DD4_e *arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6) {
+    s32 idx;
+    s32 key;
+    s32 r;
+    s32 sp50;
+    s32 val;
+    s32 val0;
+    struct func_15195DD4_s *n;
+
+    idx = arg3;
+    if (arg0 == NULL) {
+        return NULL;
+    }
+    if (D_800BEAC0) {
+        return NULL;
+    }
+    if (arg3 == -1) {
+        idx = 0;
+    }
+    do {
+        r = func_15195868(arg0, arg1, idx, &sp50);
+        if (r == -1) {
+            arg3 = 0;
+            continue;
+        }
+        if (arg1 == 0) {
+            arg1 = D_800E08F0;
+        }
+        key = arg4 ? -1 : arg1;
+        n = D_800E08E8;
+        while (n != NULL && key != n->unk8) {
+            n = n->next;
+        }
+        val = ((func_15195DD4_e *)((u8 *)arg0 + r * 8))->unk4;
+        val0 = ((func_15195DD4_e *)((u8 *)arg0 + r * 8))->unk0;
+        if (n == NULL) {
+            n = func_15195984(arg1, val, val0, arg2);
+            if (n != NULL) {
+                n->unk12 = arg5;
+                n->unk13 = arg6;
+            } else {
+                return NULL;
+            }
+        } else {
+            r = func_15195A84(r, n, val, arg2);
+        }
+        arg4 = 0;
+        if (n->unk14 < sp50) {
+            n->unk14 = sp50;
+        }
+        func_15195D00(n, arg0, r, sp50);
+        idx++;
+    } while (arg3 == -1);
+    if (arg1 == D_800E08F0) {
+        D_800E08F0--;
+    }
+    return n;
+}
 
 void *func_15195DD4();
 

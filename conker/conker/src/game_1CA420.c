@@ -35,7 +35,94 @@ void func_1519CFA0(struct func_1519CFA0_s *arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1CA420/func_1519D030.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1CA420/func_1519D240.s")
+typedef struct {
+    f32 x, y, z;
+} func_1519D240_v3;
+
+struct func_1519D240_e {
+    func_1519D240_v3 pos;
+    func_1519D240_v3 vel;
+    f32 unk18;
+    s16 unk1C;
+    s16 unk1E;
+    u8 unk20;
+    u8 pad21[3];
+};
+
+struct func_1519D240_p {
+    u8 pad0[6];
+    u8 unk6;
+    u8 pad7[0x24 - 7];
+    f32 unk24;
+    u8 pad28[8];
+    f32 unk30;
+    f32 unk34;
+    u8 pad38[0x46 - 0x38];
+    s16 unk46;
+};
+
+struct func_1519D240_s {
+    u8 pad0[0x25];
+    u8 unk25;
+    u8 pad26[6];
+    s8 unk2C;
+    s8 unk2D;
+    s8 unk2E;
+    u8 pad2F[0x54 - 0x2F];
+    func_1519D240_v3 unk54;
+    u8 pad60[0x94 - 0x60];
+    struct func_1519D240_e *unk94;
+    struct func_1519D240_p *unk98;
+};
+
+s32 func_1519D240(struct func_1519D240_s *arg0) {
+    s32 i;
+    struct func_1519D240_e *e;
+    struct func_1519D240_p *p = arg0->unk98;
+    struct func_1519D240_e *list = arg0->unk94;
+
+    if (arg0->unk2C < 2 && (p->unk6 & 1)) {
+        return 0;
+    }
+    i = arg0->unk2E;
+    while (i != arg0->unk2D) {
+        i--;
+        if (i < 0) {
+            i = arg0->unk25 - 1;
+        }
+        e = &list[i];
+        e->unk20 = 0xFF;
+        e->vel.x *= p->unk30;
+        e->vel.y += p->unk24 * D_800BE9A4;
+        e->vel.z *= p->unk30;
+        e->pos.x += list[i].vel.x * D_800BE9A4;
+        e->pos.y += list[i].vel.y * D_800BE9A4;
+        e->pos.z += list[i].vel.z * D_800BE9A4;
+        if (e->unk1E > 0) {
+            e->unk1E -= D_800BE9E4;
+        } else {
+            e->unk1C -= D_800BE9E4 * p->unk46;
+        }
+        e->unk18 += D_800BE9A4 * p->unk34;
+        if (e->unk1C < 0) {
+            p->unk6 &= ~2;
+            while (i != arg0->unk2D) {
+                arg0->unk2D++;
+                if (arg0->unk2D == arg0->unk25) {
+                    arg0->unk2D = 0;
+                }
+                arg0->unk2C--;
+            }
+            list[arg0->unk2D].unk1C = 0;
+        }
+    }
+    if (arg0->unk2C > 0) {
+        arg0->unk54 = list[arg0->unk2D].pos;
+    } else {
+        arg0->unk54.x = 0.0f; arg0->unk54.y = 0.0f; arg0->unk54.z = 0.0f;
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1CA420/func_1519D454.s")
 

@@ -101,7 +101,35 @@ void func_150AFDB0(void) {
     D_800DD190--;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_DC6B0/func_150AFE64.s")
+void func_150A7960(void *mtx, f32 x, f32 y, f32 z, f32 *outX, f32 *outY, f32 *outZ);
+void func_150E1AB0(s32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, s32, s32, s32, s32, s32, void *, s32, s32, s32, s32, s32, f32, f32, f32, f32, f32, f32);
+void func_150E2DB4(void *arg0, u8 arg1, s16 arg2, s32 arg3, f32 arg4, f32 arg5, f32 arg6, f32 arg7, f32 arg8, f32 arg9, s16 arg10, s16 arg11, u16 arg12, u8 arg13);
+
+void func_150AFE64(s32 arg0) {
+    f32 ax, ay, az;
+    f32 bx, by, bz;
+    s32 idx;
+    u8 *mtx;
+
+    if (gCurrentObject->unk1D4 != NULL) {
+        if (arg0 == 0) {
+            idx = 3;
+        } else {
+            idx = 2;
+        }
+        mtx = (u8 *)gCurrentObject->unk1D4 + (idx << 6);
+        ax = 0.0f;
+        ay = 0.0f;
+        az = -20.0f;
+        func_150A7960(mtx, 0.0f, 0.0f, -20.0f, &ax, &ay, &az);
+        bx = 0.0f;
+        by = 0.0f;
+        bz = -150.0f;
+        func_150A7960(mtx, 0.0f, 0.0f, -150.0f, &bx, &by, &bz);
+        func_150E1AB0(0, ax, ay, az, bx, by, bz, 40.0f, 0.0f, 2.0f, 120.0f, 60, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        func_150E2DB4(gCurrentObject, gCurrentObject->unique_id, idx, -1, 0.0f, 0.0f, -39.0f, 0.0f, 0.0f, -150.0f, 3, 0xFF, 4, 0);
+    }
+}
 
 void func_15179008(s32);
 void func_150AF200(s32, s32);

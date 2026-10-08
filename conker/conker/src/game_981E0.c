@@ -5,7 +5,80 @@
 
 f32 random_float();                                /* extern */
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_981E0/func_1506AD30.s")
+extern u8 D_80099A30[];
+extern u8 D_800C365E;
+extern void (*D_800863FC[])(void);
+
+struct func_1506AD30_e {
+    f32 unk0;
+    u8 pad4[3];
+    u8 unk7;
+    s32 unk8;
+};
+
+struct func_1506AD30_t {
+    u8 pad0[8];
+    f32 unk8;
+    u8 padC[0x1C];
+    s32 unk28;
+};
+
+struct func_1506AD30_s {
+    u8 pad0[5];
+    u8 unk5;
+    u8 pad6[0xB4 - 6];
+    f32 unkB4;
+    u8 padB8[0x138 - 0xB8];
+    u8 unk138;
+    u8 pad139[0x1C4 - 0x139];
+    struct func_1506AD30_e *unk1C4;
+    u8 pad1C8[0x2D0 - 0x1C8];
+    struct func_1506AD30_t *unk2D0;
+};
+
+f32 func_1506AD30(struct func_1506AD30_s *arg0, f32 arg1, u8 arg2) {
+    struct func_1506AD30_e *entry;
+    s32 prev;
+    s32 i;
+    u8 idx;
+
+    if (arg0->unk5 == 4) {
+        return 0.0f;
+    }
+    D_800D1878 = 0.0f;
+    if (arg1 < arg0->unkB4) {
+        arg0->unk138 = 0;
+    }
+    D_800D1880 = 1;
+    while (arg0->unk1C4 != NULL && (entry = &arg0->unk1C4[arg0->unk138])->unk0 <= arg1 && D_800D1880 != 0) {
+        if (entry->unk0 < 900.0f) {
+            s32 *src = &D_800D1580;
+            *src = entry->unk8;
+            D_800D1874 = *(f32 *)src;
+            prev = arg0->unk2D0->unk28;
+            if (D_800C35EA == 0 || D_800C365E != 0) {
+                idx = arg0->unk1C4[arg0->unk138].unk7;
+                if (arg2) for (i = 0; arg2; i++) {
+                    if (D_80099A30[i] == 0) {
+                        idx = 0;
+                    }
+                    if (idx == D_80099A30[i]) {
+                        break;
+                    }
+                }
+                if (idx != 0) {
+                    D_800863FC[idx]();
+                }
+            }
+            if (prev != arg0->unk2D0->unk28) {
+                arg1 = arg0->unk2D0->unk8;
+            } else {
+                arg0->unk138++;
+            }
+        }
+    }
+    return D_800D1878;
+}
 
 void func_1506AF74(void) {
     if ((gCurrentObject->unk100 & 8) != 0) {

@@ -64,7 +64,102 @@ void func_151B6320(void *arg0, u8 arg1, s32 arg2) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E37D0/func_151B70B4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E37D0/func_151B7144.s")
+void func_15130280(void *, s32, s32, s32, s32, s32);
+extern f32 D_800AA47C;
+
+struct func_151B7144_s {
+    s32 unk0;
+    s32 unk4;
+    s16 unk8;
+    s16 unkA;
+    s32 unkC;
+    s32 unk10;
+    u8 unk14[7];
+    u8 unk1B;
+    u8 unk1C;
+    u8 unk1D;
+    s16 unk1E;
+    s16 unk20;
+    s16 unk22;
+    f32 unk24;
+    f32 unk28;
+    f32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+    f32 unk40;
+    f32 unk44;
+    f32 unk48;
+    f32 unk4C;
+    f32 unk50;
+    f32 unk54;
+    s32 unk58;
+    s32 pad5C;
+    s8 unk60;
+    s8 unk61;
+    s8 unk62;
+    s8 unk63;
+    s8 unk64;
+    s8 unk65;
+    u8 pad66[0xA];
+};
+
+void func_151B7144(void *arg0, u8 arg1, s32 arg2) {
+    struct func_151B7144_s sp28;
+    s32 var_v0;
+    s32 var_v1;
+
+    sp28.unk1D = 0x29;
+    sp28.unk8 = 0xE03;
+    sp28.unk0 = 0x200005;
+    sp28.unk4 = 0;
+    sp28.unkC = 0;
+    sp28.unk10 = 0;
+    sp28.unk1E = 0x12;
+    sp28.unk20 = 0xE;
+    if (func_150ADA20() & 1) {
+        var_v1 = 0x40;
+    } else {
+        var_v1 = 0;
+    }
+    if (func_150ADA20() & 1) {
+        var_v0 = 0x80;
+    } else {
+        var_v0 = 0;
+    }
+    sp28.unk58 = var_v0 | 1 | var_v1 | 0x200 | 0x400 | 0x800 | 0x4000 | 0x8000 | 0x10000;
+    sp28.unk60 = 3;
+    sp28.unk61 = 3;
+    sp28.unk62 = -1;
+    sp28.unk63 = -1;
+    sp28.unk64 = -1;
+    sp28.unk65 = 0;
+    sp28.unk22 = 0x28;
+    sp28.unk14[0] = 0xDD;
+    sp28.unk14[1] = 0xD3;
+    sp28.unk14[2] = 0xCD;
+    sp28.unk14[3] = 0xFF;
+    sp28.unk14[4] = 0x57;
+    sp28.unk14[5] = 0x55;
+    sp28.unk14[6] = 0x5A;
+    sp28.unk1C = 0xFF;
+    sp28.unk54 = 0.0f;
+    sp28.unk24 = D_800AA47C;
+    sp28.unk30 = *(f32 *)((char *)arg0 + 0x14);
+    sp28.unk34 = *(f32 *)((char *)arg0 + 0x18);
+    sp28.unk38 = *(f32 *)((char *)arg0 + 0x1C);
+    sp28.unk3C = 0.0f;
+    sp28.unk40 = 0.0f;
+    sp28.unk44 = 0.0f;
+    sp28.unk1B = (func_150ADA20() % 56U) + 0xC8;
+    sp28.unkA = (func_150ADA20() % 10U) + 0x1E;
+    sp28.unk28 = sp28.unk2C = (func_150ADA68() * 50.0f) + 89.0f;
+    sp28.unk48 = 0.0f;
+    sp28.unk4C = 0.0f;
+    sp28.unk50 = 0.0f;
+    func_15130280(&sp28, 1, 0, 0, arg1, arg2);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E37D0/func_151B7328.s")
 

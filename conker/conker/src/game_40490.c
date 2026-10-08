@@ -243,7 +243,48 @@ s32 func_150142AC(struct134 *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_40490/func_150142EC.s")
+struct func_150142EC_s {
+    struct134 *unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+};
+
+s32 func_150142EC(struct134 *arg0) {
+    struct func_150142EC_s tmp;
+    struct260 *temp_v0;
+    f32 a;
+    f32 b;
+    f32 c;
+    f32 d;
+    f32 scale;
+
+    arg0->unk16 |= 4;
+    if (D_80082FA0 >= 2) {
+        return 1;
+    }
+    if ((*((u8 *) D_800D2E4C + 0x11) & 4) && (D_800BE9F0 == 0x13)) {
+        return 1;
+    }
+    a = (u32) (arg0->unk1C & 0xFFFF) * 0.001f;
+    b = (u32) (((u32) arg0->unk1C >> 16) & 0xFFFF) * 0.001f;
+    c = (u32) (arg0->unk20 & 0xFFFF) * 0.001f;
+    d = (u32) (((u32) arg0->unk20 >> 16) & 0xFFFF) * 0.001f;
+    scale = func_1514462C(arg0);
+    tmp.unk0 = arg0;
+    tmp.unk4 = a * scale * 1.271516e-10f;
+    tmp.unk8 = b * scale * 1.271516e-10f;
+    tmp.unkC = c;
+    tmp.unk10 = d;
+    tmp.unk14 = 0.0f;
+    temp_v0 = func_15149130(0x12C, -1, 0x29, -1, 0, 0, 0x18, 0xFF, 0);
+    if (temp_v0 != NULL) {
+        memcpy((char *) temp_v0 + 0x28, &tmp, 0x18);
+    }
+    return 1;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_40490/func_150144B8.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_40490/func_1501474C.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_40490/func_15014B60.s")
@@ -472,4 +513,63 @@ s32 func_15015644(void *arg0) {
     }
     return 1;
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_40490/func_150156F4.s")
+void func_150A7960(f32 m[4][4], f32 x, f32 y, f32 z, f32 *ox, f32 *oy, f32 *oz);
+void func_151ACBD4(void *arg0, s32 arg1);
+
+struct func_150156F4_s {
+    s16 x;
+    s16 y;
+    s16 z;
+    s16 pad6;
+    s16 h;
+    s16 padA;
+    f32 rx;
+    f32 ry;
+    s32 pad14;
+    s32 type;
+};
+
+typedef struct {
+    f32 x, y, z;
+} func_150156F4_v;
+
+s32 func_150156F4(struct func_150156F4_s *arg0) {
+    func_150156F4_v pts[2];
+    f32 mtx[4][4];
+    struct {
+        u8 type;
+        func_150156F4_v lo;
+        func_150156F4_v hi;
+        f32 dist;
+        u8 f20;
+    } info;
+
+    if (D_800BE9F0 == 0xB) {
+        if ((u32) arg0->type < 6) {
+            return 1;
+        }
+    } else if (D_800BE9F0 == 0x2C) {
+        if ((u32) arg0->type < 7) {
+            return 1;
+        }
+    } else if (D_800BE9F0 == 0x26) {
+        if ((u32) arg0->type < 2) {
+            return 1;
+        }
+    }
+    func_150A8050(mtx, arg0->rx, arg0->ry, 0.0f);
+    mtx[3][0] = arg0->x;
+    mtx[3][1] = arg0->y;
+    mtx[3][2] = arg0->z;
+    func_150A7960(mtx, 0.0f, arg0->h, 0.0f, &pts[1].x, &pts[1].y, &pts[1].z);
+    pts[0].x = arg0->x;
+    pts[0].y = arg0->y;
+    pts[0].z = arg0->z;
+    info.type = arg0->type;
+    info.lo = pts[pts[0].y < pts[1].y];
+    info.hi = pts[pts[1].y < pts[0].y];
+    info.dist = fabsf(pts[1].y - pts[0].y);
+    info.f20 = 0;
+    func_151ACBD4(&info, 0);
+    return 1;
+}

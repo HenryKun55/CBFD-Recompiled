@@ -139,7 +139,71 @@ void func_150EA904(s32 arg0, s32 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_117490/func_150EA944.s")
+struct func_150EA944_s {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    u8 padC[0x10 - 0xC];
+    s16 unk10;
+    s16 unk12;
+    s16 unk14;
+    u8 pad16[0x3C - 0x16];
+    s32 unk3C;
+    u8 pad40[0x5A - 0x40];
+    s16 unk5A;
+    s16 unk5C;
+    s16 unk5E;
+    f32 unk60;
+    f32 unk64;
+    f32 unk68;
+    u8 pad6C[2];
+    u8 unk6E;
+    u8 pad6F[0x73 - 0x6F];
+    u8 unk73;
+    u8 pad74[0x7C - 0x74];
+    s32 unk7C;
+    u8 pad80[0x8A - 0x80];
+    u8 unk8A;
+};
+
+void func_150EA944(struct func_150EA944_s *arg0) {
+    f32 f;
+    s32 v;
+
+    if ((arg0->unk73 & 3) == 3) {
+        f = D_800BE9E4;
+        arg0->unk0 += arg0->unk60 * f;
+        if (arg0->unk0 < 0.0f) {
+            arg0->unk0 += 360.0f;
+        } else if (arg0->unk0 >= 360.0f) {
+            arg0->unk0 -= 360.0f;
+        }
+        arg0->unk4 += arg0->unk64 * f;
+        if (arg0->unk4 < 0.0f) {
+            arg0->unk4 += 360.0f;
+        } else if (arg0->unk4 >= 360.0f) {
+            arg0->unk4 -= 360.0f;
+        }
+        arg0->unk8 += arg0->unk68 * f;
+        if (arg0->unk8 < 0.0f) {
+            arg0->unk8 += 360.0f;
+        } else if (arg0->unk8 >= 360.0f) {
+            arg0->unk8 -= 360.0f;
+        }
+        v = arg0->unk8A;
+        arg0->unk5C -= arg0->unk3C * D_800BE9E4;
+        arg0->unk10 += arg0->unk5A * D_800BE9E4;
+        arg0->unk7C += arg0->unk5C * D_800BE9E4;
+        arg0->unk12 = arg0->unk7C >> 3;
+        arg0->unk14 += arg0->unk5E * D_800BE9E4;
+        v -= D_800BE9E4 * 4;
+        if (v > 0) {
+            arg0->unk8A = v;
+        } else {
+            arg0->unk6E = 1;
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_117490/func_150EAB10.s")
 

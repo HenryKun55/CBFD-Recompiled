@@ -3,7 +3,61 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18D250/func_1515FDA0.s")
+struct func_1515FDA0_s {
+    u8 pad0[8];
+    struct func_1515FDA0_s *next;
+    u8 padC[2];
+    u8 unkE;
+    u8 padF;
+    s8 unk10;
+};
+
+typedef struct {
+    struct func_1515FDA0_s *head;
+    u8 pad[0x19C];
+} func_1515FDA0_list;
+
+extern func_1515FDA0_list D_800DCF20[];
+extern void (*D_8008B0D8[])(struct func_1515FDA0_s *, s32);
+extern s32 func_15181CC8(s32);
+extern s32 func_1517EF00(s32);
+
+#define STK ((struct func_1515FDA0_s **)D_800DD198)
+
+void func_1515FDA0(s32 arg0) {
+    u8 i;
+    struct func_1515FDA0_s *obj;
+    u8 run;
+
+    for (i = 0; i < 2; ) {
+        obj = D_800DCF20[i].head;
+        D_800DD190++;
+        for (; obj != NULL; obj = STK[D_800DD190]) {
+            STK[D_800DD190] = obj->next;
+            if (obj->unkE & 4) {
+                obj->unkE &= ~4;
+                continue;
+            }
+            if (obj->unk10 == -1) {
+                continue;
+            }
+            run = 1;
+            if ((obj->unkE & 2) && D_800C35EA == 1) {
+                run = 0;
+            }
+            if (obj->unkE & 8) {
+                if (!func_15181CC8(0) || func_1517EF00(0)) {
+                    run = 0;
+                }
+            }
+            if (run) {
+                D_8008B0D8[obj->unk10](obj, arg0);
+            }
+        }
+        D_800DD190--;
+        i++;
+    }
+}
 
 struct func_1515FF74_s {
     u8 pad[0xE];

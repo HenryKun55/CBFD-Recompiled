@@ -131,7 +131,47 @@ void func_100046E4(u32 devAddr, u32 dramAddr, u32 size) {
 //     }
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_4470/func_1000480C.s")
+void func_1000480C(u32 devAddr, s32 dramAddr, u32 size) {
+    u32 stat;
+    u32 buf;
+    u32 i;
+
+    *(volatile u8 *)&D_8003A572 = 1;
+    size = (size + 1) & ~1;
+    while (*(volatile u8 *)&D_8003A573 != 0) {
+    }
+    stat = IO_READ(PI_STATUS_REG);
+    while (stat & (PI_STATUS_DMA_BUSY | PI_STATUS_IO_BUSY)) {
+        stat = IO_READ(PI_STATUS_REG);
+    }
+    devAddr |= D_80000308;
+    if (devAddr & 2) {
+        buf = IO_READ(devAddr - 2);
+        size -= 2;
+        *(u16 *)dramAddr = ((u16 *)&buf)[1];
+        for (i = 0; i < size - 2; i += 4) {
+            buf = IO_READ(devAddr + 2 + i);
+            ((u16 *)(dramAddr + i))[1] = (s32)buf >> 16;
+            ((u16 *)(dramAddr + i))[2] = buf & 0xFFFF;
+        }
+        if (size & 2) {
+            buf = IO_READ(devAddr + i + 2);
+            ((u16 *)(dramAddr + i))[1] = ((u16 *)&buf)[0];
+        }
+    } else {
+        for (i = 0; i < size - 2; i += 4) {
+            *(u32 *)(dramAddr + i) = IO_READ(devAddr + i);
+        }
+        if (size & 2) {
+            buf = IO_READ(i + devAddr);
+            *(u16 *)(dramAddr + i) = ((u16 *)&buf)[0];
+        }
+    }
+    *(volatile u8 *)&D_8003A572 = 0;
+    if (*(volatile u8 *)&D_8003A575 != 0) {
+        osStartThread(&D_80035910);
+    }
+}
 // void func_1000480C(s32 devAddr, void *dramAddr, u32 size) {
 //     s32 sp38;
 //     s32 *temp_t0;

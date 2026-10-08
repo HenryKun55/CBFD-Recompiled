@@ -179,7 +179,94 @@ void func_150E75A0(struct func_150E75A0_v *arg0, f32 arg1, s16 arg2, u8 arg3, u8
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_113D60/func_150E7FEC.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_113D60/func_150E81A8.s")
+struct func_150E81A8_v { f32 x, y, z; };
+struct func_150E81A8_s {
+    s16 unk0;
+    s16 unk2;
+    s16 unk4;
+    s16 unk6;
+    s32 unk8;
+    s32 unkC;
+    struct func_150E81A8_v unk10;
+    f32 unk1C;
+    f32 unk20;
+    f32 unk24;
+    f32 unk28;
+    f32 unk2C;
+    f32 unk30;
+    s32 unk34;
+    s32 unk38;
+    f32 unk3C;
+    f32 unk40;
+    f32 unk44;
+    f32 unk48;
+    s16 unk4C;
+    s16 unk4E;
+    s16 unk50;
+    s16 unk52;
+    s16 unk54;
+    s16 unk56;
+    u8 unk58;
+};
+extern struct func_150E81A8_v D_800A1290[];
+extern f32 D_800A1354;
+extern f32 D_800A1358;
+extern f32 D_800A135C;
+extern f32 D_800A1360;
+extern f32 D_800A1364;
+extern void func_151D3FF4(struct func_150E81A8_v *, u8, s32);
+extern void func_1514FCE8(struct func_150E81A8_s *, u8, s32);
+
+void func_150E81A8(u8 arg0, u8 arg1, s32 arg2) {
+    struct func_150E81A8_v v;
+    struct func_150E81A8_s s;
+    struct {
+        u8 f0;
+        s16 f2;
+        u8 f4;
+        u8 f5;
+        s8 f6;
+    } local;
+
+    if (arg0 == 4 || arg0 == 5 || arg0 == 6 || arg0 == 7) {
+        v = D_800A1290[arg0];
+        v.y += 200.0f;
+        func_151D3FF4(&v, arg1, arg2);
+        s.unk0 = 0;
+        s.unk2 = 0xFF;
+        s.unk4 = -0x40;
+        s.unk6 = 0x4D;
+        s.unk8 = 0xA;
+        s.unkC = 5;
+        s.unk10 = v;
+        s.unk1C = 252.0f;
+        s.unk20 = 117.0f;
+        s.unk24 = 308.0f;
+        s.unk28 = 256.0f;
+        s.unk2C = D_800A1354;
+        s.unk30 = D_800A1358;
+        s.unk34 = 4;
+        s.unk38 = 7;
+        s.unk3C = 27.0f;
+        s.unk40 = D_800A135C;
+        s.unk44 = D_800A1360;
+        s.unk48 = D_800A1364;
+        s.unk4C = 0x19;
+        s.unk4E = 0xF;
+        s.unk50 = 0x64;
+        s.unk52 = 0x64;
+        s.unk54 = 0xC;
+        s.unk56 = 0x14;
+        s.unk58 = 0;
+        func_1514FCE8(&s, arg1, arg2);
+        local.f0 = 1;
+        local.f2 = func_150ADA20() % 11U + 30;
+        local.f4 = 8;
+        local.f6 = -1;
+        local.f5 = 1;
+        func_151D8868(&local, 0, 0xFF, 0);
+    }
+}
 
 struct func_150E83AC_s {
     f32 x, y, z;

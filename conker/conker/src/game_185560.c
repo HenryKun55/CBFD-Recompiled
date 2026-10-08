@@ -454,7 +454,58 @@ u8 func_15159594(struct func_15159594_s *arg0, f32 *arg1) {
     return ret;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_185560/func_151596BC.s")
+struct func_151596BC_s {
+    f32 unk0;
+    u8 unk4;
+    u8 unk5;
+    s8 unk6;
+    s8 unk7;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    u8 unk18;
+    u8 unk19;
+    u8 unk1A;
+    u8 unk1B;
+    f32 unk1C;
+    f32 unk20;
+    f32 unk24;
+};
+
+s32 func_151596BC(struct func_15159594_s *arg0, f32 *arg1) {
+    struct func_151596BC_s *s;
+    f32 sp30;
+    f32 f;
+    volatile u8 ret = 1;
+    f32 sp24;
+
+    s = (struct func_151596BC_s *)((u8 *)arg0 + 0xA8);
+    s->unk4 += s->unk6 * D_800BE9E4;
+    s->unk5 += s->unk7 * D_800BE9E4;
+    sp30 = func_151423D8(s->unk4 - 0x40);
+    f = func_151423D8(s->unk5 - 0x40);
+    *(f32 *)((u8 *)arg0 + 0x38) = s->unk0 + s->unk8 * sp30;
+    *(f32 *)((u8 *)arg0 + 0x3C) = s->unk0 + s->unkC * f;
+    if (arg0->unk5C > 0.0f) {
+        if (s->unk10 < arg0->unk5C) {
+            arg0->unk5C = s->unk10;
+        }
+        sp24 = arg0->unk5C * s->unk14;
+        s->unk18 += s->unk1A * D_800BE9E4;
+        s->unk19 += s->unk1B * D_800BE9E4;
+        sp30 = func_151423D8(s->unk18 - 0x40);
+        f = func_151423D8(s->unk19 - 0x40);
+        *(f32 *)((u8 *)arg0 + 0x4C) = s->unk1C * sp30 * sp24;
+        *(f32 *)((u8 *)arg0 + 0x54) = s->unk20 * f * sp24;
+    }
+    if (*(s32 *)((u8 *)arg0 + 0x68) & 0x2000) {
+        if (s->unk24 < *(f32 *)((u8 *)arg0 + 0x44) + *(f32 *)((u8 *)arg0 + 0x50)) {
+            ret = 0;
+        }
+    }
+    return ret;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_185560/func_15159890.s")
 

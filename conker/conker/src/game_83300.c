@@ -751,7 +751,42 @@ void func_1505959C(struct127 *arg0, s32 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_150597FC.s")
+void func_150597FC(struct127 *arg0) {
+    s32 i;
+    struct127 *obj;
+    struct126 *a2;
+    s32 mask;
+
+    mask = D_800CC268;
+    for (i = 0; i < D_8008FD8C; i++) {
+        if (((1 << i) & mask) && (gObjects[i].unk13C == 0) && (gObjects[i].disable_run == 0) &&
+            (gObjects[i].interaction_state == 1) && (gObjects[i].stunned == 0) && (gObjects[i].unk127 != 0xFF)) {
+            break;
+        }
+    }
+    if (i == D_8008FD8C) {
+        return;
+    }
+    obj = &gObjects[i];
+    if (obj->unk13C != 0) {
+        return;
+    }
+    a2 = obj->unk31C;
+    if ((a2->unk27 == 0) && (obj->health != 0) && (arg0->unk13D == 0) &&
+        ((arg0->stunned != 0) || (arg0->unk25C & 0x1000) || (arg0->id == 0x57)) &&
+        (arg0->unk28 == 0.0f) && (obj->unk28 == 0.0f) && (arg0->unk25C & 8) && (a2->unk19B == 0)) {
+        if ((arg0->id == 0xA9) && (*((u8 *)obj + 0x128) != 0)) {
+            return;
+        }
+        if ((arg0->id == 0xA8) && (*((u8 *)obj + 0x128) == 0)) {
+            return;
+        }
+        obj->unk13C = gCurrentObjectIndex + 100;
+        obj->xz_velocity = 0.0f;
+        *(s16 *)((u8 *)a2 + 0x18) = 0;
+        func_1505959C(arg0, i);
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_83300/func_150599C8.s")
 
 u8 func_15059B54(struct127 *arg0, u16 arg1) {

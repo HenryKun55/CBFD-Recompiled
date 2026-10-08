@@ -82,7 +82,38 @@ void func_10019F98(N_ALCSPlayer *seqp, s32 arg1, s32 chan, s32 arg3) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/libultra/audio/init_19B50/func_1001A030.s")
+struct func_1001A030_s {
+    u8 pad0[0x24];
+    s32 releaseTime;
+    u8 useRelease;
+    u8 pad29[0x13];
+};
+
+void func_1001A030(N_ALCSPlayer *seqp, s32 arg1, s32 chan, u32 arg3) {
+    N_ALVoiceState *vs;
+
+    seqp->chanState[chan].sustain = arg3;
+    for (vs = seqp->vAllocHead; vs != NULL; vs = vs->next) {
+        if ((vs->channel == chan) && (vs->phase != 3)) {
+            if (arg3 >= 0x40) {
+                if (vs->phase == 0) {
+                    vs->phase = 2;
+                }
+            } else if (vs->phase == 2) {
+                vs->phase = 0;
+            } else if (vs->phase == 4) {
+                vs->phase = 3;
+                if (((struct func_1001A030_s *)&seqp->chanState[chan])->useRelease) {
+                    __n_seqpReleaseVoice((N_ALSeqPlayer *)seqp, &vs->voice,
+                        (((struct func_1001A030_s *)&seqp->chanState[chan])->releaseTime < 16000) ? 16000 : ((struct func_1001A030_s *)&seqp->chanState[chan])->releaseTime);
+                } else {
+                    __n_seqpReleaseVoice((N_ALSeqPlayer *)seqp, &vs->voice,
+                        (vs->sound->envelope->releaseTime < 16000) ? 16000 : vs->sound->envelope->releaseTime);
+                }
+            }
+        }
+    }
+}
 
 void func_1001A224(N_ALCSPlayer *seqp, s32 arg1, s32 chan, s32 arg3) {
     N_ALSoundState *state;

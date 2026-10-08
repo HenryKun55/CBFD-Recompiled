@@ -278,7 +278,81 @@ s32 func_1504530C(s32 arg0, s32 arg1, s32 arg2) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_15045384.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_71820/func_1504554C.s")
+s32 func_150A4FA0(s32, s32);
+extern f32 D_80098D4C;
+
+struct func_1504554C_s {
+    s32 unk0;
+    s32 *unk4;
+    s32 unk8;
+    s32 padC;
+};
+
+typedef struct {
+    s16 x, y, z;
+} func_1504554C_v;
+
+typedef struct {
+    f32 unk0;
+    func_1504554C_v unk4[3];
+    u8 pad16[2];
+    s32 unk18;
+    u8 unk1C;
+    u8 unk1D;
+    u8 pad1E[2];
+    s32 unk20;
+} func_1504554C_t;
+
+s32 func_1504554C(f32 *arg0, f32 arg1, func_1504554C_t *arg2) {
+    s32 *p;
+    s32 found;
+    func_1504554C_v *v;
+    f32 h;
+    s32 i;
+    s32 j;
+    s32 n;
+    s32 base;
+
+    if (arg0[1] < arg1) {
+        arg2->unk1C &= ~2;
+        return 0;
+    }
+    arg2->unk0 = D_80098D4C;
+    found = -1;
+    func_1510F800(3);
+    n = func_150A4FA0(arg0[0], arg0[2]);
+    for (i = 0; i < n; i++) {
+        h = ((struct func_1504554C_s *)&D_800D3300)[i].unk0 * 0.00390625f;
+        if (h <= arg0[1] && arg2->unk0 < h) {
+            found = i;
+            arg2->unk0 = h;
+        }
+    }
+    if (found != -1) {
+        p = ((struct func_1504554C_s *)&D_800D3300)[found].unk4;
+        base = ((struct func_1504554C_s *)&D_800D3300)[found].unk8;
+        for (j = 0; j < 3; j++) {
+            v = (func_1504554C_v *)(p[j] + base);
+            {
+                func_1504554C_v *d = &arg2->unk4[j];
+                d->x = v->x;
+                d->y = v->y;
+                d->z = v->z;
+            }
+        }
+        arg2->unk18 = 0;
+        arg2->unk1C |= 6;
+        arg2->unk1D = 4;
+        arg2->unk20 = 0;
+        if (arg1 <= arg2->unk0) {
+            arg2->unk1C |= 2;
+            return 1;
+        }
+        return 0;
+    }
+    arg2->unk1C &= ~2;
+    return 0;
+}
 
 s32 func_150A6500(s16 arg0, s16 arg1, s32 arg2, u16 arg3);
 

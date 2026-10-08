@@ -3,7 +3,72 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_15F680/func_151321D0.s")
+struct func_151321D0_s {
+    u8 pad0[0x38];
+    u8 unk38[0x28];
+    s32 unk60;
+    s16 unk64;
+    u8 pad66[0xA];
+    u8 unk70;
+    u8 unk71;
+    u8 unk72;
+    u8 pad73[3];
+    u8 unk76;
+    u8 unk77;
+    u8 pad78[0xA];
+    s16 unk82;
+    s16 unk84;
+    u8 pad86[0x148 - 0x86];
+    u8 unk148;
+};
+
+extern s32 (*D_80089988[])(struct func_151321D0_s *);
+extern s32 (*D_800898B0[])(struct func_151321D0_s *);
+extern s32 (*D_80089914[])(struct func_151321D0_s *);
+extern void (*D_8008997C[])(struct func_151321D0_s *);
+s32 func_1514672C(void *);
+
+void func_151321D0(struct func_151321D0_s *arg0) {
+    s32 v;
+    u8 flag = 0;
+
+    arg0->unk60 &= ~0x200000;
+    if ((arg0->unk60 & 0x10) && (arg0->unk148 & 0x18)) {
+        if (!D_80089988[arg0->unk77](arg0)) {
+            flag = 1;
+        }
+    } else if ((v = arg0->unk71) != 0) {
+        if (!D_800898B0[v](arg0)) {
+            flag = 1;
+        }
+    }
+    if ((v = arg0->unk72) != 0 && !flag) {
+        if (!D_80089914[v](arg0)) {
+            flag = 1;
+        }
+    }
+    if ((arg0->unk60 & 0x80) && !flag) {
+        arg0->unk64 -= D_800BE9E4;
+        if (arg0->unk64 < 0) {
+            flag = 1;
+        }
+    }
+    if ((arg0->unk60 & 0x2000) && !flag && arg0->unk64 < arg0->unk82) {
+        v = arg0->unk64 * arg0->unk84;
+        if (v < arg0->unk70) {
+            arg0->unk70 = v;
+        }
+    }
+    if (!flag && !(arg0->unk60 & 0x80000)) {
+        flag = !func_1514672C(arg0->unk38);
+    }
+    if (flag) {
+        if ((v = arg0->unk76) != 0) {
+            D_8008997C[v](arg0);
+        }
+        func_1516972C((struct102 *)arg0);
+    }
+}
 
 struct func_151323AC_s {
     char pad0[0x60];

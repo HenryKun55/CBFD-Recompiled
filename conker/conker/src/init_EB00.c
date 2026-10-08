@@ -135,7 +135,49 @@ s32 func_1000EF40(struct57 *arg0, struct57 *arg1, s32 *arg2, s32 arg3, s32 arg4,
     return 0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_EB00/func_1000EFB4.s")
+struct func_1000EFB4_s {
+    s16 unk0;
+    s16 unk2;
+    s16 unk4;
+    s16 unk6;
+    u8 pad8[0x8];
+    s32 unk10;
+    u8 pad14[4];
+    struct127 *unk18;
+    u16 *unk1C;
+};
+
+s32 func_1000EFB4(struct func_1000EFB4_s *arg0, s32 arg1, s32 *arg2, struct11 *arg3, s32 arg4, s32 *arg5, u16 *arg6) {
+    struct127 *temp_t0 = arg0->unk18;
+    u16 *ids;
+
+    if ((temp_t0 != NULL) && (*arg2 != 0)) {
+        if (temp_t0->interaction_state != 0) {
+            ids = arg0->unk1C;
+            while (*ids != 0) {
+                if ((*ids == temp_t0->unk84.uh) || !(arg0->unk10 & 1)) {
+                    *arg5 = (((u32)temp_t0->unk184 >> 3) & 0x30) * 2;
+                    arg0->unk2 = temp_t0->x_position;
+                    arg0->unk4 = temp_t0->y_position;
+                    arg0->unk6 = temp_t0->z_position;
+                    return 0;
+                }
+                ids++;
+            }
+        }
+
+        if (*arg6 == 0xCA) {
+            func_10010F30(0xCB, *arg2, arg3->unk3, 0, *arg5);
+        } else if (*arg6 == 0x2CF) {
+            func_10010F30(0x2D7, *arg2, arg3->unk3, 0, *arg5);
+            func_10010F30((func_150ADA20() % 3U) + 0x2EB, 0x3E80, arg3->unk3, 0, *arg5);
+        } else if (*arg6 == 0x2D2) {
+            func_10010F30(0x2DA, *arg2, arg3->unk3, 0, *arg5);
+            func_10010F30((func_150ADA20() % 3U) + 0x2EB, 0x3E80, arg3->unk3, 0, *arg5);
+        }
+    }
+    return 1;
+}
 void func_1000F1A8(void) {
     s32 i;
 

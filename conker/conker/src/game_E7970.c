@@ -55,4 +55,28 @@ s32 func_150BAA00(s32 arg0, s32 arg1) {
     return 9;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_E7970/func_150BAA14.s")
+void func_15143E94(s32, s32);
+void func_1514C678(f32, f32, f32, f32, s32, s32, s32, s32, s32, f32, s32, s32);
+void func_15165F80(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6, u8 arg7, s32 arg8);
+extern f32 D_8009FE64;
+
+void func_150BAA14(u8 *arg0, u8 arg1, s32 arg2) {
+    f32 pos[3];
+    u8 sp48[0x24];
+    s32 sp44;
+    u8 sp43;
+    s16 pad1;
+    u8 pad2;
+
+    if (*(s32 *)(arg0 + 0x1D4) == 0) {
+        return;
+    }
+    sp43 = func_150BA930(pos, arg0, (s32)sp48, arg1);
+    func_151D5404(pos, 1307.0f, 2000.0f, 0.0005f, 0xC, 0xF, 0xFF, 0);
+    func_15143E94(5, 0x4022);
+    if (sp43 != 0) {
+        sp44 = D_800DBFF0[D_80082FA4].unk380 * D_8009FE64;
+        func_15165F80(-1, pos[0], pos[1] + 6.0f, pos[2], 0x19, 0x12, 0, 0xFF, 1);
+        func_1514C678(pos[0], pos[1], pos[2], (func_150ADA68() * 50.0f) + 40.0f, sp44 + 0x3C, sp44 - 0x3C, (func_150ADA20() % 11U) + 0x1E, 5, 0, 0.0f, 0, 0xFF);
+    }
+}

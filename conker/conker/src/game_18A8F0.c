@@ -121,7 +121,33 @@ void func_1515D69C(void) {
 void func_1515D6C8(void) {
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18A8F0/func_1515D6D0.s")
+extern s32 D_800DCD10[];
+void func_1515EF74();
+
+#define S(v, s, w) (((v) & ((1 << (w)) - 1)) << (s))
+#define INT(a, b) (((a >> 16) << 16) | (((b) >> 16) & 0xFFFF))
+#define FRAC(a, b) ((((a) & 0xFFFF) << 16) | ((b) & 0xFFFF & 0xFFFF))
+#define FRAC2(a, b) ((((a) & 0xFFFF) << 16) | ((b) & 0xFFFF & 0xFFFF))
+#define FRAC3(a, b) ((((0) & 0xFFFF) << 16) | ((a) << 16))
+
+void *func_1515D6D0(Gfx *gdl, s32 arg1) {
+    gSPNumLights(gdl++, 0);
+    gSPSetGeometryMode(gdl++, G_LIGHTING);
+    func_1515EF74((u8 *)D_800BE628 + arg1 * 0x180 + (D_800BE9C0 << 6) + 0x100);
+    gMoveWd(gdl++, 0x10, 0, INT(D_800DCD10[0], D_800DCD10[1]));
+    gMoveWd(gdl++, 0x10, 8, INT(D_800DCD10[0], D_800DCD10[1]));
+    gMoveWd(gdl++, 0x10, 4, INT(D_800DCD10[2], 0));
+    gMoveWd(gdl++, 0x10, 0xC, INT(D_800DCD10[2], 0));
+    gMoveWd(gdl++, 0x10, 0x10, FRAC(D_800DCD10[0], D_800DCD10[1]));
+    gMoveWd(gdl++, 0x10, 0x18, FRAC(D_800DCD10[0], D_800DCD10[1]));
+    gMoveWd(gdl++, 0x10, 0x14, FRAC2(D_800DCD10[2], 0));
+    gMoveWd(gdl++, 0x10, 0x1C, FRAC2(D_800DCD10[2], 0));
+    gMoveWd(gdl++, 0x10, 0x20, FRAC(0,0));
+    gMoveWd(gdl++, 0x10, 0x24, FRAC3(D_800DCD10[3], 0));
+    gMoveWd(gdl++, 0x10, 0x28, FRAC(0,0));
+    gMoveWd(gdl++, 0x10, 0x2C, FRAC3(D_800DCD10[3], 0));
+    return gdl;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_18A8F0/func_1515D914.s")
 

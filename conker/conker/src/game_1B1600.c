@@ -3,7 +3,50 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_15184150.s")
+extern u8 D_800C3E90;
+extern s32 func_1502DB20(s32);
+
+s32 func_15184150(s32 arg0, f32 *arg1, f32 *arg2, f32 *arg3) {
+    s32 id;
+    struct127 *obj;
+    s32 n;
+    s32 i;
+    f32 dx, dy, dz;
+    f32 (*m)[4][4];
+
+    obj = &gObjects[arg0];
+    id = obj->id;
+    *arg3 = 0.0f;
+    *arg2 = 0.0f;
+    *arg1 = 0.0f;
+    if (obj->unk1D4 == NULL || D_800C3E90 != 0) {
+        return 0;
+    }
+    n = func_1502DB20(id);
+    for (i = 0; i < n; i++) {
+        m = (f32 (*)[4][4])obj->unk1D4;
+        dx = m[i][3][0];
+        dy = m[i][3][1];
+        dz = m[i][3][2];
+        dx -= obj->x_position;
+        dy -= obj->y_position;
+        dz -= obj->z_position;
+        if (dx < 0.0f) dx = -dx;
+        if (*arg1 < dx) *arg1 = dx;
+        if (dy < 0.0f) dy = -dy;
+        if (*arg2 < dy) *arg2 = dy;
+        if (dz < 0.0f) dz = -dz;
+        if (*arg3 < dz) *arg3 = dz;
+    }
+    if (*arg1 == 0.0f || *arg2 == 0.0f || *arg3 == 0.0f) {
+        dx = D_800D1C90[obj->id]->unk1A;
+        dy = obj->xz_scale * dx;
+        *arg3 = dy;
+        *arg1 = dy;
+        dx = D_800D1C90[obj->id]->unk1C + D_800D1C90[obj->id]->unk1E;
+        *arg2 = obj->y_scale * dx;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1B1600/func_15184368.s")
 

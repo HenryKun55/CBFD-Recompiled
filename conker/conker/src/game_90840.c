@@ -126,7 +126,78 @@ s32 func_15063E84(struct struct127 *arg0, u16 arg1, u16 arg2, s32 arg3, s32 arg4
     return 999;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_90840/func_15063FA0.s")
+extern f32 D_80099790;
+extern f32 D_80099794;
+extern f32 D_80099798;
+extern f32 D_8009979C;
+
+struct func_15063FA0_s {
+    u8 pad0[0xB8];
+    f32 unkB8;
+    f32 unkBC;
+    f32 unkC0;
+    u8 padC4[0x109 - 0xC4];
+    u8 unk109;
+    u8 pad10A[0x13C - 0x10A];
+    f32 unk13C;
+    f32 unk140;
+    f32 unk144;
+    u8 pad148[0x16C - 0x148];
+    f32 unk16C;
+    f32 unk170;
+};
+
+void func_15063FA0(struct127 *arg0, s32 arg1) {
+    f32 sp84;
+    f32 sp80;
+    f32 sp7C;
+    f32 dist;
+    f32 pos[3];
+    f32 off[2];
+    f32 dy;
+    f32 dz;
+    f32 a;
+    f32 xr;
+    f32 yr;
+    f32 dx;
+    struct func_15063FA0_s *s;
+    f32 dz2;
+    f32 dy2;
+
+    dist = 300.0f;
+    dy = 0.0f;
+    dz = 0.0f;
+    switch (arg1) {
+    case 2:
+        dz = 27.0f;
+        break;
+    case 3:
+    case 6:
+        dy = -11.0f;
+        dist = 500.0f;
+        break;
+    }
+    a = ((struct func_15063FA0_s *)arg0->unk31C)->unk16C * D_80099790;
+    off[0] = sinf(a) * dz;
+    off[1] = cosf(a) * dz;
+    pos[0] = ((struct func_15063FA0_s *)arg0->unk31C)->unk13C + off[0];
+    pos[1] = ((struct func_15063FA0_s *)arg0->unk31C)->unk140 + dy;
+    pos[2] = ((struct func_15063FA0_s *)arg0->unk31C)->unk144 + off[1];
+    s = (struct func_15063FA0_s *)arg0->unk31C;
+    if (s->unk109 == 0) {
+        xr = -s->unk170;
+        yr = s->unk16C + 90.0f;
+    } else {
+        dx = s->unkB8 - pos[0];
+        dy2 = s->unkBC - pos[1];
+        dz2 = s->unkC0 - pos[2];
+        xr = func_150484A0(dy2, sqrtf(dx * dx + dz2 * dz2)) * D_80099794;
+        yr = func_150484A0(dx, dz2) * D_80099798;
+    }
+    func_1505A184((s16)(xr * D_8009979C) & 0xFFFF, dist, 0.0f, &sp84, &sp80, &sp7C);
+    sp80 = -sp80;
+    func_1506C460(yr, sp84, sp80, 0.0f, 100, arg1, 0.0f, 0.5f, (s32)pos, 1, 1);
+}
 
 s32 func_1505DADC(struct127 *, u16 *, s32, s32, s32);
 

@@ -654,7 +654,23 @@ s32 func_1500B1F4(s16 count, u8 arg1, s32 arg2, s32 arg3, s32 arg4, s16 **arg5) 
     return arg4;
 }
 #pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500B3B0.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500B714.s")
+s32 func_1500B714(s16 arg0, u8 arg1, s32 arg2, s32 arg3, s32 arg4, s16 **arg5) {
+    u16 vol;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    vol = arg0;
+    x = (arg5[0][0] + arg5[1][0] + arg5[2][0]) / 3;
+    y = (arg5[0][1] + arg5[1][1] + arg5[2][1]) / 3;
+    z = (arg5[0][2] + arg5[1][2] + arg5[2][2]) / 3;
+    arg4 = func_1500AF08(arg4, arg2, arg3, x, y, z, 0x80, arg1, arg4);
+    if (vol > 62.5f) {
+        vol = 0x3E;
+    }
+    func_1000FA64(0x4D, x, y, z, 0x8000, vol, vol >> 3, 0, 0, 0, 0, 0);
+    return arg4;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500B8F4.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500BAB8.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_36680/func_1500BC7C.s")

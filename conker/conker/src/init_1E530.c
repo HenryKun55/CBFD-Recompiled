@@ -9,7 +9,37 @@
 // _n_loadOutputBuffer ?
 #pragma GLOBAL_ASM("asm/nonmatchings/init_1E530/func_1001F28C.s")
 // _n_loadBuffer ?
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1E530/func_1001F5A4.s")
+struct func_1001F5A4_s {
+    s32 length;
+    u8 pad4[0x1C];
+    s16 *base[1];
+};
+
+#define n_aLoadBuffer(pkt, c, d, s) { Acmd *_a = (Acmd *)pkt; _a->words.w0 = (_SHIFTL(A_LOADBUFF, 24, 8) | _SHIFTL(c, 12, 12) | _SHIFTL(d, 0, 12)); _a->words.w1 = (unsigned int)(s); }
+
+Acmd *func_1001F5A4(struct func_1001F5A4_s *r, s32 idx, s16 *curr_ptr, s32 buff, s32 count, Acmd *p) {
+    Acmd *ptr = p;
+    s32 after_end, before_end;
+    s16 *updated_ptr, *delay_end;
+
+    delay_end = &r->base[idx][r->length];
+    if (curr_ptr < r->base[idx]) {
+        curr_ptr += r->length;
+    }
+    updated_ptr = curr_ptr + count;
+
+    if (updated_ptr > delay_end) {
+        after_end = updated_ptr - delay_end;
+        before_end = delay_end - curr_ptr;
+
+        n_aLoadBuffer(ptr++, before_end << 1, buff, osVirtualToPhysical(curr_ptr));
+        n_aLoadBuffer(ptr++, after_end << 1, buff + (before_end << 1), osVirtualToPhysical(r->base[idx]));
+    } else {
+        n_aLoadBuffer(ptr++, count << 1, buff, osVirtualToPhysical(curr_ptr));
+    }
+
+    return ptr;
+}
 // void *func_1001F5A4(void *arg0, s32 arg1, u32 arg2, s32 arg3, s32 arg4, void *arg5) {
 //     void *sp34;
 //     s32 sp30;
@@ -52,7 +82,44 @@
 //     return sp34;
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1E530/func_1001F79C.s")
+struct func_1001F79C_s {
+    s32 length;
+    u8 pad4[0x1C];
+    s16 *base[1];
+};
+
+Acmd *func_1001F79C(struct func_1001F79C_s *r, s32 idx, s16 *curr_ptr, s32 buff, Acmd *p) {
+    Acmd *ptr = p;
+    s32 after_end, before_end;
+    s16 *updated_ptr, *delay_end;
+
+    delay_end = &r->base[idx][r->length];
+    if (curr_ptr < r->base[idx])
+        curr_ptr += r->length;
+    updated_ptr = curr_ptr + 184;
+
+    if (updated_ptr > delay_end) {
+        after_end = updated_ptr - delay_end;
+        before_end = delay_end - curr_ptr;
+        {
+            Acmd *_a = ptr++;
+            _a->words.w0 = (((before_end << 1) & 0xFFF) << 12) | 0x6000000 | (buff & 0xFFF);
+            _a->words.w1 = osVirtualToPhysical(curr_ptr);
+        }
+        {
+            Acmd *_a = ptr++;
+            _a->words.w0 = (((after_end << 1) & 0xFFF) << 12) | 0x6000000 | ((buff + (before_end << 1)) & 0xFFF);
+            _a->words.w1 = osVirtualToPhysical(r->base[idx]);
+        }
+    } else {
+        {
+            Acmd *_a = ptr++;
+            _a->words.w0 = (((184 << 1) & 0xFFF) << 12) | 0x6000000 | (buff & 0xFFF);
+            _a->words.w1 = osVirtualToPhysical(curr_ptr);
+        }
+    }
+    return ptr;
+}
 // void *func_1001F79C(void *arg0, s32 arg1, u32 arg2, s32 arg3, void *arg4) {
 //     void *sp34;
 //     s32 sp30;

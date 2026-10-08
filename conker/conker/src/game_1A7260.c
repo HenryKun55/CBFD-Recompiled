@@ -5,7 +5,65 @@
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1A7260/func_15179DB0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1A7260/func_15179FE0.s")
+extern void *func_15167A68(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, s32 arg5);
+extern f32 D_800A7220;
+
+struct func_15179FE0_s {
+    u8 pad0[0x90];
+    s16 unk90;
+    s16 unk92;
+    s16 unk94;
+    s16 unk96;
+    s16 unk98;
+    s16 unk9A;
+    s8 unk9C;
+    s8 unk9D;
+    s8 unk9E;
+    u8 unk9F;
+    s16 unkA0;
+    s16 unkA2;
+    s16 unkA4;
+    u16 unkA6;
+    f32 unkA8;
+    u16 unkAC;
+    s16 unkAE;
+    u8 padB0[2];
+    u8 unkB2;
+    u8 unkB3;
+};
+
+void func_15179FE0(u8 arg0, s16 arg1, s16 arg2, s16 arg3, s8 arg4, u16 arg5, u16 arg6, u8 arg7, u8 arg8, u8 arg9, s32 argA) {
+    struct func_15179FE0_s *s;
+    s32 pad;
+
+    s = func_15167A68(argA, 0, 0xB8, 1, 0xFF, 1);
+    if (s != NULL) {
+        s->unk90 = arg1;
+        s->unk92 = arg2;
+        s->unk94 = arg3;
+        s->unkA2 = arg4;
+        s->unkA0 = ((u32)func_150ADA20() % arg7) - (arg7 >> 1);
+        s->unkA4 = ((u32)func_150ADA20() % arg7) - (arg7 >> 1);
+        if (arg6 == 5) {
+            s->unk90 += s->unkA0 * 4;
+            s->unk92 -= s->unkA2 * 4;
+            s->unk94 += s->unkA4 * 4;
+        }
+        s->unk96 = 0;
+        s->unk98 = 0;
+        s->unk9A = 0;
+        s->unk9C = ((u32)func_150ADA20() % arg8) - (arg8 >> 1);
+        s->unk9D = ((u32)func_150ADA20() % arg8) - (arg8 >> 1);
+        s->unk9E = ((u32)func_150ADA20() % arg8) - (arg8 >> 1);
+        s->unkA8 = ((func_150ADA20() & 0x7F) + 0x8C) * D_800A7220;
+        s->unkA6 = arg5;
+        s->unk9F = arg0;
+        s->unkAC = arg6;
+        s->unkAE = arg9;
+        s->unkB2 = 0;
+        s->unkB3 = 0xFF;
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1A7260/func_1517A1EC.s")
 

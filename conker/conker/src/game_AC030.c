@@ -23,7 +23,68 @@ void func_1507EBB8(u8 *buf, s32 *len, s32 idx) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507EC38.s")
+s32 func_1507EC38(u8 *src, s32 srcLen, u8 *out, s32 *outLen, u8 *excl) {
+    s32 ret;
+    s32 i;
+    s32 j;
+    s32 found;
+    s32 count;
+    u8 buf[5];
+    s32 n;
+
+    ret = 0;
+    *outLen = 0;
+    for (i = 0; i < srcLen; i++) {
+        found = 0;
+        for (j = 0; j < *outLen; j++) {
+            if (out[j] == src[i]) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            for (j = 0; j < 5; j++) {
+                if (excl[j] == src[i]) {
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found) {
+                out[*outLen] = src[i];
+                *outLen = *outLen + 1;
+            }
+        }
+    }
+    if (*outLen == 0) {
+        count = 0;
+        for (i = 0; i < 5; i++) {
+            if (excl[i] != 0) {
+                for (j = 0; j < srcLen; j++) {
+                    if (excl[i] == src[j]) {
+                        buf[count++] = excl[i];
+                        break;
+                    }
+                }
+            }
+        }
+        if (count == 0) {
+            out[0] = 0;
+            *outLen = 1;
+        } else {
+            n = count >> 1;
+            if (n == 0) {
+                n = 1;
+            }
+            for (; n != 0; n--) {
+                out[*outLen] = buf[count - 1];
+                count--;
+                *outLen = *outLen + 1;
+            }
+            ret = 1;
+        }
+    }
+    return ret;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_AC030/func_1507EE58.s")
 

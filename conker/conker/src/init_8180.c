@@ -163,7 +163,48 @@ void func_10008C6C(u8 idx, u8 arg1) {
 //     func_100186DC(&D_8003CA58[idx], &D_8003CD48[idx + (arg1 * 0xEC)]); // (idx * 0x760)
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_8180/func_10008CE8.s")
+void func_10004074(void *);
+struct func_10008CE8_s {
+    s32 unk0;
+    s32 unk4;
+};
+
+s32 func_10008CE8(u8 idx, s32 arg1) {
+    s32 sp3C;
+    u32 i;
+
+    i = 0;
+    func_10018C60(D_8003C900[idx]);
+    while ((n_alCSPGetState(D_8003C900[idx]) != 0) && (i != 2000000)) {
+        i++;
+    }
+
+    if (i >= 2000000) {
+        func_10018C60(D_8003C900[idx]);
+        while ((n_alCSPGetState(D_8003C900[idx]) != 0) && (i < 4000000)) {
+            i++;
+        }
+    }
+
+    if (arg1 != ((u16 *)D_8003CA3C)[idx]) {
+        if (((s32 *)D_8003CA48)[idx] != 0) {
+            func_10004074((void *)((s32 *)D_8003CA48)[idx]);
+            ((void **)D_8003CA48)[idx] = NULL;
+        }
+        sp3C = ((struct func_10008CE8_s *)D_8003CD40)[arg1].unk4;
+        ((void **)D_8003CA48)[idx] = allocate_memory(((u16 *)D_8003C910)[arg1], 0xFF, 2, 2);
+        if (((void **)D_8003CA48)[idx] == NULL) {
+            return -1;
+        }
+        func_10004514(sp3C, ((void **)D_8003CA48)[idx], (((u16 *)D_8003C910)[arg1] + 0xF) & ~0xF, 1);
+        ((u16 *)D_8003CA3C)[idx] = arg1;
+    }
+
+    n_alCSeqNew(&D_8003CA58[idx], ((u8 **)D_8003CA48)[idx]);
+    func_10018CB0(D_8003C900[idx], &D_8003CA58[idx]);
+    func_10017B30(D_8003C900[idx]);
+    return 0;
+}
 // NON-MATCHING: 80% of the way there
 // s32 func_10008CE8(u8 idx, u16 arg1) {
 //     s32 sp3C;

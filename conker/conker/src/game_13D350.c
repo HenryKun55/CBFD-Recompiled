@@ -71,7 +71,38 @@ s32 func_15110600(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     return arg0;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_13D350/func_151106A8.s")
+extern u8 D_800BEAC2;
+Gfx *func_1501A680(Gfx *);
+
+Gfx *func_151106A8(Gfx *gfx) {
+    s32 half;
+    s32 half2;
+
+    if (D_80082FA4 == 0) {
+        gDPPipeSync(gfx++);
+        gDPSetOtherMode(gfx++, 0x302C0F, 4);
+        gDPSetCombineMode(gfx++, G_CC_SHADE, G_CC_SHADE);
+        gDPSetColorImage(gfx++, G_IM_FMT_RGBA, G_IM_SIZ_16b, D_800BE620, D_800BE9C4);
+        gDPSetFillColor(gfx++, 0xFFFCFFFC);
+        gfx = (Gfx *)func_1501A490(gfx, 0xFF, 0, 0, 0, 0);
+        gDPFillRectangle(gfx++, 2, 0, D_800BE620 - 2, D_800BE624);
+        gDPPipeSync(gfx++);
+        gfx = func_1501A680(gfx);
+        if (D_80082FA0 != 0) {
+            gDPPipeSync(gfx++);
+            gfx = (Gfx *)func_1501A490(gfx, 0xFF, 0, 0, 0, 0);
+            gDPSetFillColor(gfx++, 0x10001);
+            gfx = func_1501A6CC(gfx, 0, (half = D_800BE624 >> 1) - 6, D_800BE620, half + 6);
+            if (D_80082FA0 != 1) {
+                gfx = func_1501A6CC(gfx, (half2 = D_800BE620 >> 1) - 1, 0, half2 + 1, D_800BE624);
+            }
+            if (D_800BEAC2) {
+                gfx = func_1501A6CC(gfx, 0, 0, D_800BE620, D_800BE624);
+            }
+        }
+    }
+    return gfx;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_13D350/func_151108C4.s")
 
@@ -140,13 +171,122 @@ void func_15113180(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_13D350/func_15113218.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_13D350/func_151135C4.s")
+extern u8 **D_80089240[];
+extern s32 **D_80089250[];
+extern u8 D_80089470[];
+extern u8 D_800D9E21;
+extern u16 D_800DBEE8[];
+Gfx *func_151733D8(Gfx *, s32);
+Gfx *func_1515E544(Gfx *, s32, u8, u8, u8 *);
+Gfx *func_151137D4(Gfx *, struct131 *, s32, s16, s32, s32);
+
+Gfx *func_151135C4(Gfx *gdl, s32 arg1, s16 arg2) {
+    u16 *p;
+    s32 sp48;
+    s32 i;
+
+    if (arg1 == 0) {
+        sp48 = 0;
+    } else {
+        sp48 = 0x10;
+    }
+    gdl = func_151733D8(gdl, 0);
+    gSPGeometryMode(gdl++, 0x5C0000, 0);
+    gSPSetGeometryMode(gdl++, 0x20000);
+    gdl = func_1515E544(gdl, D_800D9E10[arg2], D_800D9E20, D_800D9E21, D_800D9BD0[arg2][D_800BE9C0]);
+    for (i = 0; i < D_800DBEE8[arg2]; i++) {
+        p = (u16 *)(*D_80089240[arg2] + i * 4);
+        gdl = func_151137D4(gdl, &D_800DBEF4[p[0]], (s32)*D_80089250[D_800BE9C0] + (p[0] << 6), arg2, p[1], sp48);
+    }
+    gSPMatrix(gdl++, D_80089470, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPGeometryMode(gdl++, 0x500200, 0);
+    gSPSetGeometryMode(gdl++, 0x20000);
+    return gdl;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_13D350/func_151137D4.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_13D350/func_15113C88.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_13D350/func_15113E54.s")
+extern s32 D_800DBF98;
+
+struct func_15113E54_s {
+    u8 pad0[0x38];
+    void (*unk38)(struct func_15113E54_s *);
+    u8 pad3C[0x1E];
+    s16 unk5A;
+    s16 unk5C;
+    s16 unk5E;
+    u8 pad60[0xE];
+    u8 unk6E;
+    u8 unk6F;
+    u8 pad70[0x10];
+    s32 unk80;
+    u8 pad84[0x1C];
+};
+
+struct func_15113E54_t {
+    u16 unk0;
+    u16 unk2;
+    u8 pad4[4];
+    u16 unk8[8];
+};
+
+void func_15113E54(s32 arg0) {
+    s32 i;
+    s32 j;
+    s32 n;
+    s16 a;
+    s16 b;
+    s16 c;
+    s32 d;
+    struct func_15113E54_s *obj;
+    s32 v;
+    struct func_15113E54_t *base;
+
+    a = 0;
+    b = 0;
+    n = D_800DBEF0 - D_800DBF98;
+    c = 0;
+    d = 0;
+    for (i = 0; i < n; i++) {
+        obj = i + (struct func_15113E54_s *)D_800DBEF4;
+        if ((obj->unk6F & 0x40) == 0x40 && obj->unk6E == 0) {
+            obj->unk38(obj);
+        }
+    }
+    i = 0;
+    if ((s32)D_80087380 > 0) {
+        base = (struct func_15113E54_t *)D_800D23C0;
+        do {
+        if ((base[i].unk8[0] >> 12) == 2) {
+            for (j = 0; j < base[i].unk2; j++) {
+                v = base[i].unk8[j];
+                if ((v >> 12) == 2) {
+                    obj = (v & 0xFFF) + (struct func_15113E54_s *)D_800DBEF4;
+                    if ((obj->unk6F & 0x40) == 0x40 && obj->unk6E == 0) {
+                        if (j != 0) {
+                            obj->unk5A = a;
+                            obj->unk5C = b;
+                            obj->unk5E = c;
+                            obj->unk80 = d;
+                        }
+                        obj->unk38(obj);
+                        base = (struct func_15113E54_t *)D_800D23C0;
+                    }
+                    if (j == 0) {
+                        a = obj->unk5A;
+                        b = obj->unk5C;
+                        c = obj->unk5E;
+                        d = obj->unk80;
+                    }
+                }
+            }
+        }
+            i++;
+        } while (i < (s32)D_80087380);
+    }
+}
 
 extern s32 *D_800DBF94;
 
@@ -321,7 +461,54 @@ void func_15114B94(u32 arg0) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_13D350/func_15114CC4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_13D350/func_15114D24.s")
+struct func_15114D24_s {
+    u8 unk0[0x10];
+    s16 unk10;
+    s16 unk12;
+    s16 unk14;
+    u8 unk16[0x5E];
+    u16 unk74;
+};
+
+void func_15114CC4();
+u16 func_10010E78(u16, s32, u16, s32, s32, s32, s32, s32, s32, s32, s32);
+
+void func_15114D24(struct func_15114D24_s *arg0, s32 arg1, s32 arg2, s16 arg3, s16 arg4, s32 arg5) {
+    u16 id;
+
+    if ((arg5 & 1) && (arg0->unk74 != 0) && (func_1001147C(arg0->unk74) == arg1)) {
+        return;
+    }
+    if (arg1 == -1) {
+        if (arg0->unk74 != 0) {
+            func_100111C8(arg0->unk74);
+            arg0->unk74 = 0;
+        }
+        return;
+    }
+    if (arg5 & 8) {
+        id = 0;
+    } else {
+        id = arg0->unk74;
+    }
+    if (arg5 & 4) {
+        func_10010E78(id, arg1, arg2, 0, 0, -1, arg0->unk10, arg0->unk12, arg0->unk14, arg3, arg4);
+        if (!(arg5 & 8)) {
+            arg0->unk74 = 0;
+        }
+    } else if (arg5 & 2) {
+        if (id != 0) {
+            func_1001123C(id);
+            id = 0;
+        }
+        arg0->unk74 = func_10010E78(id, arg1, arg2, 0, 0, -1, arg0->unk10, arg0->unk12, arg0->unk14, arg3, arg4);
+    } else {
+        if (id != 0) {
+            func_1001123C(id);
+        }
+        arg0->unk74 = func_1000FA64(arg1, arg0->unk10, arg0->unk12, arg0->unk14, arg2, arg4, arg3, (s32)func_15114CC4, (s32)arg0, 0, 0, 0);
+    }
+}
 
 void func_15114CC4();
 void func_1001001C();

@@ -117,7 +117,97 @@ void func_15147A30(s32 *arg0) {
     D_8008A340[idx](arg0);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_174BF0/func_15147A80.s")
+struct func_15147A80_src {
+    u8 pad0[0xE];
+    u16 unkE;
+    u8 pad10[5];
+    u8 unk15;
+    u8 pad16[6];
+};
+
+struct func_15147A80_blk {
+    s32 w[9];
+};
+
+struct func_15147A80_s {
+    u8 pad0[0x10];
+    struct func_15147A80_src unk10;
+    u8 unk2C;
+    u8 unk2D;
+    u8 unk2E;
+    u8 unk2F;
+    u8 unk30;
+    u8 unk31;
+    u8 pad32[2];
+    s32 unk34;
+    u8 unk38;
+    u8 pad39[3];
+    s32 unk3C[4];
+    s32 unk4C;
+    s32 unk50;
+    f32 unk54;
+    f32 unk58;
+    f32 unk5C;
+    struct func_15147A80_blk unk60;
+    u8 pad84[0x10];
+    void *unk94;
+    void *unk98;
+    u8 pad9C[4];
+};
+
+extern void *func_15167A68(s32, s32, s32, s32, u8, s32);
+extern s32 func_1515D480(s32);
+extern s32 func_1515D440(void);
+
+struct func_15147A80_s *func_15147A80(struct func_15147A80_src *arg0, s32 arg1, u32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6, s32 arg7, struct func_15147A80_blk *arg8, u8 arg9, s32 arg10) {
+    struct func_15147A80_s *p;
+    s32 i;
+    u8 type;
+    s32 tmp;
+
+    tmp = arg0->unk15 * arg2;
+    if (arg0->unkE & 0x40) {
+        type = 0x4D;
+    } else {
+        type = 0x22;
+    }
+    p = func_15167A68(type, arg10, arg1 + tmp + 0xA0, 1, arg9, 1);
+    if (p == NULL) {
+        return NULL;
+    }
+    p->unk98 = (u8 *)p + 0xA0;
+    p->unk94 = (u8 *)p->unk98 + arg1;
+    memcpy(&p->unk10, arg0, 0x1C);
+    p->unk2C = 0;
+    p->unk2D = 0;
+    p->unk2E = 0;
+    p->unk2F = arg3;
+    p->unk30 = arg4;
+    p->unk31 = arg5;
+    if (arg8 != NULL) {
+        p->unk60 = *arg8;
+    } else {
+        ((u8 *)&p->unk60)[0x1C] = 0;
+    }
+    p->unk34 = arg6;
+    p->unk50 = arg7;
+    p->unk38 = 0;
+    for (i = 0; i < 4; i++) {
+        p->unk3C[i] = 0;
+    }
+    p->unk4C = 0;
+    if (arg6 != 0) {
+        for (i = 0; i <= D_80082FA0; i++) {
+            p->unk3C[i] = func_1515D480(arg6);
+        }
+        p->unk4C = func_1515D440();
+    }
+    p->unk54 = 0.0f;
+    p->unk58 = 0.0f;
+    p->unk5C = 0.0f;
+    bzero(p->pad84, 0x10);
+    return p;
+}
 
 struct func_15147C4C_s {
     u8 pad0[0x1E];

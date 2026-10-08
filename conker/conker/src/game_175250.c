@@ -99,7 +99,86 @@ s8 func_15147EB8(u8 *arg) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_175250/func_1514803C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_175250/func_151488C4.s")
+typedef struct { f32 x, y, z; } func_151488C4_v;
+struct func_151488C4_e { func_151488C4_v v; f32 w; u16 s; };
+struct func_151488C4_s {
+    u8 pad0[4];
+    f32 f4;
+    f32 f8;
+    f32 fC;
+    f32 f10;
+    u8 pad14[4];
+    u8 u18;
+    u8 pad19[7];
+    u8 u20;
+};
+struct func_151488C4_a {
+    u8 pad0[0x10];
+    func_151488C4_v v;
+    u8 pad1C[9];
+    u8 n;
+    u8 pad26[6];
+    s8 c;
+    s8 head;
+    s8 tail;
+    u8 pad2F[0x94 - 0x2F];
+    struct func_151488C4_e *p;
+    struct func_151488C4_s *s;
+};
+
+s32 func_151488C4(struct func_151488C4_a *a, s32 i) {
+    u16 v;
+    struct func_151488C4_e *p;
+    struct func_151488C4_s *s;
+    s8 unused;
+    u16 step;
+
+    i = a->head;
+    p = a->p;
+    s = a->s;
+    while (i != a->tail) {
+        p[i].w -= s->f10 * D_800BE9A4;
+        p[i].v.x += s->f4 * D_800BE9A4;
+        p[i].v.y += p[i].w * D_800BE9A4;
+        p[i].v.z += s->fC * D_800BE9A4;
+        i++;
+        if (i == a->n) {
+            i = 0;
+        }
+    }
+    if (a->c < a->n - 1) {
+        v = (s->u18 & 0x20) ? 0x1000 : 0;
+        if (a->c != 0) {
+            step = 0x1000 / a->c;
+        }
+        a->c++;
+        p[a->tail].v = a->v;
+        p[a->tail].w = s->f8;
+        a->tail++;
+        if (a->tail == a->n) {
+            a->tail = 0;
+        }
+        for (i = a->head; i != a->tail;) {
+            p[i].s = v;
+            if (s->u18 & 0x20) {
+                v -= step;
+            } else {
+                v += step;
+            }
+            i++;
+            if (i == a->n) {
+                i = 0;
+            }
+        }
+    } else {
+        if (s->u18 & 0x17) {
+            s->u20 = 3;
+        } else {
+            s->u20 = 2;
+        }
+    }
+    return 1;
+}
 
 struct func_15148AF4_e {
     f32 x;
@@ -144,7 +223,87 @@ s32 func_15148AF4(struct func_15148AF4_s *arg0) {
     return 1;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_175250/func_15148BA4.s")
+typedef struct { f32 x, y, z; } func_15148BA4_v3;
+struct func_15148BA4_e {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+    u8 pad10[4];
+};
+struct func_15148BA4_p {
+    u8 pad0[4];
+    f32 unk4;
+    u8 pad8[4];
+    f32 unkC;
+    f32 unk10;
+    u8 pad14[4];
+    u8 unk18;
+    u8 pad19[0x23 - 0x19];
+    u8 unk23;
+    u8 unk24;
+};
+struct func_15148BA4_s {
+    u8 pad0[0x25];
+    u8 unk25;
+    u8 pad26[7];
+    s8 unk2D;
+    s8 unk2E;
+    u8 pad2F[0x60 - 0x2F];
+    f32 unk60;
+    f32 unk64;
+    u8 pad68[0x7D - 0x68];
+    u8 unk7D;
+    u8 pad7E[0x94 - 0x7E];
+    struct func_15148BA4_e *unk94;
+    struct func_15148BA4_p *unk98;
+};
+extern s32 func_15046C80(f32 *, s32, f32, void *);
+extern s32 (*D_8008A450[])(void *, f32, f32, f32, f32, f32 *);
+extern s32 (*D_8008A430[])(void *, f32, f32, f32, f32, f32 *);
+
+s32 func_15148BA4(struct func_15148BA4_s *arg0) {
+    struct func_15148BA4_e *arr = arg0->unk94;
+    struct func_15148BA4_p *v = arg0->unk98;
+    s32 i = arg0->unk2E;
+    func_15148BA4_v3 saved;
+    f32 pos[3];
+
+    if (v->unk18 & 7) {
+        saved = *(func_15148BA4_v3 *)((u8 *)arr + arg0->unk2D * 0x14);
+    }
+    do {
+        i--;
+        if (i < 0) {
+            i = arg0->unk25 - 1;
+        }
+        arr[i].w -= v->unk10 * D_800BE9A4;
+        arr[i].x += v->unk4 * D_800BE9A4;
+        arr[i].y += arr[i].w * D_800BE9A4;
+        arr[i].z += v->unkC * D_800BE9A4;
+    } while (i != arg0->unk2D);
+    if (v->unk18 & 0x17) {
+        if (arr[arg0->unk2D].y < saved.y) {
+            pos[0] = arr[arg0->unk2D].x;
+            pos[1] = saved.y;
+            pos[2] = arr[arg0->unk2D].z;
+            if (func_15046C80(pos, 0, arr[arg0->unk2D].y, &arg0->unk60) != 0) {
+                if (arg0->unk7D == 3) {
+                    if (v->unk24 != 0) {
+                        if (!D_8008A450[v->unk24](arg0, saved.x, saved.y, saved.z, arg0->unk60, &arg0->unk64)) {
+ return 0;
+ }
+                    }
+                } else if (v->unk23 != 0) {
+                    if (!D_8008A430[v->unk23](arg0, saved.x, saved.y, saved.z, arg0->unk60, &arg0->unk64)) {
+ return 0;
+ }
+                }
+            }
+        }
+    }
+    return 1;
+}
 
 struct func_15148DE0_e { u8 pad0[0x10]; u16 unk10; u8 pad12[2]; };
 struct func_15148DE0_s {

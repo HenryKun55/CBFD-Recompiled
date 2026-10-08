@@ -408,7 +408,64 @@ void func_1514E194(s32 arg0) {
     func_151D74B0((void *)arg0, 5, -1, 0xFF, 1);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514E31C.s")
+extern f32 D_800A5E18;
+extern f32 D_800A5E1C;
+
+void func_1514E31C(s32 arg0) {
+    struct func_1514E194_b b;
+    struct func_1514E194_a a;
+    struct func_1514E194_c c;
+
+    a.unk0 = 3;
+    a.unk8 = 0;
+    a.unkC = 0;
+    a.unk40 = 0x2012;
+    a.unk4 = 0;
+    a.unk45 = 0xFF;
+    a.unk10 = 0xFF;
+    a.unk11 = 0xE6;
+    a.unk12 = 0;
+    a.unk13 = 0xFF;
+    a.unk2 = 0x401;
+    a.unk1C = 0.0f;
+    a.unk20 = 0.0f;
+    a.unk24 = 0.0f;
+    a.unk28 = 0.0f;
+    a.unk2C = 0.0f;
+    a.unk30 = 0.0f;
+    b.unk0 = 45.0f;
+    b.unk4 = 55.0f;
+    b.unk8 = 25.0f;
+    b.unkC = 45.0f;
+    b.unk10 = 0.5f;
+    b.unk14 = 0.5f;
+    b.unk18 = D_800A5E18;
+    b.unk1C = 0.0f;
+    b.unk20 = D_800A5E1C;
+    c.unk1D = ((u8 *)arg0)[0x3B];
+    c.unk0 = 0.0f;
+    c.unk4 = 0.0f;
+    c.unk8 = 100.0f;
+    c.unkC = 0.0f;
+    c.unk10 = 0.0f;
+    c.unk14 = 600.0f;
+    c.unk18 = arg0;
+    b.unk48 = 1.0f;
+    c.unk1C = 0xC;
+    b.unk54 = 0;
+    b.unk55 = 0;
+    b.unk56 = 0;
+    b.unk57 = 0;
+    c.unk1E = 2;
+    func_1514EC1C(func_15189FF0(&a, &b, &c, 2, 3, 0, 0), arg0, 7);
+    {
+    f32 d[3];
+    d[0] = 0.0f;
+    d[1] = 0.0f;
+    d[2] = 150.0f;
+    func_15160A58(arg0, 0xC, d, 2, 0x12C, 0x28, 0xFF, 0xB5, 0, 0xFF, 0, 2, 0, 0, 0xFF, 1);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_179F30/func_1514E508.s")
 

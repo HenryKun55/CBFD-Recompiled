@@ -198,7 +198,104 @@ void func_151A4590(u8 *arg0, u8 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D0840/func_151A4638.s")
+s32 func_15130374(void *, s32, s32, u8, s32);
+extern f32 D_800A8D60;
+
+struct func_151A4638_s {
+    s32 unk0;
+    s32 unk4;
+    s16 unk8;
+    s16 unkA;
+    s32 unkC;
+    s32 unk10;
+    u8 unk14;
+    u8 unk15;
+    u8 unk16;
+    u8 unk17;
+    u8 unk18;
+    u8 unk19;
+    u8 unk1A;
+    u8 unk1B;
+    u8 unk1C;
+    u8 unk1D;
+    s16 unk1E;
+    s16 unk20;
+    s16 unk22;
+    f32 unk24;
+    f32 unk28;
+    f32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    u8 pad3C[0xC];
+    f32 unk48;
+    f32 unk4C;
+    f32 unk50;
+    f32 unk54;
+    s32 unk58;
+    u8 pad5C[4];
+    s8 unk60;
+    s8 unk61;
+    s8 unk62;
+    s8 unk63;
+};
+
+void func_151A4638(f32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 arg4, f32 arg5, u8 *arg6) {
+    f32 sp9C[3];
+    struct func_151A4638_s sp38;
+    s16 sp28[8];
+    s32 temp_v0;
+
+    sp38.unk1D = 0x27;
+    sp38.unk8 = 0x1401;
+    sp38.unk0 = 0x200005;
+    sp38.unk4 = 0;
+    sp38.unkA = (func_150ADA20() % 5U) + 0xF;
+    sp38.unkC = 0;
+    sp38.unk10 = 0;
+    sp38.unk14 = 0x8A;
+    sp38.unk15 = 0;
+    sp38.unk16 = 0;
+    sp38.unk17 = 0xFF;
+    sp38.unk18 = 0;
+    sp38.unk19 = 0;
+    sp38.unk1A = 0;
+    sp38.unk1E = 1;
+    sp38.unk20 = 0xFF;
+    sp38.unk22 = 1;
+    sp38.unk24 = 1.0f;
+    sp38.unk28 = sp38.unk2C = (func_150ADA68() * 50.0f) + 500.0f;
+    sp38.unk30 = arg0;
+    sp38.unk34 = arg1;
+    sp38.unk38 = arg2;
+    sp38.unk48 = -arg3 * (D_800A8D60 * D_800BE9A8);
+    sp38.unk4C = -arg4 * (D_800A8D60 * D_800BE9A8);
+    sp38.unk58 = 0xD;
+    sp38.unk60 = 1;
+    sp38.unk61 = 1;
+    sp38.unk50 = -arg5 * (D_800A8D60 * D_800BE9A8);
+    sp38.unk54 = 0.0f;
+    if (func_150ADA20() & 1) {
+        sp38.unk58 |= 0x40;
+    }
+    if (func_150ADA20() & 1) {
+        sp38.unk58 |= 0x80;
+    }
+    sp38.unk1B = 0xFF;
+    sp38.unk1C = 0xFF;
+    sp38.unk62 = 0;
+    sp38.unk63 = -1;
+    sp28[0] = 0x10;
+    sp28[1] = 0xF;
+    sp28[2] = 0xD;
+    sp28[3] = 0x13;
+    sp28[4] = 0x11;
+    sp28[5] = -0x18;
+    temp_v0 = func_15130374(&sp38, 0, 0xC, arg6[0xC], 1);
+    if (temp_v0 != 0) {
+        memcpy((u8 *)temp_v0 + 0xA8, sp28, 0xC);
+    }
+}
 
 struct func_151A483C_sub {
     s16 unk0;

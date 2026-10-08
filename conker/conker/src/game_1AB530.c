@@ -88,7 +88,89 @@ void func_1517E1AC(void) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1AB530/func_1517E28C.s")
+struct func_1517E28C_s {
+    u8 pad0[0xC];
+    f32 unkC;
+    f32 unk10;
+    u8 pad14[0x10];
+    struct func_1517E28C_s *next;
+    u16 unk28;
+    u16 unk2A;
+    u16 unk2C;
+    u8 unk2E;
+    u8 unk2F;
+    u8 unk30;
+};
+
+struct func_1517E28C_c {
+    u8 v[2];
+};
+
+s32 func_1517E4A8(s32, struct func_1517E28C_s *, u8, u8, u8, s32, u8 *);
+s32 func_1517EC1C(struct func_1517E28C_s *, s32 *);
+s32 func_1517EAAC(f32 arg0, f32 arg1, s32 arg2, f32 *arg3, f32 *arg4);
+extern struct func_1517E28C_c D_8008D004;
+extern struct func_1517E28C_c D_8008D008;
+extern struct func_1517E28C_c D_8008D00C;
+extern u8 D_800DDD60;
+
+s32 func_1517E28C(s32 arg0, s32 arg1) {
+    s32 var_s2;
+    s32 flags;
+    s32 sp6C;
+    u8 *var_v1;
+    struct func_1517E28C_s *p;
+    struct func_1517E28C_c sp60;
+    struct func_1517E28C_c sp5C;
+    struct func_1517E28C_c sp58;
+    s32 fail;
+    s32 *temp_v0;
+
+    sp60 = D_8008D004;
+    sp5C = D_8008D008;
+    sp58 = D_8008D00C;
+    D_800DDD60 = 0;
+    for (p = D_800DDD64; p != NULL; p = p->next) {
+        if (p->unk30 != 0) {
+            flags = p->unk2E;
+            fail = 0;
+            if (flags & 1) {
+                if (!D_800DCDD0) {
+                    fail = 1;
+                } else {
+                    temp_v0 = (s32 *)D_8008CFFC[D_800B0DF0->unk10];
+                    var_s2 = func_1517EAAC(((f32 *)temp_v0)[0], ((f32 *)temp_v0)[1], temp_v0[2], &p->unkC, &p->unk10);
+                    if (var_s2 != 1) {
+                        fail = 1;
+                    }
+                    if (p->unk2A != 0xFFFC) {
+                        var_s2 = -1;
+                    } else {
+                        var_s2 = 0xFF;
+                    }
+                }
+            } else {
+                var_s2 = func_1517EC1C(p, &sp6C);
+                if (var_s2 != 1) {
+                    fail = 1;
+                }
+                if (p->unk2C - sp6C < 0x1E) {
+                    var_s2 = 0x100;
+                } else {
+                    var_s2 = -1;
+                }
+            }
+            flags = p->unk2E;
+            var_v1 = (flags & 2) ? &D_800DD2D0 : NULL;
+            if (fail == 0) {
+                arg0 = func_1517E4A8(arg0, p, sp60.v[p->unk2F], sp5C.v[p->unk2F], sp58.v[p->unk2F], var_s2, var_v1);
+            } else if (var_v1 != NULL) {
+                *var_v1 = 0;
+            }
+        }
+    }
+    return arg0;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1AB530/func_1517E4A8.s")
 

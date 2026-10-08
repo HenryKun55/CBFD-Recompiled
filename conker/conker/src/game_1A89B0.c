@@ -3,7 +3,48 @@
 #include "variables.h"
 
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1A89B0/func_1517B500.s")
+struct func_1517B500_s {
+    s16 x;
+    s16 y;
+    s16 z;
+    s16 pad6;
+    u8 unk8;
+    u8 pad9[4];
+    s8 unkD;
+};
+
+extern u8 D_80095CE1[];
+s32 func_151EF610(void);
+
+s32 func_1517B500(struct func_1517B500_s *arg0, s16 *arg1, s32 *arg2, s32 arg3) {
+    s32 diff;
+    s32 pad;
+    s32 r;
+    s32 r2;
+
+    *arg2 = (*arg2 * 3) / 2;
+    if (*arg2 >= (D_80095CE1[arg0->unk8 * 10] << 8)) {
+        *arg2 -= D_80095CE1[arg0->unk8 * 10] << 8;
+    }
+    arg1[0] = arg0->x;
+    arg1[1] = arg0->y;
+    arg1[2] = arg0->z;
+    diff = 0x29 - arg0->unkD;
+    if (diff == 0) {
+        arg0->unkD = arg0->unkD - (func_151EF610() % 8) + 4;
+    } else if (diff < 0) {
+        r = func_151EF610();
+        arg0->unkD = arg0->unkD - ((func_151EF610() % -diff) >> 1) - (r % 8) + 4;
+    } else {
+        r = func_151EF610();
+        r2 = (func_151EF610() % diff) >> 1;
+        arg0->unkD = arg0->unkD + r2 + (r % 8) - 4;
+    }
+    arg1[0] = arg0->x;
+    arg1[1] = arg0->y;
+    arg1[2] = arg0->z;
+    return 0;
+}
 
 s32 func_1517B6E8(s16 *arg0, s16 *arg1, s32 *arg2, u8 *arg3) {
     s32 temp;
@@ -168,6 +209,35 @@ void *func_1517D690(void *arg0, u16 *arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1A89B0/func_1517D7B0.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1A89B0/func_1517DE5C.s")
+struct func_1517DE5C_s {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+    u8 unkC;
+    u8 padD[3];
+};
+extern struct func_1517DE5C_s D_800DDB80[];
+void func_1517BBAC(s32, s32, s32, s32, f32, s32, s32, s32);
+
+void func_1517DE5C(void) {
+    struct func_1517DE5C_s *p;
+    s32 i;
+
+    if (D_800DDD20 != 0) {
+        p = D_800DDB80 - 15;
+        do {
+            p->unkC = 0;
+            p++;
+        } while (p < D_800DDB80);
+        func_1517BBAC(gObjects[0].x_position, gObjects[0].y_position, gObjects[0].z_position, 0x5DC,
+                      D_800DBFF0->unk380, D_800DBFF0->unk2F8, D_800DBFF0->unk2FC, D_800DBFF0->unk300);
+        for (i = 0; i < 15; i++) {
+            if ((&D_800DD478)[i * 26] != 0 && ((struct func_1517DE5C_s *)&D_800DDA90)[i].unkC == 0) {
+                (&D_800DD478)[i * 26] = 0;
+                ((struct func_1517DE5C_s *)&D_800DDA90)[i].unk8 = 0;
+            }
+        }
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1A89B0/func_1517E05C.s")

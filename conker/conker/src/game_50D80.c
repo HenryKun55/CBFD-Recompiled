@@ -8,7 +8,64 @@ void func_150238D0(void) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_50D80/func_150238D8.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_50D80/func_15023BB0.s")
+typedef struct func_15023BB0_s {
+    s8 b0;
+    u8 b1;
+    s16 h2;
+    s8 b4;
+    s8 b5;
+    s16 pad6;
+} func_15023BB0_s;
+
+extern s32 D_800C3640[];
+extern u16 *D_800C35D8[];
+extern u8 *D_800C3688[][30];
+
+s32 func_15023BB0(u32 arg0, s32 arg1, s32 arg2, func_15023BB0_s **arg3, s32 arg4, s32 arg5, s32 arg6, s32 arg7, s32 arg8, s32 arg9, s32 arg10) {
+    func_15023BB0_s *p;
+    s32 val;
+    s32 b1;
+
+    if (D_800C3688[arg10][arg2] != NULL) {
+        val = ((func_15023BB0_s *)D_800C3688[arg10][arg2])->h2;
+        for (p = (func_15023BB0_s *)D_800C3688[arg10][arg2] + 4; (u32)(p - (func_15023BB0_s *)D_800C3688[arg10][arg2]) < D_800C35D8[arg10][arg2]; p++) {
+            b1 = p->b1;
+            if (b1 == 0 && p->b0 == 0) {
+                val = p->h2;
+                continue;
+            }
+            if ((arg0 < (u32)p) && (arg1 == p->b0)
+                && ((arg4 == 0) || ((arg4 == 1) && (arg5 == p->h2)))
+                && ((arg6 == 0) || ((arg6 == 1) && (arg7 == p->b4)))
+                && ((arg8 == 0) || ((arg8 == 1) && (arg9 == p->b5)))) {
+                *arg3 = p;
+                return val;
+            }
+            while (b1 == 0) {
+                if (p->b0 == 0) {
+                    val = p->h2;
+                    break;
+                }
+                p++;
+                if ((u32)(p - (func_15023BB0_s *)D_800C3688[arg10][arg2]) >= D_800C35D8[arg10][arg2]) {
+                    b1 = p->b1;
+                    break;
+                }
+                if ((arg0 < (u32)p) && (arg1 == p->b0)
+                    && ((arg4 == 0) || ((arg4 == 1) && (arg5 == p->h2)))
+                    && ((arg6 == 0) || ((arg6 == 1) && (arg7 == p->b4)))
+                    && ((arg8 == 0) || ((arg8 == 1) && (arg9 == p->b5)))) {
+                    *arg3 = p;
+                    return val;
+                }
+                b1 = p->b1;
+            }
+            val += b1;
+        }
+    }
+    *arg3 = NULL;
+    return D_800C3640[arg10];
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_50D80/func_15023DE0.s")
 

@@ -712,7 +712,66 @@ void func_15125924(struct108 *arg0) {
         }
     }
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_14FF90/func_15125A6C.s")
+struct func_15125A6C_s {
+    s32 unk0;
+    s32 unk4;
+    f32 unk8;
+    u8  unkC[0x8];
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    f32 unk20;
+    f32 unk24;
+    f32 unk28;
+    u8  pad2C[0x30];
+    u8  unk5C;
+};
+
+void func_15125A6C(struct108 *arg0) {
+    f32 pad44;
+    f32 pad40;
+    f32 pad3C;
+    f32 sp38;
+    f32 pad34;
+    f32 pad30;
+    f32 sp2C;
+    f32 sp28;
+    f32 sp24;
+    struct func_15125A6C_s *s;
+    u8 temp_v0;
+
+    temp_v0 = arg0->unk23E;
+    if (temp_v0 == 0x2A) {
+        sp38 = arg0->unk3D0->unk40;
+        if (arg0->unk2C != 0x40000) {
+            func_1512D560(arg0, 5, 0);
+            arg0->unk7E4 = 1;
+        }
+        D_800DBFF4[0] = 3;
+        s = (struct func_15125A6C_s *)&D_800C3600;
+        ((struct func_15125A6C_s *)&D_800C3600)->unk0 = 1;
+        ((struct func_15125A6C_s *)&D_800C3600)->unk4 = 0;
+        sp28 = sp38 * D_800A3550;
+        sp2C = sinf(sp28);
+        sp24 = (sp38 - 90.0f) * D_800A3554;
+        s->unk14 = (sinf(sp24) * 46.0f) + (arg0->unk3D0->x_position + (138.0f * sp2C));
+        s->unk18 = arg0->unk3D0->y_position + 96.0f;
+        sp2C = cosf(sp28);
+        s->unk1C = (cosf(sp24) * 46.0f) + (arg0->unk3D0->z_position + (138.0f * sp2C));
+        ((struct func_15125A6C_s *)&D_800C3600)->unk20 = 0.0f;
+        s->unk24 = -180.0f;
+        ((struct func_15125A6C_s *)&D_800C3600)->unk8 = 0.0f;
+        ((struct func_15125A6C_s *)&D_800C3600)->unk28 = sp38 - 180.0f;
+        s->unk5C = 0;
+        func_1512D560(arg0, 7, s);
+        return;
+    }
+
+    if (arg0->unk7E4 != 0) {
+        func_1512D560(arg0, 6, 0);
+        arg0->unk7E4 = 0;
+    }
+}
 // NON-MATCHING: miles away
 // void func_15125A6C(struct108 *arg0) {
 //     f32 pad3C;

@@ -136,7 +136,34 @@ Gfx *func_15091534(Gfx *arg0, s32 arg1, u8 *arg2) {
 //     return arg0;
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_BC510/func_150916B4.s")
+void func_15042D94(s32 arg0, s32 arg1, u8 arg2, void *arg3, ...);
+
+void func_150916B4(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    s32 pad;
+    s32 secs;
+    s32 mins;
+    s32 hund;
+
+    if (arg2 >= 0x57030) {
+        arg2 = 0x57030;
+    }
+    hund = ((arg2 % 60) * 100) / 60;
+    if (hund >= 100) {
+        hund = 99;
+    }
+    arg0 -= 8;
+    if (arg2 >= 0) {
+        secs = arg2 / 60;
+        mins = secs / 60;
+        func_15042D94(arg0 - ((mins >= 10) ? 5 : 0) - 8, arg1, (u8)arg3, &D_8009DCC0, mins);
+        func_15042D94(arg0, arg1, (u8)arg3, &D_8009DCC4, secs % 60);
+        func_15042D94(arg0 + 0x10, arg1, (u8)arg3, &D_8009DCCC, hund);
+    } else {
+        func_15042D94(arg0 - 8, arg1, (u8)arg3, &D_8009DCD4);
+        func_15042D94(arg0, arg1, (u8)arg3, &D_8009DCD8);
+        func_15042D94(arg0 + 0x10, arg1, (u8)arg3, &D_8009DCE0);
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_BC510/func_150918EC.s")
 
 void func_15093818(s32 arg0) {

@@ -78,7 +78,37 @@ void func_151D3F14(f32 *arg0, u8 arg1, s32 arg2) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_200930/func_151D3FF4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_200930/func_151D40D4.s")
+struct func_151D40D4_v {
+    f32 x, y, z;
+};
+
+extern f32 D_800AB1CC;
+void func_1505D1C4(f32 arg0, f32 arg1, f32 arg2, s32 arg3, s32 arg4, u16 arg5, s32 arg6, s32 arg7);
+void func_1507C3E0(s32 arg0, s16 *arg1, s32 arg2, s32 arg3);
+
+void func_151D40D4(struct func_151D40D4_v *pos, struct func_151D40D4_v *dir, struct127 *obj, s32 arg3, f32 arg4, s32 arg5, s32 arg6, s32 arg7) {
+    u16 ang;
+    struct func_151D40D4_v v;
+    s16 h;
+
+    if (dir != NULL) {
+        arg4 = func_150484A0(dir->x, dir->z);
+        ang = arg4 * D_800AB1CC;
+        ang = (ang - 0x4000) | 1;
+        v.x = pos->x + dir->x * -90.0f;
+        v.y = pos->y + dir->y * -90.0f;
+        v.z = pos->z + dir->z * -90.0f;
+    } else {
+        v = *pos;
+        if (arg3 != 0) {
+            func_1507C3E0(arg3, &h, 0, 0);
+            v.y += h >> 1;
+        }
+        ang = 0;
+    }
+    func_1505D1C4(pos->x, pos->y, pos->z, arg5, obj - gObjects, ang, arg7, (s32)&v);
+    func_1505D1C4(pos->x, pos->y, pos->z, arg6, obj - gObjects, ang, arg7, (s32)&v);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_200930/func_151D42E8.s")
 
@@ -286,7 +316,42 @@ void func_151D5648(s32 arg0, u8 arg1, s32 arg2) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_200930/func_151D5A18.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_200930/func_151D5B6C.s")
+extern s32 (*D_80086C90[])(struct127 *, struct127 *, s32);
+s32 func_151452C4(s32 a0, s32 a1, f32 *a2, f32 a3, f32 *a4, f32 *a5, f32 *a6, f32 *a7);
+
+s32 func_151D5B6C(s32 arg0, s32 arg1, struct127 *arg2, s8 arg3, s32 arg4) {
+    struct127 *obj;
+    u8 i;
+    s32 mask = -1;
+    f32 pos[3];
+    f32 sp74[3];
+    f32 sp68[3];
+    f32 sp64;
+    f32 sp60;
+    f32 radius;
+
+    for (i = 0; i < 25; i++) {
+        obj = &gObjects[i];
+        if (obj->interaction_state == 0) continue;
+        if (obj->unk5 == 3) continue;
+        if (D_800BE9F0 != 0x23 && obj->id == 0xFF) continue;
+        if (obj == arg2) continue;
+        if (!(obj->unkF8 & 0x40)) continue;
+        if (arg3 != -1 && D_80086C90[arg3](obj, arg2, arg4) == 0) continue;
+        if (obj->unkD2 < obj->unkD4) {
+            radius = obj->unkD4;
+        } else {
+            radius = obj->unkD2;
+        }
+        pos[0] = obj->x_position;
+        pos[1] = obj->y_position + obj->unkD6;
+        pos[2] = obj->z_position;
+        if (func_151452C4(arg0, arg1, pos, radius + radius, sp74, sp68, &sp64, &sp60) != 0) {
+            mask &= ~(1 << i);
+        }
+    }
+    return mask;
+}
 
 void *allocate_memory(s32 size, s32 arg1, s32 arg2, s32 arg3);
 

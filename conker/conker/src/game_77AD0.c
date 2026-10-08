@@ -761,7 +761,51 @@ void func_1505250C(struct127 *arg0, s32 arg1) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_77AD0/func_15052590.s")
+s32 func_150535F4(struct127 *arg0);
+void func_15053750(struct127 *arg0);
+void func_1502178C(struct127 *, s32, s32);
+s32 func_150229E4(struct127 *);
+void func_150562FC(struct127 *);
+void func_15056B08(struct127 *);
+void func_150585F0(struct127 *, f32);
+void func_150597FC(struct127 *);
+void func_15054F74(struct127 *);
+void func_150AFC68(u8, s32, s32, s32, s32, s32);
+extern f32 D_80099344;
+
+void func_15052590(struct127 *arg0) {
+    if (arg0->unk25C & 0x80) {
+        arg0->unk25C &= ~0x80;
+        func_150AFC68(gCurrentObjectIndex, 3, 0x3FC, 6, 0xFF, 0);
+        func_150AFC68(gCurrentObjectIndex, 2, 0x3FC, 6, 0xFF, 0);
+    }
+    if ((D_800C35EA == 1) && ((*(u8 *)&D_800C3654 == 0) || (func_150229E4(arg0) != 0))) {
+        return;
+    }
+    func_15053750(arg0);
+    func_1504BB88(arg0);
+    arg0->unk80 = 10;
+    if (arg0->stunned == 0) {
+        func_15056B08(arg0);
+    } else if (arg0->unk13D == 0) {
+        func_150585F0(arg0, 0.05f);
+    }
+    arg0->unk40 = (s16)(arg0->unk7A + 0x4000) * 0.005493164f;
+    func_15059140(arg0);
+    if ((arg0->unk28 == 0.0f) && ((arg0->unk184 & 0x1F) == 0xE)) {
+        arg0->health = 0;
+    }
+    func_150597FC(arg0);
+    if (arg0->unk13D != 0) {
+        func_150562FC(arg0);
+    } else {
+        arg0->unkC4 += (0.0f - arg0->unkC4) * D_80099344;
+    }
+    func_15054F74(arg0);
+    if (func_150535F4(arg0) == 0) {
+        func_1502178C(arg0, 0, -1);
+    }
+}
 extern f32 D_80099348;
 extern f32 D_8009934C;
 

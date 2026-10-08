@@ -116,4 +116,101 @@ void func_151B863C(void *arg0, s16 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1E58B0/func_151B86F4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1E58B0/func_151B8908.s")
+struct func_151B8908_v { f32 x, y, z; };
+struct func_151B8908_t { s32 c[4]; };
+
+struct func_151B8908_s {
+    s32 unk0;
+    s32 unk4;
+    s16 unk8;
+    s16 unkA;
+    s32 unkC;
+    s32 unk10;
+    u8 unk14;
+    u8 unk15;
+    u8 unk16;
+    u8 unk17;
+    u8 unk18;
+    u8 unk19;
+    u8 unk1A;
+    u8 unk1B;
+    u8 unk1C;
+    u8 unk1D;
+    s16 unk1E;
+    s16 unk20;
+    s16 unk22;
+    f32 unk24;
+    f32 unk28;
+    f32 unk2C;
+    struct func_151B8908_v unk30;
+    struct func_151B8908_v unk3C;
+    struct func_151B8908_v unk48;
+    f32 unk54;
+    s32 unk58;
+    s32 unk5C;
+    s8 unk60;
+    s8 unk61;
+    s8 unk62;
+    s8 unk63;
+    s8 unk64;
+    s8 unk65;
+    u8 unk66;
+    u8 pad67[0xD];
+};
+
+extern struct func_151B8908_t D_800AA4B8;
+s32 func_15130280(void *, s32, s32, s32, s32, s32);
+
+void func_151B8908(u8 *arg0) {
+    struct func_151B8908_s p;
+    struct func_151B8908_t colors;
+    s32 b;
+    s32 a;
+
+    colors = D_800AA4B8;
+    p.unk1D = colors.c[func_150ADA20() & 3];
+    p.unk8 = 0x1303;
+    p.unk0 = 0x200005;
+    p.unk4 = 0;
+    p.unkA = 0x12C;
+    p.unkC = 0;
+    p.unk10 = 0;
+    p.unk14 = 0xFF;
+    p.unk15 = 0xFF;
+    p.unk16 = 0xFF;
+    p.unk17 = 0xFF;
+    p.unk18 = 0xFF;
+    p.unk19 = 0xFF;
+    p.unk1A = 0xFF;
+    p.unk1B = 0xFF;
+    p.unk1C = 0xFF;
+    p.unk28 = p.unk2C = (func_150ADA68() * 500.0f) + 900.0f;
+    p.unk30 = *(struct func_151B8908_v *)(arg0 + 0x38);
+    p.unk3C = *(struct func_151B8908_v *)&D_800A5480;
+    p.unk48 = *(struct func_151B8908_v *)&D_800A5480;
+    p.unk1E = 1;
+    p.unk20 = 0xFF;
+    p.unk22 = 1;
+    p.unk54 = 0.0f;
+    p.unk24 = 1.0f;
+    if (func_150ADA20() & 1) {
+        a = 0x40;
+    } else {
+        a = 0;
+    }
+    if (func_150ADA20() & 1) {
+        b = 0x80;
+    } else {
+        b = 0;
+    }
+    p.unk58 = b | a | 0x4000 | 0x8000 | 0x40000 | 0x800000;
+    p.unk60 = 6;
+    p.unk61 = 5;
+    p.unk62 = -1;
+    p.unk63 = -1;
+    p.unk64 = -1;
+    p.unk65 = 0;
+    p.unk5C = 0;
+    p.unk66 = 0xFF;
+    func_15130280(&p, 1, 0, 0, arg0[0xC], arg0[1]);
+}

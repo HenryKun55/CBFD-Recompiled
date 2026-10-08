@@ -137,7 +137,47 @@ void func_150E0348(s32 arg0, u8 arg1, s32 arg2) {
     func_1513418C(&s, 0, arg1, arg2);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_10CD70/func_150E03F8.s")
+s32 func_15143794(s16, s16, f32, f32 *);
+s32 func_151A26EC(f32 *, f32 *, f32 *, f32, f32, f32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
+extern f32 D_800A0FBC;
+extern f32 D_800A0FC0;
+extern f32 D_800A0FC4;
+extern f32 D_800A0FC8;
+extern f32 D_800A0FCC;
+
+void func_150E03F8(f32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 arg4, f32 arg5, u8 *arg6) {
+    f32 pos[3];
+    f32 vel[3];
+    f32 zero[3];
+    f32 scale;
+    f32 sp64;
+    u32 sp60;
+    u32 sp5C;
+    f32 sp58;
+
+    pos[0] = arg0;
+    pos[1] = arg1;
+    pos[2] = arg2;
+    sp5C = func_150ADA20();
+    sp60 = func_150ADA20();
+    func_15143794(sp5C & 0xFF, (sp60 % 65) - 0x20, func_150ADA68() * D_800A0FBC, vel);
+    scale = func_150ADA68();
+    arg0 = D_800BE9A8;
+    scale = (scale * D_800A0FC0) + D_800A0FC4;
+    zero[0] = 0.0f;
+    zero[1] = 0.0f;
+    zero[2] = 0.0f;
+    vel[0] += -arg3 * arg0 * scale;
+    vel[1] += -arg4 * arg0 * scale;
+    vel[2] += -arg5 * arg0 * scale;
+    sp58 = func_150ADA68();
+    sp64 = func_150ADA68();
+    sp5C = func_150ADA20();
+    sp60 = func_150ADA20();
+    func_151A26EC(pos, zero, vel, 0.98689097f, (sp58 * D_800A0FC8) + D_800A0FCC, (sp64 * 200.0f) + 150.0f,
+                  (sp5C % 26) + 0x28, (sp60 % 201) + 0x37, 0x1E, 0x14, 0, -1, 0x34, 0x35, 0x34,
+                  arg6[0xC], arg6[1]);
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_10CD70/func_150E05F8.s")
 

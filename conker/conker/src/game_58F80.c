@@ -107,7 +107,66 @@ s32 func_1502C3BC(s32 arg0) {
     return v;
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_58F80/func_1502C408.s")
+struct func_1502C408_s {
+    s16 x;
+    s16 y;
+    s16 z;
+    s16 unk6;
+    s16 unk8;
+    u8 unkA;
+    u8 unkB;
+    u8 unkC;
+    u8 unkD;
+    u8 padE[6];
+};
+
+extern Gfx D_800873D0[];
+extern Gfx D_80087408[];
+extern struct func_1502C608_s *D_8008CA4C[];
+Gfx *func_15094F70(Gfx *, void *, s32, void *, s32, s32, s32, s32, s32);
+Gfx *func_15095760(Gfx *, void *);
+
+Gfx *func_1502C408(Gfx *gdl, s32 arg1) {
+    struct func_1502C408_s sp6C;
+    s32 h;
+    s32 w;
+    Gfx *gfx;
+    u8 size;
+    s16 a2;
+    s32 unk7;
+    s32 idx;
+
+    if (D_800BEAC0 != 0) {
+        return gdl;
+    }
+    unk7 = gObjects[arg1].unk7;
+    size = gObjects[arg1].unk122;
+    a2 = ((s16 *)&gObjects[arg1].unk60)[0];
+    if (unk7 == 0) {
+        return gdl;
+    }
+    h = size * 19;
+    w = h;
+    if (gObjects[arg1].interaction_state == 3) {
+        h = size * 15;
+        w = h;
+    }
+    idx = func_1502C3BC(arg1);
+    gSPDisplayList(gdl++, D_800873D0);
+    gDPPipeSync(gdl++);
+    if (0) {}
+    gfx = func_15094F70(gdl, D_8008CA4C[idx], a2, &sp6C, 0, 0, 0, 2, 3);
+    sp6C.unkD = 0;
+    sp6C.unk6 = h;
+    sp6C.unk8 = w;
+    sp6C.unkA = unk7;
+    sp6C.x = gObjects[arg1].x_position;
+    sp6C.y = gObjects[arg1].y_position + (size / 2);
+    sp6C.z = gObjects[arg1].z_position;
+    gfx = func_15095760(gfx, &sp6C);
+    gSPDisplayList(gfx++, D_80087408);
+    return gfx;
+}
 
 struct func_1502C608_s {
     u8 pad0[4];

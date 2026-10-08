@@ -490,7 +490,56 @@ s32 func_151DADA0(struct func_151DADA0_s *arg0) {
 //     *(f32 *) ((char *) a1 + 0x4C) = *(f32 *) ((char *) v1 + 4) * f0 + 1.0f;
 //     *(f32 *) ((char *) a1 + 0x50) = D_800AB4B0 - *(f32 *) ((char *) v1 + 8) * f0;
 // }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DAE28.s")
+struct func_151DAE28_s {
+    u8 pad0[0x2C];
+    f32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+    u8 pad40[0x4C - 0x40];
+    f32 unk4C;
+    f32 unk50;
+    u8 pad54[0xC0 - 0x54];
+    u8 unkC0[0x40];
+    Vtx *unk100[1];
+};
+
+Vtx *func_151DAE28(struct func_151DAE28_s *arg0, s16 arg1) {
+    Vtx *vtx;
+    Vtx *ret;
+    f32 sz;
+    f32 sx;
+    f32 w;
+    f32 h;
+    u8 flag;
+
+    func_151D5D60(arg0->unk100, arg1, 0x40, &vtx, &flag);
+    ret = vtx;
+    if (ret != NULL) {
+        if (flag) {
+            memcpy(arg0->unk100[arg1], arg0->unkC0, 0x40);
+            memcpy((u8 *)arg0->unk100[arg1] + 0x40, arg0->unkC0, 0x40);
+        }
+    } else {
+        return NULL;
+    }
+    w = arg0->unk2C * arg0->unk4C;
+    h = arg0->unk30 * arg0->unk50;
+    sz = D_800DD1D8[arg1] * w;
+    sx = D_800DD1E8[arg1] * w;
+    vtx[0].v.flag = 0;
+    vtx[1].v.flag = 0;
+    vtx[2].v.flag = 0;
+    vtx[3].v.flag = 0;
+    vtx[0].v.ob[0] = vtx[3].v.ob[0] = arg0->unk34 + sx;
+    vtx[0].v.ob[1] = vtx[1].v.ob[1] = arg0->unk38;
+    vtx[0].v.ob[2] = vtx[3].v.ob[2] = arg0->unk3C - sz;
+    vtx[1].v.ob[0] = vtx[2].v.ob[0] = arg0->unk34 - sx;
+    vtx[2].v.ob[1] = vtx[3].v.ob[1] = arg0->unk38 + h;
+    vtx[1].v.ob[2] = vtx[2].v.ob[2] = arg0->unk3C + sz;
+    return ret;
+}
 
 void func_151DB004(struct218 *arg0) {
     arg0->unk14 = (random_u32() % 0x38U) + 80;
@@ -800,7 +849,96 @@ void func_151DBBD4(struct17 *arg0, s32 arg1, u8 *arg2, u8 arg3, s32 arg4) {
 #pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DBCBC.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DBE80.s")
 #pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DC034.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DC260.s")
+extern f32 D_800AB4D0;
+extern f32 D_800AB4D4;
+extern f32 D_800AB4D8;
+extern f32 D_800AB4DC;
+extern f32 D_800AB4E0;
+
+struct func_151DC260_s {
+    s16 unk0;
+    s16 unk2;
+    s16 unk4;
+    s16 unk6;
+    struct func_151DBAA8_v unk8;
+    s16 unk14;
+    s16 unk16;
+    f32 unk18;
+    f32 unk1C;
+    s16 unk20;
+    s16 unk22;
+    f32 unk24;
+    f32 unk28;
+    u8 unk2C;
+    u8 unk2D;
+    f32 unk30;
+    f32 unk34;
+    u8 unk38;
+    u8 unk39;
+    f32 unk3C;
+    u8 unk40;
+    f32 unk44;
+};
+
+void func_15150178(void *, void *, s32, u8, s32);
+
+void func_151DC260(struct func_151DBAA8_v *arg0, s32 arg1, u8 arg2, u8 arg3, s32 arg4) {
+    struct func_151DBAA8_s tmp;
+    struct func_151DC260_s tmp2;
+
+    tmp.unk8 = *arg0;
+    tmp.unk14 = 3.0f;
+    tmp.unk2C = 10;
+    tmp.unk2E = 10;
+    tmp.unk2 = 0xFF;
+    tmp.unk4 = -0x40;
+    tmp.unk6 = 0x28;
+    tmp.unk18 = 4.0f;
+    tmp.unk1C = D_800AB4D0;
+    tmp.unk20 = D_800AB4D4;
+    tmp.unk24 = 12.0f;
+    tmp.unk28 = 11.0f;
+    tmp.unk0 = 0;
+    tmp.unk30 = 3;
+    tmp.unk32 = 1;
+    tmp.unk34 = 0x3C;
+    tmp.unk36 = 0x28;
+    tmp.unk38 = 0x64;
+    tmp.unk3A = 0x64;
+    tmp.unk44 = 0x10;
+    tmp.unk46 = 0xF;
+    tmp.unk48 = 0;
+    tmp.unk40 = 1.0f;
+    tmp.unk3C = arg2;
+    func_15153F18(&tmp, &tmp.unk8, arg1, arg3, arg4);
+
+    {
+    struct func_151DBAA8_v *v = arg0;
+    tmp2.unk8 = *v;
+    tmp2.unk14 = 0xC;
+    tmp2.unk18 = 6.0f;
+    tmp2.unk16 = 6;
+    tmp2.unk1C = 8.0f;
+    tmp2.unk0 = 0;
+    tmp2.unk2 = 0xFF;
+    tmp2.unk4 = -0x40;
+    tmp2.unk6 = 0x24;
+    tmp2.unk20 = 0x23;
+    tmp2.unk22 = 0xF;
+    tmp2.unk2C = 0x9B;
+    tmp2.unk2D = 0x64;
+    tmp2.unk38 = 1;
+    tmp2.unk24 = D_800AB4D8;
+    tmp2.unk39 = arg2;
+    tmp2.unk28 = D_800AB4DC;
+    tmp2.unk30 = 123.0f;
+    tmp2.unk34 = 134.0f;
+    tmp2.unk3C = D_800AB4E0;
+    tmp2.unk40 = 1;
+    tmp2.unk44 = 0.0f;
+    func_15150178(&tmp2, &tmp2.unk8, arg1, arg3, arg4);
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_2062D0/func_151DC484.s")
 
 // typedef struct {

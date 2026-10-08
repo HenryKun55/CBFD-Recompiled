@@ -105,7 +105,56 @@ s32 func_151AC550(struct func_151AC550_s *arg0, s32 arg1, s32 arg2, s32 arg3, f3
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D92F0/func_151AC61C.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D92F0/func_151AC810.s")
+struct func_151AC810_s {
+    u8 pad0[0x2C];
+    f32 unk2C;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+    u8 pad40[0x4C - 0x40];
+    f32 unk4C;
+    f32 unk50;
+    u8 pad54[0xC0 - 0x54];
+    u8 unkC0[0x40];
+    Vtx *unk100[1];
+};
+
+Vtx *func_151AC810(struct func_151AC810_s *arg0, s16 arg1) {
+    Vtx *vtx;
+    Vtx *ret;
+    f32 sz;
+    f32 sx;
+    f32 w;
+    f32 h;
+    u8 flag;
+
+    func_151D5D60(arg0->unk100, arg1, 0x40, &vtx, &flag);
+    ret = vtx;
+    if (ret != NULL) {
+        if (flag) {
+            memcpy(arg0->unk100[arg1], arg0->unkC0, 0x40);
+            memcpy((u8 *)arg0->unk100[arg1] + 0x40, arg0->unkC0, 0x40);
+        }
+    } else {
+        return NULL;
+    }
+    w = arg0->unk2C * arg0->unk4C;
+    h = arg0->unk30 * arg0->unk50;
+    sz = D_800DD1D8[arg1] * w;
+    sx = D_800DD1E8[arg1] * w;
+    vtx[0].v.flag = 0;
+    vtx[1].v.flag = 0;
+    vtx[2].v.flag = 0;
+    vtx[3].v.flag = 0;
+    vtx[0].v.ob[0] = vtx[3].v.ob[0] = arg0->unk34 + sx;
+    vtx[0].v.ob[1] = vtx[1].v.ob[1] = arg0->unk38;
+    vtx[0].v.ob[2] = vtx[3].v.ob[2] = arg0->unk3C - sz;
+    vtx[1].v.ob[0] = vtx[2].v.ob[0] = arg0->unk34 - sx;
+    vtx[2].v.ob[1] = vtx[3].v.ob[1] = arg0->unk38 + h;
+    vtx[1].v.ob[2] = vtx[2].v.ob[2] = arg0->unk3C + sz;
+    return ret;
+}
 
 extern f32 D_800BE9A4;
 
@@ -425,7 +474,50 @@ void func_151AE890(f32 arg0, f32 arg1, f32 arg2, s32 arg3, s32 arg4, s32 arg5, u
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D92F0/func_151AE984.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1D92F0/func_151AEAB4.s")
+extern f32 D_800A9D98;
+extern f32 D_800A9D9C;
+extern f32 D_800A9DA0;
+extern f32 D_800A9DA4;
+void *func_151DA6F8(f32 *, f32 *, f32, s16, s32, f32, s32, s32, f32, f32, s32, s32, s32, s32, s32, s32, s32, s32);
+
+s32 func_151AEAB4(f32 *arg0, s32 arg1, u8 arg2) {
+    s32 pad0;
+    f32 vec[3];
+    u8 a;
+    u8 b;
+
+    a = func_150ADA20() & 0xFF;
+    b = (func_150ADA20() & 0x7F) - 0x3F;
+    {
+    s32 pad1;
+    f32 c0;
+    f32 c1;
+    f32 c2;
+    f32 c3;
+    f32 scale;
+    c0 = func_151423D8(a);
+    c1 = func_151423D8(a - 0x40);
+    c2 = func_151423D8(b);
+    c3 = func_151423D8(b - 0x40);
+    scale = ((func_150ADA68() * 80.0f) + 20.0f) * D_800A9D98;
+    vec[0] = scale * c2 * c1;
+    vec[1] = -scale * c3;
+    vec[2] = scale * c2 * c0;
+    }
+    {
+    f32 r4;
+    u32 r3;
+    u32 r2;
+    f32 r1;
+    r1 = func_150ADA68();
+    r2 = func_150ADA20();
+    r3 = func_150ADA20();
+    r4 = func_150ADA68();
+    func_151DA6F8(arg0, vec, (r1 * D_800A9D9C) + D_800A9DA0, (r2 % 41) + 60,
+                  (r3 % 101) + 155, (r4 * 4.0f) + D_800A9DA4, (func_150ADA20() % 5U) + 3,
+                  (u8)arg1, 1.0f, 1.0f, 0, 0, 0, 0x10, 0xF, 0, arg2, 1);
+    }
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1D92F0/func_151AECA0.s")
 

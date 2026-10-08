@@ -491,7 +491,47 @@ void func_151424F4(Mtx *m, f32 scale02, f32 scale1, f32 rotX, f32 rotY, f32 rotZ
     mtx[2][2] *= scaleZ * scale02;
     guMtxF2L(&mtx, m);
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15142600.s")
+void func_15142600(Mtx *m, f32 scale0, f32 scale1, f32 scaleX, f32 scaleY, f32 scaleZ, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1) {
+    f32 mtx[4][4];
+    f32 inv;
+    f32 fx, fy, fz;
+    f32 rx, rz;
+    vertex u;
+
+    fx = x1 - x0;
+    fy = y1 - y0;
+    fz = z1 - z0;
+    inv = 1.0f / sqrtf(fx * fx + fy * fy + fz * fz);
+    fx *= inv;
+    fy *= inv;
+    fz *= inv;
+    rx = fz;
+    rz = -fx;
+    inv = 1.0f / sqrtf(rx * rx + rz * rz);
+    rx *= inv;
+    rz *= inv;
+    u.x = fy * rz;
+    u.y = fz * rx - fx * rz;
+    u.z = -fy * rx;
+    inv = 1.0f / sqrtf(u.x * u.x + u.y * u.y + u.z * u.z);
+    mtx[0][0] = rx * scaleX * scale0;
+    mtx[1][0] = u.x * inv * scaleX * scale1;
+    mtx[2][0] = fx * scaleX * scale0;
+    mtx[3][0] = x0;
+    mtx[0][1] = 0.0f;
+    mtx[1][1] = u.y * inv * scaleY * scale1;
+    mtx[2][1] = fy * scaleY * scale0;
+    mtx[3][1] = y0;
+    mtx[0][2] = rz * scaleZ * scale0;
+    mtx[1][2] = u.z * inv * scaleZ * scale1;
+    mtx[2][2] = fz * scaleZ * scale0;
+    mtx[3][2] = z0;
+    mtx[0][3] = 0.0f;
+    mtx[1][3] = 0.0f;
+    mtx[2][3] = 0.0f;
+    mtx[3][3] = 1.0f;
+    guMtxF2L(mtx, m);
+}
 void func_15142838(Mtx *m, f32 scale02, f32 scale1, f32 rotX, f32 rotY, f32 rotZ, f32 transX, f32 transY, f32 transZ) {
     f32 mtx[4][4];
 
@@ -1474,7 +1514,44 @@ s32 func_15144CEC(s32 *arg0, f32 *arg1, f32 *arg2, f32 *arg3, f32 *arg4, u8 arg5
     arg1[1] = ((struct func_15144CEC_s *)D_800BE628)[arg5].unk38 - (arg1[1] * (sy + 5.0f)) * *arg4;
     return 1;
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15144E80.s")
+s32 func_15144E80(s16 *arg0, struct17 *arg1, struct17 *arg2, struct17 *arg3) {
+    struct17 v[3];
+    struct17 sp30;
+    struct17 a;
+    struct17 b;
+
+    if (arg3 == NULL) {
+        arg3 = &sp30;
+    }
+    v[0].unk0 = arg0[0];
+    v[0].unk4 = arg0[1];
+    v[0].unk8 = arg0[2];
+    v[1].unk0 = arg0[3];
+    v[1].unk4 = arg0[4];
+    v[1].unk8 = arg0[5];
+    v[2].unk0 = arg0[6];
+    v[2].unk4 = arg0[7];
+    v[2].unk8 = arg0[8];
+    if (v[0].unk0 == v[1].unk0 && v[0].unk4 == v[1].unk4 && v[0].unk8 == v[1].unk8) {
+        return 0;
+    }
+    if (v[0].unk0 == v[2].unk0 && v[0].unk4 == v[2].unk4 && v[0].unk8 == v[2].unk8) {
+        return 0;
+    }
+    if (v[1].unk0 == v[2].unk0 && v[1].unk4 == v[2].unk4 && v[1].unk8 == v[2].unk8) {
+        return 0;
+    }
+    a.unk0 = v[0].unk0 - v[1].unk0;
+    a.unk4 = v[0].unk4 - v[1].unk4;
+    a.unk8 = v[0].unk8 - v[1].unk8;
+    b.unk0 = v[2].unk0 - v[1].unk0;
+    b.unk4 = v[2].unk4 - v[1].unk4;
+    b.unk8 = v[2].unk8 - v[1].unk8;
+    func_151450B4(&a, &b, arg3);
+    func_151450B4(&a, arg3, arg1);
+    *arg2 = a;
+    return 1;
+}
 
 void func_151450B4(struct17 *arg0, struct17 *arg1, struct17 *arg2) {
     arg2->unk0 = arg0->unk4 * arg1->unk8 - arg0->unk8 * arg1->unk4;
@@ -1936,9 +2013,108 @@ void func_15145DB4(f32 *arg0, f32 arg1[][3], f32 arg2[][3], s32 arg3) {
         i++;
     }
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15145EA4.s")
+void func_15145EA4(f32 **arg0, f32 **arg1, Mtx *arg2, s32 arg3) {
+    f32 **dst;
+    f32 mf[4][4];
+    f32 *v;
+    
+
+    if (D_800C3E90) {
+        guMtxL2F(mf, arg2);
+        if (arg3 > 0) {
+            f32 **src;
+            
+            src = arg0;
+            dst = arg1;
+            do {
+                v = *src;
+                if (v != NULL && (v[0] != 0.0f || v[1] != 0.0f || v[2] != 0.0f)) {
+                    func_150A7960(mf, v[0], v[1], v[2], &(*dst)[0], &(*dst)[1], &(*dst)[2]);
+                } else {
+                    func_15142314(arg2, 0, *dst);
+                }
+                arg3--;
+                src++;
+                dst++;
+            } while (arg3 > 0);
+        }
+    } else {
+        if (arg3 > 0) {
+            f32 **src;
+            
+            src = arg0;
+            dst = arg1;
+            do {
+                v = *src;
+                if (v != NULL && (v[0] != 0.0f || v[1] != 0.0f || v[2] != 0.0f)) {
+                    func_150A7960(arg2, v[0], v[1], v[2], &(*dst)[0], &(*dst)[1], &(*dst)[2]);
+                } else {
+                    func_15142314(arg2, 0, *dst);
+                }
+                arg3--;
+                src++;
+                dst++;
+            } while (arg3 > 0);
+        }
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_15146078.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_151462C8.s")
+struct func_151462C8_s {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8[4];
+    s32 unk18;
+    s32 unk1C;
+};
+struct func_151462C8_t {
+    s32 unk0;
+    u8 unk4;
+    u8 pad5[0x3B - 5];
+    u8 unk3B;
+    u8 pad3C[0x301 - 0x3C];
+    u8 unk301;
+    u8 unk302;
+    u8 pad303;
+    s32 unk304[4];
+    u8 *unk314;
+};
+s32 func_1515D914(s32, s16, s32, s32, s32, s32, s32, s32, s32, void *, s32, s32, s32, s32);
+s32 func_1515E544(s32, s32, u8, u8, u8 *);
+extern u8 D_800D9E21;
+
+s32 func_151462C8(s32 arg0, struct func_151462C8_s *arg1, u8 arg2, struct func_151462C8_t *arg3, u8 arg4, s16 arg5, f32 *arg6, u8 arg7, s32 arg8) {
+    s32 a;
+    s32 b;
+
+    a = arg1->unk8[arg5];
+    if (a != 0) {
+        b = arg1->unk18;
+        if (b != 0) {
+            if (arg2 == 1) {
+                if (arg3 != NULL) {
+                    if (arg3->unk0 == 0 || arg3->unk3B != arg4 || arg3->unk4 == 0xFF || arg3->unk302 == 0) {
+                        arg2 = 2;
+                    }
+                } else {
+                    arg2 = 0;
+                }
+            }
+            switch (arg2) {
+            case 1:
+                arg0 = func_1515E544(arg0, arg3->unk304[arg5], arg3->unk301, arg3->unk302, arg3->unk314);
+                break;
+            case 2:
+                arg0 = func_1515E544(arg0, D_800D9E10[arg5], D_800D9E20, D_800D9E21, D_800D9BD0[arg5][D_800BE9C0]);
+                break;
+            case 0:
+            default:
+                arg0 = func_1515D914(arg0, arg5, arg6[0], arg6[1], arg6[2], arg8, a, arg1->unk0, b, &arg1->unk4, arg1->unk1C, 0, 8 | ((arg7 & 1) ? 2 : 0) | ((arg7 & 2) ? 0x10 : 0), 0);
+                break;
+            }
+        }
+    }
+    return arg0;
+}
 // NON-MATCHING: mips_to_c reconstruction, hand-typed. Builds a bitmask
 // of the low (D_80082FA0+1) bits (0 if D_80082FA0<0), then returns
 // whether that mask has no bits in common with *(arg0+2) (s16). Tried
@@ -2007,7 +2183,59 @@ void func_15146508(struct127 *arg0, struct127 *arg1) {
     func_15169040(&tmp, 45, arg0, arg1);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_16EE20/func_1514654C.s")
+s32 func_15031070();
+void func_15145EA4(f32 **arg0, f32 **arg1, Mtx *arg2, s32 arg3);
+extern void func_150A7960(void *mtx, f32 x, f32 y, f32 z, f32 *outX, f32 *outY, f32 *outZ);
+
+s32 func_1514654C(u8 *arg0, u8 *arg1, s32 arg2, f32 **arg3, f32 **arg4, s32 arg5) {
+    Mtx *m;
+    u8 *other;
+    s32 i;
+    Mtx *sp90;
+    s32 sp8C;
+    f32 mtx[4][4];
+
+    if (arg0 == NULL || arg1 == NULL || *(s32 *) (arg0 + 0x1D4) == 0) {
+        return 0;
+    }
+    if (*(u8 **) (arg1 + 0x48) != NULL) {
+        if ((*(u8 **) (arg1 + 0x48))[0x3F6] == 0) {
+            return 0;
+        }
+        m = (Mtx *) (((s32 *) (*(u8 **) (arg1 + 0x48) + 0x3E8))[D_800BE9C0] + arg2 * 0x40);
+    } else if (*(u16 *) (arg1 + 0x1E)) {
+        other = (u8 *) func_1503195C(arg0, *(u16 *) (arg1 + 0x1E), NULL);
+        if (other == NULL) {
+            return 0;
+        }
+        if (func_15031070(other, arg0, &sp90, &sp8C) == 0) {
+            return 0;
+        }
+        {
+            Mtx *t;
+            if (*(s32 *) (other + 0x48) != 0) {
+                m = &sp90[*(u16 *) (arg1 + 0x20)];
+            } else {
+                t = sp90;
+                m = t;
+            }
+        }
+    } else if (*(s32 *) (arg1 + 0x34) != 0) {
+        m = (Mtx *) (*(s32 *) (arg1 + 0x34) + D_800BE9C0 * 0x40);
+    } else {
+        func_15145EA4(arg3, arg4, (Mtx *) (arg1[2] * 0x40 + *(s32 *) (arg0 + 0x1D4)), arg5);
+        return 1;
+    }
+    if (m != NULL) {
+        guMtxL2F(mtx, m);
+        for (i = 0; i < arg5; i++) {
+            func_150A7960(mtx, arg3[i][0], arg3[i][1], arg3[i][2], arg4[i], arg4[i] + 1, arg4[i] + 2);
+        }
+    } else {
+        return 0;
+    }
+    return 1;
+}
 
 // NON-MATCHING: mips_to_c reconstruction, hand-typed. Bounding-volume
 // check: fails if |x| or |z| exceed D_800A56C4, or if y is outside

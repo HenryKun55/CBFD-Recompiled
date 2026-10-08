@@ -497,7 +497,45 @@ void func_151D10C4(void *arg0, s32 arg1) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1FA770/func_151D10E4.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1FA770/func_151D1138.s")
+f32 func_15143E64(func_151D0F60_v *);
+s32 func_1510F8CC(s32);
+void func_151D1448(u8 *);
+
+void func_151D1138(u8 *arg0) {
+    struct func_151D0F60_s *s;
+    u8 *obj;
+    u8 flag;
+    s32 ret;
+
+    flag = 0;
+    s = (struct func_151D0F60_s *)(arg0 + 0x28);
+    obj = s->unk0;
+    if (*(s32 *)obj == 0 || s->unk4 != obj[0x3B]) {
+        *(s16 *)(arg0 + 0xE) = -1;
+        return;
+    }
+    s->unkC = s->unk18;
+    if (D_8008FC30[s->unk34](obj, &s->unk18) == 0) {
+        flag = 1;
+        s->unk18 = s->unkC;
+    }
+    s->unk24.x = s->unk18.x - s->unkC.x;
+    s->unk24.y = s->unk18.y - s->unkC.y;
+    s->unk24.z = s->unk18.z - s->unkC.z;
+    s->unk30 = func_15143E64(&s->unk24);
+    ret = func_1510F8CC(*(s32 *)(obj + 0x184));
+    if (s->unk30 > 300.0f || s->unk30 <= 0.0f || *(f32 *)(obj + 0x28) != 0.0f || obj[0xAD] != 0 ||
+        ret == 5 || ret == 6 || ret == 9 || ret == 0xD || ret == 0xE) {
+        flag = 1;
+    }
+    if (flag) {
+        func_151D13E0(arg0);
+        return;
+    }
+    if (s->unk8 == 0) {
+        func_151D1448(arg0);
+    }
+}
 
 void func_151D1328(u8 *arg0, void *arg1, u8 arg2) {
     func_15169850(arg1, arg2, arg0 + 0x28, arg0 + 0x2C, arg0);

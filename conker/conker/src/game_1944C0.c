@@ -160,7 +160,49 @@ void func_151671E8(void) {
         }
     }
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15167310.s")
+extern f32 D_800DD1D0[];
+struct func_15167310_s {
+    u8 pad0[8];
+    struct func_15167310_s *unk8;
+};
+
+void func_15167310(void) {
+    s32 k;
+    f32 f;
+    f32 g;
+    for (k = 0; k < D_80082FA0 + 1; k++) {
+        f = D_800DBFF0[k].unk3A0;
+        D_800DD1D8[k] = sinf(f);
+        D_800DD1E8[k] = cosf(f);
+    }
+    g = D_800DBFF0->unk3A0;
+    D_800DD1D0[0] = sinf(g);
+    D_800DD1D0[1] = cosf(g);
+    {
+    s32 i;
+    s32 j;
+    struct115 *e;
+    s32 off;
+    struct func_15167310_s *p;
+    struct func_15167310_s *q;
+    for (j = 0, off = 0; j < 0x68; j++, off += 4) {
+        for (i = 0; i < 2; i++) {
+            p = *(struct func_15167310_s **) (D_800DCE50 + i * 0x1A0 + off);
+            if (p != NULL && *(void **) ((u8 *) &D_8008B4A8[j] + 0xC) != NULL) {
+                e = &D_8008B4A8[j];
+                q = p;
+                D_800DD190++;
+                while (q != NULL) {
+                    ((struct func_15167310_s **) D_800DD198)[D_800DD190] = q->unk8;
+                    (*(void (**)(void *)) ((u8 *) e + 0xC))(q);
+                    q = ((struct func_15167310_s **) D_800DD198)[D_800DD190];
+                }
+                D_800DD190--;
+            }
+        }
+    }
+    }
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_151674F8.s")
 void *func_15167A68(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 arg4, s32 arg5) {
     void *v0 = func_10003C6C(arg2, 1, arg3, 0, (u8) arg5);
@@ -604,7 +646,64 @@ void func_15168BE4(void *arg0, u8 arg1, s32 arg2) {
         }
     }
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15168C4C.s")
+extern s16 D_800DD1C0;
+extern s16 D_800DD1C2;
+extern s16 D_800DD1C4;
+extern s16 D_800DD1C6;
+
+struct func_15168C4C_s {
+    u8 pad0[0x10];
+    Mtx mtx[2];
+    f32 unk90;
+    f32 unk94;
+    f32 unk98;
+    f32 unk9C;
+    f32 unkA0;
+    f32 unkA4;
+    u8 padA8[0xC0 - 0xA8];
+    f32 unkC0;
+    f32 unkC4;
+    f32 unkC8;
+    u8 padCC[4];
+    Gfx *unkD0;
+    u8 padD4[0xE5 - 0xD4];
+    u8 unkE5;
+    u8 unkE6;
+    u8 padE7[0xEC - 0xE7];
+    u8 unkEC;
+    u8 unkED;
+};
+
+Gfx *func_15168C4C(Gfx *gfx, struct func_15168C4C_s *arg1, s32 arg2) {
+    s32 pad;
+    s32 mode;
+    u8 sync;
+
+    func_15043D90(&arg1->mtx[D_800BE9C0], arg1->unk9C, arg1->unkA0, arg1->unkA4,
+                  arg1->unkC0, arg1->unkC4, arg1->unkC8, arg1->unk90, arg1->unk94, arg1->unk98);
+    gDPPipeSync(gfx++);
+    gDPSetPrimColor(gfx++, 0, 0, 0, 0, 0, arg1->unkE5);
+    D_800DD1C6 = arg1->unkE5;
+    D_800DD1C0 = D_800DD1C2 = D_800DD1C4 = 0;
+    gDPSetEnvColor(gfx++, 0, 0, 0, 0);
+    gDPSetTileSize(gfx++, 0, 2, arg1->unkE6, 0x7E, 0xFE);
+    switch (arg1->unkEC) {
+    case 1:
+        mode = 0x552230;
+        break;
+    case 2:
+        mode = 0x504A50;
+        break;
+    }
+    sync = 0;
+    gfx = func_15142FBC(gfx, 0x8ACA0, mode, &sync);
+    if (arg1->unkED == 1) {
+        gDPSetCombine(gfx++, 0x123824, 0xFF73FFFF);
+    }
+    gSPMatrix(gfx++, &arg1->mtx[D_800BE9C0], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPDisplayList(gfx++, arg1->unkD0);
+    return gfx;
+}
 void func_15168E34(s32 *arg0, s32 arg1) {
     if ((*arg0 & 0xF000000) == 0) {
         *arg0 = *arg0 + arg1;
@@ -707,7 +806,39 @@ void func_15169040(void *arg0, u8 arg1) {
 //     func_15169070(0, 0x68, arg0, arg1);
 // }
 #pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15169070.s")
-#pragma GLOBAL_ASM("asm/nonmatchings/game_1944C0/func_15169260.s")
+void func_1516968C(struct102 *arg0, u8 *arg1, u8 arg2);
+void func_15169260(void *arg0, s32 arg1, void *arg2, u8 arg3) {
+    s32 *sel;
+    s32 i;
+    s32 j;
+    struct102 *p;
+
+    for (i = 0, sel = arg0; i < arg1; i++) {
+        for (j = 0; j < 2; j++) {
+            if (*(void **) ((u8 *) &D_8008B4A8[*sel] + 0x1C) != NULL) {
+                p = ((struct102 *(*)[0x68]) D_800DCE50)[j][*sel];
+                D_800DD190++;
+                while (p != NULL) {
+                    ((struct102 **) D_800DD198)[D_800DD190] = ((struct102 **) p)[2];
+                    func_1516968C(p, (u8 *) arg2, arg3);
+                    (*(void (**)(struct102 *, void *, u8)) ((u8 *) &D_8008B4A8[*sel] + 0x1C))(p, arg2, arg3);
+                    p = ((struct102 **) D_800DD198)[D_800DD190];
+                }
+                D_800DD190--;
+            } else {
+                p = ((struct102 *(*)[0x68]) D_800DCE50)[j][*sel];
+                D_800DD190++;
+                while (p != NULL) {
+                    ((struct102 **) D_800DD198)[D_800DD190] = ((struct102 **) p)[2];
+                    func_1516968C(p, (u8 *) arg2, arg3);
+                    p = ((struct102 **) D_800DD198)[D_800DD190];
+                }
+                D_800DD190--;
+            }
+        }
+        sel++;
+    }
+}
 void func_1516968C(struct102 *arg0, u8 *arg1, u8 arg2);
 void func_1516944C(s32 arg0, void *arg1, u8 arg2) {
     s32 i;

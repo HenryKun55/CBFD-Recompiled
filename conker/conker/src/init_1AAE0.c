@@ -58,7 +58,58 @@ void func_1001AAE0(N_ALSeqPlayer *seqp, N_ALVoice *voice) {
 //     }
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/__n_seqpReleaseVoice.s")
+void __n_seqpReleaseVoice(N_ALSeqPlayer *seqp, N_ALVoice *voice, ALMicroTime deltaTime) {
+    N_ALEvent evt;
+    N_ALVoiceState *vs = (N_ALVoiceState *)voice->unk10;
+
+    if (vs->envPhase == AL_PHASE_ATTACK) {
+        ALLink *thisNode;
+        ALLink *nextNode;
+        N_ALEventListItem *thisItem, *nextItem;
+
+        thisNode = seqp->evtq.allocList.next;
+        while (thisNode != 0) {
+            nextNode = thisNode->next;
+            thisItem = (N_ALEventListItem *)thisNode;
+            nextItem = (N_ALEventListItem *)nextNode;
+            if (thisItem->evt.type == AL_SEQP_ENV_EVT) {
+                if (thisItem->evt.msg.vol.voice == voice) {
+                    if (nextItem)
+                        nextItem->delta += thisItem->delta;
+                    {
+                        ALLink *_ln = thisNode;
+                        if (_ln->next)
+                            _ln->next->prev = _ln->prev;
+                        if (_ln->prev)
+                            _ln->prev->next = _ln->next;
+                    }
+                    {
+                        ALLink *_ln = thisNode;
+                        ALLink *_to = &seqp->evtq.freeList;
+                        _ln->next = _to->next;
+                        _ln->prev = _to;
+                        if (_to->next)
+                            _to->next->prev = _ln;
+                        _to->next = _ln;
+                    }
+                }
+            }
+            thisNode = nextNode;
+        }
+    }
+
+    vs->velocity = 0;
+    vs->envPhase = AL_PHASE_RELEASE;
+    vs->envGain = 0;
+    vs->envEndTime = seqp->curTime + deltaTime;
+
+    n_alSynSetPriority(voice, 0);
+    n_alSynSetVol(voice, 0, deltaTime);
+    evt.type = AL_NOTE_END_EVT;
+    evt.msg.note.voice = voice;
+    deltaTime += AL_USEC_PER_FRAME * 2;
+    n_alEvtqPostEvent(&seqp->evtq, &evt, deltaTime, 0);
+}
 // void __n_seqpReleaseVoice(void *arg0, void *arg1, s32 arg2) {
 //     void *sp3C;
 //     s16 sp38;
@@ -408,4 +459,47 @@ void func_1001BE1C(void *handler, s32 data, s32 index) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_1AAE0/__n_seqpStopOsc.s")
+void __n_seqpStopOsc(N_ALSeqPlayer *seqp, N_ALVoiceState *vs)
+{
+    N_ALEventListItem *thisNode, *nextNode;
+    s16 evtType;
+
+    thisNode = (N_ALEventListItem *)seqp->evtq.allocList.next;
+    while (thisNode) {
+        nextNode = (N_ALEventListItem *)thisNode->node.next;
+        evtType = thisNode->evt.type;
+        if (evtType == 0x17 || evtType == 0x18) {
+            if (thisNode->evt.msg.osc.vs == vs) {
+                (*seqp->stopOsc)(thisNode->evt.msg.osc.oscState);
+                {
+                    ALLink *ln = (ALLink *)thisNode;
+                    if (ln->next) {
+                        ln->next->prev = ln->prev;
+                    }
+                    if (ln->prev) {
+                        ln->prev->next = ln->next;
+                    }
+                }
+                if (nextNode)
+                    nextNode->delta += thisNode->delta;
+                {
+                    ALLink *element = (ALLink *)thisNode;
+                    ALLink *after = &seqp->evtq.freeList;
+                    element->next = after->next;
+                    element->prev = after;
+                    if (after->next) {
+                        after->next->prev = element;
+                    }
+                    after->next = element;
+                }
+                if (evtType == 0x17)
+                    vs->flags = vs->flags & 0xFE;
+                else
+                    vs->flags = vs->flags & 0xFD;
+                if (!vs->flags)
+                    return;
+            }
+        }
+        thisNode = nextNode;
+    }
+}

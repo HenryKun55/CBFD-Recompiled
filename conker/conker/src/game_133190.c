@@ -236,7 +236,111 @@ void func_151076A4(struct func_151076A4_s *arg0, s32 arg1, u8 arg2) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_133190/func_15107700.s")
+typedef struct {
+    f32 x, y, z;
+} func_15107700_v3;
+
+typedef struct {
+    u8 b[4];
+} func_15107700_w;
+
+struct func_15107700_s {
+    s16 unk0;
+    u8 unk2;
+    func_15107700_v3 unk4;
+    func_15107700_v3 unk10;
+    func_15107700_v3 unk1C;
+    func_15107700_v3 unk28;
+    u8 unk34;
+    s32 unk38;
+    f32 unk3C;
+    f32 unk40;
+    s16 unk44;
+    s16 unk46;
+    func_15107700_w unk48;
+    u8 unk4C;
+};
+
+struct func_15107700_d {
+    void *unk0;
+    u8 unk4;
+    s16 unk6;
+    s16 unk8;
+};
+
+struct func_15107700_b {
+    func_15107700_v3 unk0;
+    u8 unkC[8];
+    func_15107700_v3 unk14;
+    u8 pad20[0x65 - 0x20];
+    u8 unk65;
+    u8 pad66[0x70 - 0x66];
+};
+
+struct func_15107700_a {
+    u8 pad0[0x3B];
+    u8 unk3B;
+    u8 pad3C[0x1D4 - 0x3C];
+    s32 unk1D4;
+};
+
+void func_15107A20();
+void func_15107AE0();
+void func_15081690(void *, f32, f32, f32, f32, f32, f32, void *, f32, s32, s32, s32, s32, s32, s32);
+void *func_15105CE0();
+
+void *func_15107700(struct func_15107700_a *arg0, s16 arg1, s16 arg2, s16 arg3, s32 arg4, f32 arg5, f32 arg6, s16 arg7, s16 arg8, func_15107700_w *arg9, u8 arg10, s32 arg11) {
+    struct func_15107700_d d;
+    void *ret;
+    struct func_15107700_s s;
+    struct func_15107700_b buf;
+    s32 flag;
+
+    if (arg0->unk1D4 == 0) {
+        return NULL;
+    }
+    d.unk0 = arg0;
+    d.unk4 = arg0->unk3B;
+    d.unk6 = arg1;
+    d.unk8 = arg2;
+    if (arg3 == -1) {
+        s.unk0 = 300;
+    } else {
+        s.unk0 = arg3;
+    }
+    if (arg3 == -1) {
+        flag = 0;
+    } else {
+        flag = 1;
+    }
+    s.unk2 = flag;
+    s.unk34 = 0;
+    s.unk38 = arg4;
+    s.unk3C = arg5;
+    s.unk40 = arg6;
+    s.unk44 = arg7;
+    s.unk46 = arg8;
+    s.unk48 = *arg9;
+    s.unk4C = 2;
+    {
+        s32 unused; // block scope (-g3 .bgnb) needed for scheduling
+
+        func_15107A20(arg0, arg1, arg2, &s.unk4, &buf);
+        func_15081690(arg0, s.unk4.x, s.unk4.y, s.unk4.z,
+                      s.unk4.x - buf.unk0.x, s.unk4.y - buf.unk0.y, s.unk4.z - buf.unk0.z,
+                      &buf.unkC, 0.0f, 0, 1, 1, -1, 0, 0);
+        if (buf.unk65 == 0) {
+            return NULL;
+        }
+        s.unk28 = buf.unk14;
+        func_15107AE0(&s.unk4, &s.unk28, &s.unk10, &s.unk1C);
+        ret = func_15105CE0(&s, 12, arg10, arg11);
+        if (ret != NULL) {
+            memcpy(*(void **)((u8 *)ret + 0x60), &d, 12);
+        }
+        return ret;
+    }
+}
 
 struct func_151078E4_s {
     u8 pad0[0x60];

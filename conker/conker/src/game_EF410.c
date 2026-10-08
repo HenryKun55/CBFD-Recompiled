@@ -330,7 +330,77 @@ void func_150C2898(f32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 arg4, f32 arg5, u
     sp54 = func_150ADA20();
     func_151D9014(sp6C, sp60, 6, (sp4C * D_800A028C) + D_800A0290, (sp50 & 0xF) + 0x19, (sp54 % 101) + 0x9B, (func_150ADA68() * 119.0f) + 129.0f, 0, 1.0f, 1.0f, 1, 0, 1, 0, arg6[0xC], arg6[1]);
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C29F0.s")
+extern f32 D_800A02A0, D_800A02A4, D_800A02A8, D_800A02AC, D_800A02B0, D_800A02B4, D_800A02B8, D_800A02BC;
+
+struct func_150C29F0_s {
+    f32 p[3];
+    f32 unkC[5];
+    s16 unk20;
+    s16 unk22;
+    s16 unk24;
+    u8 unk26;
+    u8 unk27;
+    u8 unk28;
+    u8 unk29;
+    s16 unk2A;
+    u8 unk2C;
+    u8 unk2D;
+    u8 unk2E;
+    u8 unk2F;
+    s32 unk30;
+    u8 unk34;
+    f32 unk38;
+    f32 unk3C;
+    f32 unk40;
+    f32 unk44;
+    f32 unk48;
+};
+void func_15149550(struct func_150C29F0_s *, s32, s32, s32, u8, u8);
+
+void func_150C29F0(u8 *arg0) {
+    struct func_150C29F0_s sp3C;
+    f32 sp38;
+    f32 *pos;
+    u8 sp33;
+    f32 sp2C;
+    f32 sp28;
+    f32 temp;
+
+    sp33 = func_150ADA20() & 0xFF;
+    sp2C = func_151423D8(sp33 - 0x40);
+    sp28 = func_151423D8(sp33);
+    pos = (f32 *)(arg0 + 0x28);
+    temp = pos[2] * func_150ADA68();
+    sp3C.unk22 = (sp3C.unk20 = 0x6231, 0x1A4D);
+    sp3C.unk26 = 0;
+    sp3C.unk27 = 0;
+    sp3C.unk28 = 0;
+    sp3C.unk29 = 0xFF;
+    sp3C.unk2C = 0xFF;
+    sp3C.unk2D = 0xFF;
+    sp3C.unk30 = 0;
+    sp3C.unk2A = 1;
+    sp3C.unk2E = 0;
+    sp3C.unk2F = 1;
+    sp3C.unk24 = ((u32)func_150ADA20() % 201) + 100;
+    sp3C.unk34 = 15;
+    sp3C.unk38 = 0.0f;
+    sp3C.unk40 = D_800A02A0;
+    sp3C.unk44 = D_800A02A4;
+    sp3C.p[0] = pos[0] + temp * sp2C;
+    sp3C.p[1] = pos[3];
+    sp3C.p[2] = pos[1] + temp * sp28;
+    sp3C.unk3C = D_800A02A8;
+    sp38 = func_150ADA68() * 0.5f + 1.0f;
+    temp = func_150ADA68() * 0.5f + 1.0f;
+    sp3C.unkC[0] = D_800A02AC * sp38;
+    sp3C.unkC[2] = D_800A02B0 * sp38;
+    sp3C.unkC[1] = D_800A02B4 * temp;
+    sp3C.unkC[3] = D_800A02B8 * temp;
+    sp3C.unkC[4] = D_800A02BC * temp;
+    func_15149550(&sp3C, 10, 1, 0, arg0[0xC], arg0[1]);
+    *(s16 *)(arg0 + 0xE) = ((u32)func_150ADA20() % 51) + 25;
+}
 #pragma GLOBAL_ASM("asm/nonmatchings/game_EF410/func_150C2C00.s")
 // Struct/type unidentified in this file (no callers decompiled yet) -
 // raw void* offset casts. Simple physics-integration step: unk2C/unk30

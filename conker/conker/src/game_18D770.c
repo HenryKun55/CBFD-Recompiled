@@ -918,7 +918,18 @@ void func_15162110(s32 arg0) {
     }
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18D770/func_151621B8.s")
+void func_151621B8(struct236 *arg0) {
+    struct235 *temp_v0;
+    f32 temp_f0;
+
+    temp_v0 = &arg0->unk28;
+    temp_f0 = sinf(temp_v0->unk18);
+    func_1515D4D4((u8)(temp_v0->unk0 + (temp_f0 * temp_v0->unkC)),
+                  (u8)(temp_v0->unk4 + (temp_f0 * temp_v0->unk10)),
+                  (u8)(temp_v0->unk8 + (temp_f0 * temp_v0->unk14)), 0);
+    temp_v0->unk18 += temp_v0->unk1C * D_800BE9A4;
+    temp_v0->unk18 = func_15144B68(temp_v0->unk18);
+}
 // NON-MATCHING: not quite right here
 // struct235 *func_151621B8(struct236 *arg0) {
 //     struct235 *temp_v0;
@@ -986,7 +997,21 @@ struct225 *func_151623F4(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
     }
     return temp_v0;
 }
-#pragma GLOBAL_ASM("asm/nonmatchings/game_18D770/func_15162510.s")
+s32 func_15162510(struct237 *arg0) {
+    struct235 *temp_v1;
+    f32 temp_f0;
+
+    temp_v1 = &arg0->unk18;
+    temp_f0 = sinf(temp_v1->unk18);
+
+    arg0->unk14->unk5 = temp_v1->unk0 + (temp_f0 * temp_v1->unkC);
+    arg0->unk14->unk6 = temp_v1->unk4 + (temp_f0 * temp_v1->unk10);
+    arg0->unk14->unk7 = temp_v1->unk8 + (temp_f0 * temp_v1->unk14);
+
+    temp_v1->unk18 += temp_v1->unk1C * D_800BE9A4;
+    temp_v1->unk18 = func_15144B68(temp_v1->unk18);
+    return 1;
+}
 // s32 func_15162510(struct237 *arg0) {
 //     struct235 *temp_v1;
 //     f32 temp_f0;

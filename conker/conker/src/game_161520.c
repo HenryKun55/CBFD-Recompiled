@@ -977,13 +977,172 @@ void func_15138BC0(void *arg0, u8 arg1, s32 arg2) {
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15138E98.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15139578.s")
+struct func_15139578_s {
+    u8 pad0;
+    u8 unk1;
+    u8 pad2[0xA];
+    u8 unkC;
+    u8 padD[3];
+    f32 unk10;
+    f32 unk14;
+    f32 unk18;
+    f32 unk1C;
+    u8 pad20[0x10];
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+    f32 unk40;
+    f32 unk44;
+    f32 unk48;
+    f32 unk4C;
+    f32 unk50;
+    f32 unk54;
+    f32 unk58;
+    f32 unk5C;
+    s32 unk60;
+};
+
+extern f32 D_800A48F8;
+extern f32 D_800A48FC;
+
+s32 func_15139578(struct func_15139578_s *arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4, void *arg5) {
+    f32 sp54[3];
+    f32 f;
+    u32 sp4C;
+    f32 sp48;
+    s32 sp44;
+
+    f = arg0->unk14;
+    arg0->unk3C = arg0->unk10 + arg4;
+    arg0->unk44 = arg0->unk44 * f;
+    arg0->unk48 = arg0->unk48 * -f;
+    arg0->unk4C = arg0->unk4C * f;
+    arg0->unk50 = arg0->unk50 * f;
+    arg0->unk54 = arg0->unk54 * f;
+    arg0->unk58 = arg0->unk58 * f;
+    if (fabsf(arg0->unk48) < 4.0f) {
+        arg0->unk44 = 0.0f;
+        arg0->unk60 &= ~0x69;
+        arg0->unk48 = 0.0f;
+        arg0->unk4C = 0.0f;
+        arg0->unk50 = 0.0f;
+        arg0->unk54 = 0.0f;
+        arg0->unk58 = 0.0f;
+        arg0->unk5C = 0.0f;
+    }
+    if (arg0->unk30 != 2.0f) {
+        sp54[0] = arg0->unk38;
+        sp54[1] = arg4;
+        sp54[2] = arg0->unk40;
+        sp44 = (arg0->unk30 != 0) ? 1 : 0;
+        sp48 = func_150ADA68();
+        sp4C = func_150ADA20();
+        func_151D9B8C(sp44, (sp48 * D_800A48F8 + D_800A48FC) * ((arg0->unk18 + arg0->unk1C) * 0.5f),
+                      sp4C % 101 + 100, arg5, sp54, (u32)func_150ADA20() % 144 + 0x50, 1, 1, 0, arg0->unkC, arg0->unk1);
+    }
+    return 1;
+}
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15139768.s")
 
 #pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_15139D74.s")
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_161520/func_1513A24C.s")
+struct func_1513A24C_s {
+    s32 unk0;
+    s32 unk4;
+    f32 pos[3];
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    s16 unk1A;
+    f32 unk1C;
+    f32 unk20;
+    f32 unk24;
+    f32 unk28;
+    s16 unk2C;
+    s16 unk2E;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+    u8 unk40;
+};
+struct func_1513A24C_t {
+    s32 unk0;
+    u16 unk4;
+    s8 unk6;
+    s32 unk8;
+};
+struct func_1513A24C_v { f32 v[3]; };
+struct func_1513A24C_a { u16 v[4]; };
+extern struct func_1513A24C_a D_800A4258;
+extern f32 D_800A4938;
+extern f32 D_800A493C;
+extern f32 D_800A4940;
+extern f32 D_800A4944;
+extern f32 D_800A4948;
+extern f32 D_800A494C;
+void func_1515080C(void *arg0, s32 arg1, s32 arg2, s32 arg3, void *arg4, s32 arg5, u8 arg6, u8 arg7, s8 arg8, s32 arg9, f32 arg10, u8 arg11, u8 arg12, u8 arg13, s32 arg14);
+void func_15133E3C(s32 arg0, s32 arg1);
+
+void func_1513A24C(struct func_1513A24C_v *arg0, s32 arg1, s32 arg2, s32 arg3, f32 arg4, u8 arg5, u8 arg6, u8 *arg7, s32 arg8, u8 arg9, s32 arg10) {
+    struct func_1513A24C_s sp6C;
+    struct func_1513A24C_t sp60;
+    s32 var_v1;
+
+    sp6C.unk0 = 0x28;
+    sp6C.unk4 = 0;
+    *(struct func_1513A24C_v *)sp6C.pos = *arg0;
+    sp6C.unk30 = (f32)1.0 * arg4;
+    sp6C.unk14 = 0;
+    sp6C.unk16 = 0xFF;
+    sp6C.unk2C = 0x1E0;
+    sp6C.unk2E = 0xF0;
+    sp6C.unk34 = (f32)0.0 * arg4;
+    sp6C.unk40 = arg6;
+    sp60.unk0 = 4;
+    var_v1 = -1;
+    sp6C.unk18 = -0x40;
+    sp6C.unk1A = 0xC;
+    sp6C.unk20 = 5.0f;
+    sp6C.unk3C = 1.0f;
+    sp6C.unk1C = 13.0f;
+    sp6C.unk24 = D_800A4938;
+    sp6C.unk28 = D_800A493C;
+    sp6C.unk38 = D_800A4940;
+    switch (arg5) {
+    case 0x13:
+        if (D_800BE9F0 == 0x3C) {
+            sp6C.unk3C = 0.0f;
+        }
+        break;
+    case 0xD:
+        sp6C.unk18 = -0x2E;
+        sp6C.unk1A = 0x14;
+        sp6C.unk1C = 15.0f;
+        sp6C.unk20 = 8.0f;
+        sp6C.unk24 = D_800A4944;
+        sp6C.unk28 = D_800A4948;
+        sp6C.unk38 = D_800A494C;
+        break;
+    case 1: {
+        struct func_1513A24C_a sp54 = D_800A4258;
+        u8 idx;
+        idx = arg7[0x128];
+        if (idx >= 4) {
+            idx = 3;
+        }
+        sp60.unk4 = sp54.v[idx];
+        sp60.unk6 = 6;
+        sp60.unk8 = 3;
+        var_v1 = 1;
+        break;
+    }
+    }
+    func_1515080C(&sp6C, arg1, arg2, arg3, &sp60, 0xC, 6, 1, var_v1, arg8, 5.0f, 1, D_800BE616 != 0 ? 1 : 0, arg9, arg10);
+    func_15133E3C(0, 0x45);
+}
 
 // NON-MATCHING: builds the same kind of fixed-layout 0x3C-byte
 // effect-params blob as func_1513A5E0 below (position copied from

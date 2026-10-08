@@ -20,7 +20,93 @@ void func_150D8B3C(void *arg0, void *arg1) {
     func_15145740(arg0, sp34, sp28, arg1, D_800BE616 ? D_800A0B40 : D_800A0B44);
 }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/game_105FC0/func_150D8B88.s")
+struct func_150D8B88_v {
+    f32 x, y, z;
+};
+
+struct func_150D8B88_a {
+    struct func_150D8B88_v pos;
+    s16 unkC;
+    s16 unkE;
+    s32 unk10;
+    u8 unk14;
+    u8 unk15;
+    s32 unk18;
+};
+
+struct func_150D8B88_b {
+    void *unk0;
+    u8 unk4;
+    struct func_150D8B88_v unk8;
+    struct func_150D8B88_v unk14;
+    f32 unk20[3];
+    f32 unk2C;
+    s16 unk30;
+    f32 unk34;
+    f32 unk38;
+    f32 unk3C;
+    f32 unk40;
+    f32 unk44;
+    f32 unk48;
+    u8 unk4C;
+    u8 unk4D;
+    u8 pad4E[6];
+};
+
+struct func_150D8B88_o {
+    u8 pad0[0x3B];
+    u8 unk3B;
+    u8 pad3C[0x31C - 0x3C];
+    struct { u8 pad[0x84]; u8 unk84; } *unk31C;
+};
+
+extern f32 D_800A0B48;
+s32 func_1000D96C(s32, s32, s32);
+void *func_15147A80(void *, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
+s32 func_151EF610(void);
+
+void func_150D8B88(struct func_150D8B88_o *arg0) {
+    struct func_150D8B88_a a;
+    struct func_150D8B88_b b;
+    struct func_150D8B88_v tmp;
+    void *res;
+
+    if (arg0->unk31C != NULL) {
+        if (D_800BE9F0 == 10) {
+            func_1000D96C(10, 0x37, 0);
+        }
+        func_150D8B10((f32 *)arg0, (f32 *)&a.pos);
+        b.unk4D = 0;
+        b.unk4C = 1;
+        b.unk0 = arg0;
+        b.unk4 = arg0->unk3B;
+        tmp = a.pos;
+        b.unk8 = tmp;
+        b.unk14 = tmp;
+        func_150D8B3C(arg0, b.unk20);
+        b.unk3C = D_800A0B48;
+        b.unk30 = func_10010F88((func_151EF610() % 2) + 0x1B6, 0x7FFF, 0, 0, 0, 0, 0, 0, 0x1F4, 0x1388);
+        b.unk34 = 0.0f;
+        b.unk2C = 0.0f;
+        b.unk40 = 0.0f;
+        b.unk44 = 0.0f;
+        b.unk48 = 0.0f;
+        b.unk38 = -16384.0f;
+        if (arg0->unk31C != NULL && arg0->unk31C->unk84 != 0) {
+            b.unk4C &= ~1;
+        }
+        a.unk15 = 0x32;
+        a.unkC = 300;
+        a.unkE = 0x36;
+        a.unk10 = 2;
+        a.unk14 = 5;
+        a.unk18 = 0;
+        res = func_15147A80(&a, 0x50, 0x24, 0xE, 1, 0x11, 3, 0xFF, 0, 0xFF, 1);
+        if (res != NULL) {
+            memcpy(*(void **)((u8 *)res + 0x98), &b, 0x50);
+        }
+    }
+}
 
 struct func_150D8D84_s {
     f32 x, y, z;

@@ -268,7 +268,79 @@ void func_10009400(s32 arg0) {
 //     }
 // }
 
-#pragma GLOBAL_ASM("asm/nonmatchings/init_8F90/func_100095A0.s")
+void func_100099BC(void);
+void func_1000A03C(void);
+Acmd *n_alAudioFrame(Acmd *, s32 *, s16 *, s32);
+extern s32 D_8002C960;
+
+struct func_100095A0_s {
+    s32 next;        /* 0x10 */
+    s32 state;       /* 0x14 */
+    s32 unk8;        /* 0x18 */
+    u32 flags;       /* 0x1C */
+    s32 unk10;       /* 0x20 */
+    s32 unk14;       /* 0x24 */
+    OSTask_t list;      /* 0x28 */
+    OSMesgQueue *msgQ; /* 0x68 */
+    OSMesg msg;      /* 0x6C */
+};
+int func_100095A0(struct50 *arg0, struct51 *arg1) {
+    s32 sp3C;
+    Acmd *cmdp;
+    s32 cmdLen;
+    u32 samplesLeft;
+    s32 bufEnd;
+    struct func_100095A0_s *t;
+
+    sp3C = osVirtualToPhysical((void *)arg0->unk0);
+    func_100099BC();
+    func_1000A03C();
+    samplesLeft = IO_READ(AI_LEN_REG) >> 2;
+    if (arg1 != NULL) {
+        osAiSetNextBuffer((void *)arg1->unk4, arg1->unk8 * 4);
+    }
+    if (((s32)samplesLeft >= 0xF9) && (D_80040F84 == 0)) {
+        arg0->unk8 = D_80040F88;
+        D_80040F84 = 2;
+    } else {
+        arg0->unk8 = D_80040F8C;
+        if (D_80040F84 != 0) {
+            D_80040F84 -= 1;
+        }
+    }
+    bufEnd = sp3C + arg0->unk8 * sizeof(s32);
+    if ((bufEnd & 0x1FFF) == 0) {
+        sp3C += 0x10;
+        arg0->unk4 = arg0->unk0 + 0x10;
+    } else {
+        arg0->unk4 = arg0->unk0;
+    }
+    cmdp = n_alAudioFrame((Acmd *)(&D_8003E388)[D_8002AE4C], &cmdLen, (s16 *)sp3C, arg0->unk8);
+    if (cmdLen == 0) {
+        return 0;
+    }
+    t = (struct func_100095A0_s *)&arg0->unk10;
+    t->next = 0;
+    t->msgQ = (OSMesgQueue *)&D_8003E608;
+    t->msg = (OSMesg)&arg0->unk70;
+    t->flags = 2;
+    t->unk10 = 0;
+    t->list.data_ptr = (u64 *)(&D_8003E388)[D_8002AE4C];
+    t->list.data_size = (cmdp - (Acmd *)(&D_8003E388)[D_8002AE4C]) * sizeof(Acmd);
+    t->list.type = M_AUDTASK;
+    t->list.ucode_boot = (u64 *)&D_100290D0;
+    t->list.ucode_boot_size = (s32)((u8 *)&D_100290D0 + 0xD0) - (s32)&D_100290D0;
+    t->list.flags = 0;
+    t->list.ucode = (u64 *)&D_100291A0;
+    t->list.ucode_data = (u64 *)&D_8002C960;
+    t->list.ucode_data_size = 0x800;
+    t->list.yield_data_ptr = NULL;
+    t->list.yield_data_size = 0x400;
+    osWritebackDCacheAll();
+    osSendMesg(&D_8003B200, (OSMesg)t, 1);
+    D_8002AE4C ^= 1;
+    return 1;
+}
 // NON-MATCHING: so far away
 // s32 func_100095A0(struct50 *arg0, struct51 *arg1) {
 //     s32 sp3C;
