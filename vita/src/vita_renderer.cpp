@@ -1778,6 +1778,7 @@ namespace {
                     }
                     case G_MODIFYVTX: modify_vertex(w0, w1); break;
                     case G_CULLDL:
+                        if (dumping()) std::fprintf(stderr, "[culldl] pc 0x%06X v%u-%u cull=%d\n", (pc - 8) & rdram_mask, (w0 & 0xFFFF) / 2, (w1 & 0xFFFF) / 2, (int)cull_dl((w0 & 0xFFFF) / 2, (w1 & 0xFFFF) / 2));
                         if (cull_dl((w0 & 0xFFFF) / 2, (w1 & 0xFFFF) / 2)) {
                             if (depth == 0) return;
                             pc = stack[--depth];
@@ -1793,7 +1794,7 @@ namespace {
                             const float screen_z = (v.z / v.w + 1.0f) * 0.5f * 1023.0f;
                             take = screen_z < (float)w1 / 65536.0f;
                         }
-                        if (dl_count == dump_dl) std::fprintf(stderr, "[branchz] pc 0x%06X w0 %08X w1 %08X -> 0x%06X v%u take=%d\n", (pc - 8) & rdram_mask, w0, w1, segmented(rdp_half1) & rdram_mask, vtx, (int)take);
+                        if (dumping()) std::fprintf(stderr, "[branchz] pc 0x%06X w0 %08X w1 %08X -> 0x%06X v%u take=%d\n", (pc - 8) & rdram_mask, w0, w1, segmented(rdp_half1) & rdram_mask, vtx, (int)take);
                         if (take) {
                             pc = segmented(rdp_half1) & rdram_mask;
                         }
@@ -1958,7 +1959,7 @@ namespace {
                     case G_SETENVCOLOR: env_color = w1; state_dirty = true; break;
                     case G_SETCOMBINE: combine_w0 = w0 & 0x00FFFFFF; combine_w1 = w1; state_dirty = true; break;
                     case G_SETTIMG:
-                        if (dl_count == dump_dl) std::fprintf(stderr, "[timg] addr 0x%06X fmt %u siz %u width %u\n", segmented(w1), (w0 >> 21) & 7, (w0 >> 19) & 3, (w0 & 0xFFF) + 1);
+                        if (dumping()) std::fprintf(stderr, "[timg] addr 0x%06X fmt %u siz %u width %u\n", segmented(w1), (w0 >> 21) & 7, (w0 >> 19) & 3, (w0 & 0xFFF) + 1);
                         timg.fmt = (w0 >> 21) & 7;
                         timg.siz = (w0 >> 19) & 3;
                         timg.width = (w0 & 0xFFF) + 1;
@@ -2663,7 +2664,7 @@ namespace {
         // Coordinates in 10.2, texture coordinates in s10.5 and s5.10.
         void texture_rectangle(uint32_t tile, int32_t ulx, int32_t uly, int32_t lrx, int32_t lry,
                                int32_t s, int32_t t, int32_t dsdx, int32_t dtdy, bool flip) {
-            if (dl_count == dump_dl) {
+            if (dumping()) {
                 std::fprintf(stderr, "[texrect] cimg 0x%06X w%u tile %u timg 0x%06X rect (%.2f,%.2f)-(%.2f,%.2f) st (%d,%d) d(%d,%d) cycle %u\n",
                     cimg.addr, cimg.width, tile, timg.addr, ulx / 4.0, uly / 4.0, lrx / 4.0, lry / 4.0, s, t, dsdx, dtdy, (other_mode_h >> OMH_CYCLE_SHIFT) & 3);
             }
@@ -2724,7 +2725,7 @@ namespace {
         }
 
         void fill_rectangle(int32_t ulx, int32_t uly, int32_t lrx, int32_t lry) {
-            if (dl_count == dump_dl) {
+            if (dumping()) {
                 std::fprintf(stderr, "[fill] cimg 0x%06X w%u rect (%d,%d)-(%d,%d) color %08X cycle %u\n", cimg.addr, cimg.width,
                     ulx / 4, uly / 4, lrx / 4, lry / 4, fill_color, (other_mode_h >> OMH_CYCLE_SHIFT) & 3);
             }
@@ -2842,7 +2843,7 @@ namespace {
                 std::fprintf(stderr, "[fbtrace] dl %u cimg 0x%06X fmt %u siz %u w %u\n", dl_count, addr, fmt, siz, width);
                 fb_trace_count++;
             }
-            if (dl_count == dump_dl) {
+            if (dumping()) {
                 std::fprintf(stderr, "[cimg] addr 0x%06X fmt %u siz %u width %u (zimg 0x%06X) scissor (%u,%u)-(%u,%u)\n", addr, fmt, siz, width, zimg_addr,
                     scissor_ulx / 4, scissor_uly / 4, scissor_lrx / 4, scissor_lry / 4);
             }
@@ -3178,8 +3179,10 @@ namespace {
             return n;
         }();
         // debug_dump_dl holds the number of a display list whose draws are logged.
-        // "t<seconds>": the first display list after that many seconds of running.
+        // "t<seconds>": the first display list after that many seconds of running. A second
+        // number logs that many display lists from there.
         double dump_at_s = -1;
+        uint32_t dump_count = 1;
         uint32_t dump_dl = [this] {
             uint32_t n = ~0u;
             if (FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_dump_dl", "r")) {
@@ -3188,10 +3191,12 @@ namespace {
                     if (text[0] == 't') dump_at_s = std::atof(text + 1);
                     else n = (uint32_t)std::atoi(text);
                 }
+                if (std::fscanf(f, "%u", &dump_count) != 1 || dump_count == 0) dump_count = 1;
                 std::fclose(f);
             }
             return n;
         }();
+        bool dumping() const { return dump_dl != ~0u && dl_count - dump_dl < dump_count; }
 
         uint32_t debug_flags = file_debug_flags;
         // Programs made with other flags: kept (draw states point at them), not used.
@@ -3531,7 +3536,7 @@ namespace {
             const uint32_t draw_index = (uint32_t)list->draws.size() - 1;
             enqueue([draw_index](Backend& b, CommandList& l) { b.draw(l, l.draws[draw_index]); });
 
-            if (dl_count == dump_dl) {
+            if (dumping()) {
                 GLVertex v{};
                 if (batch_raw) {
                     const VertexIn& in = list->vin[batch.base];
