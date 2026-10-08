@@ -621,6 +621,13 @@ func = "func_1501E05C"
 before_vram = 0x1501E05C
 text = "{ extern int conker_cutscene_skip(uint8_t*, recomp_context*); if (conker_cutscene_skip(rdram, ctx)) return; }"
 
+# Translated speech bubbles (host/src/text_translation.cpp): func_1516C878 finds the page a
+# bubble shows; with a translation for it, the translated page is returned instead ($v0).
+[[patches.hook]]
+func = "func_1516C878"
+before_vram = 0x1516C878
+text = "{ extern int conker_translate_page(uint8_t*, recomp_context*); if (conker_translate_page(rdram, ctx)) return; }"
+
 # Cutscene Aspect Ratio at 4:3 (host/src/cutscene_aspect.cpp): at the end of the frame's display
 # list, just before func_1501878C writes its full sync ($s1 points to the list's pointer), a call to
 # a list of our own that draws black bars over the picture beyond the 4:3 frame.

@@ -198,6 +198,10 @@ namespace conker {
     // Which cutscenes L skips (host/src/cutscene_skip.cpp): 0 the game's rule, 1 any,
     // 2 also the ones the game never lets you skip.
     int cutscene_skip_mode();
+    // The speech bubbles' language (host/src/text_translation.cpp): 0 English, 1 Portuguese;
+    // and whether translated swear words show as the game's symbols.
+    int text_language();
+    bool text_censored();
 }
 #endif
 

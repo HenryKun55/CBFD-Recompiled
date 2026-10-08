@@ -100,6 +100,7 @@ add_executable(ConkerVita
     "${HOST_DIR}/field_of_view.cpp"
     "${HOST_DIR}/interpolation.cpp"
     "${HOST_DIR}/cutscene_skip.cpp"
+    "${HOST_DIR}/text_translation.cpp"
     "${HOST_DIR}/render_fixes.cpp"
     "${HOST_DIR}/look_aim.cpp"
     src/vita_hooks.cpp
@@ -170,4 +171,5 @@ vita_create_vpk(ConkerVita.vpk ${VITA_TITLEID} eboot.bin
     VERSION ${VITA_VERSION}
     NAME ${VITA_APP_NAME}
     FILE sce_sys sce_sys
+    FILE ${CMAKE_CURRENT_SOURCE_DIR}/translation/pt_br.txt translation/pt_br.txt
 )

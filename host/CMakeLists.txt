@@ -90,6 +90,7 @@ add_executable(ConkerRecomp
     src/field_of_view.cpp
     src/interpolation.cpp
     src/cutscene_skip.cpp
+    src/text_translation.cpp
     src/render_fixes.cpp
     src/look_aim.cpp
     src/mouse_camera.cpp

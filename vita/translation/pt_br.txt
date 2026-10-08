@@ -1,0 +1,49 @@
+# Conker's Bad Fur Day: tradução dos balões de fala para português do Brasil.
+#
+# Uma página de balão por linha: "<chave> = <texto>". A chave é o CRC32 da página em inglês
+# (vita/tools/text_dump.py gera en_reference.txt com o original, que não vai para o git).
+# "\n" quebra a linha, "<XX>" é um código de controle do jogo (cores, ícones de botão:
+# mantenha os do original), e "{palavra}" é um palavrão: escrito por extenso, ou em
+# símbolos com a Censura ligada. Escreva em minúsculas: o jogo desenha tudo em maiúsculas.
+# Espaços no começo das linhas centralizam o texto no balão, como no original.
+
+# assets06/0026
+25acf3c6 = algum espertinho tá\n  tentando roubar nossa\n   colmeia nova de novo.
+a181f07a = é o mesmo\n{desgraçadinho}.
+e5fe707c = vamos, rapazes.
+bd60aead = vamos pegar \nele, chefe !
+ba4cfd2e = de novo.
+ec3b275f = sr. esquilo,\ndepressa, depressa.
+febec134 =  acho que deu \numa trégua\n nas ondas.
+33ec35d4 =  pula aí e \nleva a colmeia, \n agora, rápido !
+0ccc2751 = não temos \ntempo a perder.
+
+# assets06/0028
+f39e720f = vai ser
+15061b45 =    um daqueles\n  dias .
+c2746ef5 = beleza, birdy,
+74140309 = então, como você\npode me ajudar ?
+fab49d66 = certo,
+49ccd815 = vem aqui\n  pra cá ! 
+738fbd37 = aperte <A9>
+02232ad0 = ah, é,
+40170772 = a luz\nacende,
+8fa37d47 = e faz\nesse barulho,
+fadf9221 = tim !
+f490f95a = barulho de tim. . .
+ebadaddc = pronto,
+c576c363 = tim . . .
+2b9f7b08 = é isso.
+f417f877 = é isso ?
+089dd5a1 = é.
+17dbb7b6 = beleza, vou\napertar <A9>
+ea33f455 = não me importo\n  nem um pouco !
+0943c926 = e o que isso\n quer dizer ?
+2cf72966 =    quer dizer\nsensível ao contexto . . .
+32842acf = é sensível\nao contexto !
+49513e1b =   tenta\nali ó .
+376ab0a4 = beleza .
+25c6e68b = ou você podia\ntentar de novo !
+64f179ac =   aah, eu vou\npra cama agora !
+012110ee = boa noite .
+82cbb125 = uau, bem o que\n       eu precisava.
