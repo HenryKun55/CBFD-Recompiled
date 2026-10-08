@@ -613,6 +613,14 @@ func = "func_1501878C"
 before_vram = 0x15018920
 text = "{ extern void conker_frame_dl_begin(uint8_t*, recomp_context*); conker_frame_dl_begin(rdram, ctx); }"
 
+# Skipping cutscenes with L (host/src/cutscene_skip.cpp): func_1501E05C, which decides each frame
+# whether the playing cutscene is skipped, answers from the Vita's setting instead ($v0) when it's
+# on. The PC build has the Skip Any Cutscene mod for this.
+[[patches.hook]]
+func = "func_1501E05C"
+before_vram = 0x1501E05C
+text = "{ extern int conker_cutscene_skip(uint8_t*, recomp_context*); if (conker_cutscene_skip(rdram, ctx)) return; }"
+
 # Cutscene Aspect Ratio at 4:3 (host/src/cutscene_aspect.cpp): at the end of the frame's display
 # list, just before func_1501878C writes its full sync ($s1 points to the list's pointer), a call to
 # a list of our own that draws black bars over the picture beyond the 4:3 frame.

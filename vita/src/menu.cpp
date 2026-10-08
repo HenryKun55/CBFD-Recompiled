@@ -89,8 +89,9 @@ namespace conker::vita::menu {
             return b;
         }
 
-        const char* main_items[] = { "Resume", "Controls", "Analog stick", "Widescreen", "Reset controls to defaults", "Debug", "Quit game" };
-        constexpr int main_count = 7;
+        const char* main_items[] = { "Resume", "Controls", "Analog stick", "Widescreen", "Skip cutscenes (L)", "Reset controls to defaults", "Debug", "Quit game" };
+        constexpr int main_count = 8;
+        const char* skip_names[] = { "Watched ones (original)", "Any", "Any, even unskippable" };
         constexpr int stick_count = 6;
 
         int item_count() {
@@ -129,10 +130,14 @@ namespace conker::vita::menu {
             else if (button == SCE_CTRL_DOWN) cursor = (cursor + 1) % count;
             else if (page == Page::Controls && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) slot ^= 1;
             else if (page == Page::Stick && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) adjust_stick(cursor, button == SCE_CTRL_LEFT ? -1 : 1);
+            else if (page == Page::Main && cursor == 4 && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) {
+                current().cutscene_skip = (current().cutscene_skip + (button == SCE_CTRL_LEFT ? 2 : 1)) % 3;
+                save();
+            }
             else if (page == Page::Debug && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT) && cursor != 3) debug_action(cursor, button == SCE_CTRL_LEFT ? -1 : 1);
             else if (button == SCE_CTRL_CIRCLE) {
                 if (page == Page::Main) close_menu();
-                else { cursor = page == Page::Controls ? 1 : page == Page::Stick ? 2 : 5; page = Page::Main; save(); }
+                else { cursor = page == Page::Controls ? 1 : page == Page::Stick ? 2 : 6; page = Page::Main; save(); }
             }
             else if (button == SCE_CTRL_TRIANGLE && page == Page::Controls) {
                 current().bindings[cursor][slot] = Input::None;
@@ -144,16 +149,19 @@ namespace conker::vita::menu {
                         case 1: page = Page::Controls; cursor = 0; slot = 0; break;
                         case 2: page = Page::Stick; cursor = 0; break;
                         case 3: current().widescreen = !current().widescreen; save(); break;
-                        case 4: {
+                        case 4: current().cutscene_skip = (current().cutscene_skip + 1) % 3; save(); break;
+                        case 5: {
                             const bool widescreen = current().widescreen;
+                            const int cutscene_skip = current().cutscene_skip;
                             current() = defaults();
                             current().widescreen = widescreen;
+                            current().cutscene_skip = cutscene_skip;
                             save();
                             set_status("Controls reset to the defaults.");
                             break;
                         }
-                        case 5: page = Page::Debug; cursor = 0; break;
-                        case 6: quit = true; break;
+                        case 6: page = Page::Debug; cursor = 0; break;
+                        case 7: quit = true; break;
                     }
                 }
                 else if (page == Page::Controls) {
@@ -279,6 +287,9 @@ namespace conker::vita::menu {
                 text(x0 + 30, list_y + i * row_h, main_items[i], i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
                 if (i == 3) {
                     text(x0 + 360, list_y + i * row_h, current().widescreen ? "16:9" : "4:3 (original)", i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
+                }
+                if (i == 4) {
+                    text(x0 + 360, list_y + i * row_h, skip_names[current().cutscene_skip], i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
                 }
             }
             text(x0 + 24, y0 + h - 70, "Cross: choose    Circle: back    START+SELECT: close", 0x8888A0FF, 0.62f);

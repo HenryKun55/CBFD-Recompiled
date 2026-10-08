@@ -99,6 +99,7 @@ add_executable(ConkerVita
     "${HOST_DIR}/cutscene_aspect.cpp"
     "${HOST_DIR}/field_of_view.cpp"
     "${HOST_DIR}/interpolation.cpp"
+    "${HOST_DIR}/cutscene_skip.cpp"
     "${HOST_DIR}/render_fixes.cpp"
     "${HOST_DIR}/look_aim.cpp"
     src/vita_hooks.cpp

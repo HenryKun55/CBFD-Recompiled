@@ -195,6 +195,9 @@ namespace conker {
 namespace conker {
     // How much wider than 4:3 the Vita build shows the 3D view (1: not at all).
     float vita_widescreen_ratio();
+    // Which cutscenes L skips (host/src/cutscene_skip.cpp): 0 the game's rule, 1 any,
+    // 2 also the ones the game never lets you skip.
+    int cutscene_skip_mode();
 }
 #endif
 
