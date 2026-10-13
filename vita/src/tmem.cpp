@@ -136,13 +136,25 @@ namespace n64gfx {
                     q++;
                 }
 #if defined(__ARM_NEON)
-                // Two words at a time, while neither RDRAM nor TMEM wraps.
-                while (i + 2 <= end && ((dst + i * 8) & 0xFFF) + 16 <= 0x1000 &&
-                       ((src + i * 8) & rdram_mask) + 16 <= rdram_size) {
-                    uint8x16_t v = vrev32q_u8(vld1q_u8(rdram + ((src + i * 8) & rdram_mask)));
-                    if (odd) v = vreinterpretq_u8_u32(vrev64q_u32(vreinterpretq_u32_u8(v)));
-                    vst1q_u8(&tmem.data[(dst + i * 8) & 0xFFF], v);
-                    i += 2;
+                // Two words at a time, as far as neither RDRAM nor TMEM wraps.
+                if (i < end) {
+                    const uint32_t d0 = (dst + i * 8) & 0xFFF, s0 = (src + i * 8) & rdram_mask;
+                    uint32_t n = std::min(end - i, (0x1000 - d0) / 8);
+                    n = std::min(n, s0 < rdram_size ? (rdram_size - s0) / 8 : 0u) & ~1u;
+                    const uint8_t* sp = rdram + s0;
+                    uint8_t* dp = &tmem.data[d0];
+                    if (odd) {
+                        for (uint32_t k = 0; k < n; k += 2, sp += 16, dp += 16) {
+                            const uint8x16_t v = vrev32q_u8(vld1q_u8(sp));
+                            vst1q_u8(dp, vreinterpretq_u8_u32(vrev64q_u32(vreinterpretq_u32_u8(v))));
+                        }
+                    }
+                    else {
+                        for (uint32_t k = 0; k < n; k += 2, sp += 16, dp += 16) {
+                            vst1q_u8(dp, vrev32q_u8(vld1q_u8(sp)));
+                        }
+                    }
+                    i += n;
                 }
 #endif
                 for (; i < end; i++) {
@@ -348,13 +360,55 @@ namespace n64gfx {
         }
     }
 
+    namespace {
+        // XXH32 of a range, seeded with the hash so far (the ranges of a tile chain this way),
+        // its four lanes in a NEON register: the same result as XXH32's, a third of its work.
+        uint32_t hash_range(const uint8_t* p, uint32_t n, uint32_t seed) {
+#if defined(__ARM_NEON)
+            constexpr uint32_t P1 = 2654435761u, P2 = 2246822519u, P3 = 3266489917u, P4 = 668265263u, P5 = 374761393u;
+            const uint8_t* const end = p + n;
+            uint32_t h;
+            if (n >= 16) {
+                const uint32_t init[4] = { seed + P1 + P2, seed + P2, seed, seed - P1 };
+                uint32x4_t acc = vld1q_u32(init);
+                const uint8_t* const limit = end - 16;
+                do {
+                    acc = vmlaq_n_u32(acc, vreinterpretq_u32_u8(vld1q_u8(p)), P2);
+                    acc = vsriq_n_u32(vshlq_n_u32(acc, 13), acc, 19);
+                    acc = vmulq_n_u32(acc, P1);
+                    p += 16;
+                } while (p <= limit);
+                auto rotl = [](uint32_t x, int r) { return (x << r) | (x >> (32 - r)); };
+                h = rotl(vgetq_lane_u32(acc, 0), 1) + rotl(vgetq_lane_u32(acc, 1), 7) +
+                    rotl(vgetq_lane_u32(acc, 2), 12) + rotl(vgetq_lane_u32(acc, 3), 18);
+            }
+            else {
+                h = seed + P5;
+            }
+            h += n;
+            auto rotl = [](uint32_t x, int r) { return (x << r) | (x >> (32 - r)); };
+            while (p + 4 <= end) {
+                uint32_t w;
+                std::memcpy(&w, p, 4);
+                h = rotl(h + w * P3, 17) * P4;
+                p += 4;
+            }
+            while (p < end) {
+                h = rotl(h + (*p++) * P5, 11) * P1;
+            }
+            h ^= h >> 15; h *= P2; h ^= h >> 13; h *= P3; h ^= h >> 16;
+            return h;
+#else
+            return XXH32(p, n, seed);
+#endif
+        }
+    }
+
     uint32_t hash_tile(const Tmem& tmem, const Tile& tile, uint32_t width, uint32_t height, uint32_t tlut_type) {
-        XXH32_state_t state;
-        XXH32_reset(&state, 0);
         const uint32_t params[8] = {
             tile.fmt, tile.siz, tile.line, tile.tmem, tile.palette, width, height, tlut_type
         };
-        XXH32_update(&state, params, sizeof(params));
+        uint32_t h = hash_range((const uint8_t*)params, sizeof(params), 0);
 
         // The rows the texture reads: from its start, height lines (TMEM wraps).
         const uint32_t row_bytes = (tile.siz == SIZ_32b) ? width * 2 : (width * (4u << tile.siz) + 7) / 8;
@@ -364,9 +418,9 @@ namespace n64gfx {
         const uint32_t start = (tile.siz == SIZ_32b) ? ((tile.tmem * 8) & 0x7FF) : ((tile.tmem * 8) & 0xFFF);
         auto add_range = [&](uint32_t offset) {
             const uint32_t first = std::min(span, half - (start & (half - 1)));
-            XXH32_update(&state, &tmem.data[offset + (start & (half - 1))], first);
+            h = hash_range(&tmem.data[offset + (start & (half - 1))], first, h);
             if (span > first) {
-                XXH32_update(&state, &tmem.data[offset], span - first);
+                h = hash_range(&tmem.data[offset], span - first, h);
             }
         };
         if (tile.siz == SIZ_32b) {
@@ -378,12 +432,12 @@ namespace n64gfx {
         }
 
         if (tlut_type >= 2 && tile.siz == SIZ_4b) {
-            XXH32_update(&state, &tmem.tlut[(tile.palette << 4) & 0xFF], 16 * sizeof(uint16_t));
+            h = hash_range((const uint8_t*)&tmem.tlut[(tile.palette << 4) & 0xFF], 16 * sizeof(uint16_t), h);
         }
         else if (tlut_type >= 2 && tile.siz == SIZ_8b) {
-            XXH32_update(&state, tmem.tlut, sizeof(tmem.tlut));
+            h = hash_range((const uint8_t*)tmem.tlut, sizeof(tmem.tlut), h);
         }
-        return XXH32_digest(&state);
+        return h;
     }
 
     void decode_framebuffer(const uint8_t* rdram, uint32_t addr, uint32_t siz, uint32_t width, uint32_t height, uint32_t* out) {

@@ -1357,29 +1357,38 @@ namespace {
             int depth = 0;
             uint32_t pc = start & rdram_mask;
             // A runaway list (bad pointer) stops after this many commands.
+            // What changes how vertices are lit or textured: the next vertex load works the
+            // context out again (otherwise loads in a row share it), and the pending ones are
+            // finished with the context they had.
+            static constexpr auto context_ops = [] {
+                std::array<bool, 256> t{};
+                for (uint8_t op : { G_MTX, G_POPMTX, G_MOVEWORD, G_MOVEMEM, G_GEOMETRYMODE, G_TEXTURE, G_LOAD_UCODE, G_RT64_EXTENDED }) {
+                    t[op] = true;
+                }
+                return t;
+            }();
+            // The page the commands are read from, looked up again only when they leave it.
+            uint32_t cmd_page = ~0u;
+            const uint8_t* cmd_mem = nullptr;
             for (uint32_t guard = 0; guard < 2000000; guard++) {
-                const uint8_t* const cmd = mem(pc); // the command's 8 bytes are in one page
-                const uint32_t w0 = read32(cmd, pc);
-                const uint32_t w1 = read32(cmd, pc + 4);
+                if ((pc >> capture::page_shift) != cmd_page) {
+                    cmd_page = pc >> capture::page_shift;
+                    cmd_mem = mem(pc);
+                }
+                const uint32_t w0 = read32(cmd_mem, pc); // the command's 8 bytes are in one page
+                const uint32_t w1 = read32(cmd_mem, pc + 4);
                 mark_read(pc, 8, 1);
                 pc += 8;
                 const uint8_t op = w0 >> 24;
-                if (profiling) op_hist[op]++;
-                // What changes how vertices are lit or textured: the next vertex load works the
-                // context out again (otherwise loads in a row share it).
-                if (op == G_MTX || op == G_POPMTX || op == G_MOVEWORD || op == G_MOVEMEM ||
-                    op == G_GEOMETRYMODE || op == G_TEXTURE || op == G_LOAD_UCODE || op == G_RT64_EXTENDED) {
+                if (__builtin_expect(profiling, 0)) op_hist[op]++;
+                if (context_ops[op]) {
                     vctx_dirty = true;
-                }
-                // ... and finishes the pending ones.
-                if (pending_vertices) {
-                    if (op == G_MODIFYVTX) {
-                        finish_pending_vertices();
-                    }
-                    else if (op == G_MTX || op == G_POPMTX || op == G_MOVEWORD || op == G_MOVEMEM ||
-                             op == G_GEOMETRYMODE || op == G_TEXTURE || op == G_LOAD_UCODE || op == G_RT64_EXTENDED) {
+                    if (pending_vertices) {
                         pin_vertex_context();
                     }
+                }
+                else if (op == G_MODIFYVTX && pending_vertices) {
+                    finish_pending_vertices();
                 }
                 switch (op) {
                     case 0x00: break; // G_NOOP
@@ -1975,10 +1984,28 @@ namespace {
             const float32x4_t vscale4 = vld1q_f32(vp_scale), vtrans4 = vld1q_f32(vp_trans);
 #endif
 
+            if (count > 0) {
+                const uint64_t loaded = (count >= 64 ? ~0ull : ((1ull << count) - 1)) << dst;
+                pending_vertices |= loaded;
+                current_ctx_slots |= loaded;
+            }
+#if defined(__ARM_NEON)
+            // The outcodes' bits: x, y, z below -w (left, bottom, near) and above w.
+            const uint32_t below_bits[4] = { 1, 4, 16, 0 }, above_bits[4] = { 2, 8, 32, 0 };
+            const uint32x4_t below4 = vld1q_u32(below_bits), above4 = vld1q_u32(above_bits);
+            const float32x2_t tiny_w = vdup_n_f32(1e-6f);
+#endif
+            uint32_t vtx_page = ~0u;
+            const uint8_t* vtx_mem = nullptr;
             for (uint32_t i = 0; i < count; i++) {
                 const uint32_t va = addr + i * 16;
-                // The vertex's 16 bytes: one page (looked up once) unless it straddles two.
-                const uint8_t* const vb = (va & 0xFFF) <= 0xFF0 ? mem(va) : nullptr;
+                // The vertex's 16 bytes: in one page (looked up when the vertices reach it) unless
+                // it straddles two.
+                if ((va >> capture::page_shift) != vtx_page) {
+                    vtx_page = va >> capture::page_shift;
+                    vtx_mem = mem(va);
+                }
+                const uint8_t* const vb = (va & 0xFFF) <= 0xFF0 ? vtx_mem : nullptr;
                 const uint32_t w_xy = vb ? read32(vb, va) : m32(va);
                 const uint32_t w_zf = vb ? read32(vb, va + 4) : m32(va + 4);
                 const uint32_t w_st = vb ? read32(vb, va + 8) : m32(va + 8);
@@ -2008,39 +2035,44 @@ namespace {
                 r.t = (int16_t)(w_st & 0xFFFF);
                 r.r = w_c >> 24; r.g = (w_c >> 16) & 0xFF; r.b = (w_c >> 8) & 0xFF; r.a = w_c & 0xFF;
                 slot_normal_addr[vindex] = (c.advanced && (c.lighting || c.texgen)) ? normal_base_at_load + (vindex << 1) : ~0u;
-                pending_vertices |= 1ull << vindex;
-                current_ctx_slots |= 1ull << vindex;
                 slot_ctx[vindex] = ctx_current;
                 slot_serial[vindex] = 0;
 
                 RspVertex& v = vertices[vindex];
-                // 1/w for the culling's normalised coordinates: NEON's estimate and a refining step
-                // (a division costs the Cortex-A9 far more; culling needs no more precision).
-                const float wd = std::fabs(cw) < 1e-6f ? 1e-6f : cw;
 #if defined(__ARM_NEON)
-                float32x2_t est = vrecpe_f32(vdup_n_f32(wd));
-                est = vmul_f32(est, vrecps_f32(vdup_n_f32(wd), est));
-                est = vmul_f32(est, vrecps_f32(vdup_n_f32(wd), est));
-                const float rw = vget_lane_f32(est, 0);
-#else
-                const float rw = 1.0f / wd;
-#endif
-                v.ndc_x = cx * rw;
-                v.ndc_y = cy * rw;
+                // All in NEON registers: on the Cortex-A9 a value moved from them to the core's
+                // (each compare's flags, each outcode bit) stalls the pipeline.
+                // 1/w for the culling's normalised coordinates: NEON's estimate and two refining
+                // steps (a division costs far more; culling needs no more precision).
+                const float32x2_t w2 = vdup_lane_f32(vget_high_f32(clip4), 1);
+                const float32x2_t wd = vbsl_f32(vcalt_f32(w2, tiny_w), tiny_w, w2);
+                float32x2_t est = vrecpe_f32(wd);
+                est = vmul_f32(est, vrecps_f32(wd, est));
+                est = vmul_f32(est, vrecps_f32(wd, est));
+                vst1_f32(&v.ndc_x, vmul_f32(vget_low_f32(clip4), est));
                 // Through the viewport, into the framebuffer's normalised coordinates
                 // (top of the N64's screen at +1).
-#if defined(__ARM_NEON)
-                vst1q_f32(&v.x, vmlaq_n_f32(vmulq_f32(clip4, vscale4), vtrans4, cw));
+                const float32x4_t pos = vmlaq_n_f32(vmulq_f32(clip4, vscale4), vtrans4, cw);
+                vst1q_f32(&v.x, pos);
+                // Outside a plane when x + w < 0 (left), w - x < 0 (right)...
+                const float32x4_t w4 = vdupq_lane_f32(vget_high_f32(pos), 1);
+                const uint32x4_t out = vorrq_u32(vandq_u32(vcltq_f32(pos, vnegq_f32(w4)), below4),
+                                                 vandq_u32(vcgtq_f32(pos, w4), above4));
+                const uint32x2_t out2 = vorr_u32(vget_low_u32(out), vget_high_u32(out));
+                v.clip = (uint8_t)vget_lane_u32(vpadd_u32(out2, out2), 0);
 #else
+                const float wd = std::fabs(cw) < 1e-6f ? 1e-6f : cw;
+                const float rw = 1.0f / wd;
+                v.ndc_x = cx * rw;
+                v.ndc_y = cy * rw;
                 v.x = cx * sx + cw * tx;
                 v.y = cy * sy + cw * ty;
                 v.z = cz * sz + cw * tz;
                 v.w = cw;
-#endif
-                // Outside a plane when x + w < 0 (left), w - x < 0 (right)...
                 v.clip = (uint8_t)(negative(v.x + v.w) | (negative(v.w - v.x) << 1) |
                                    (negative(v.y + v.w) << 2) | (negative(v.w - v.y) << 3) |
                                    (negative(v.z + v.w) << 4) | (negative(v.w - v.z) << 5));
+#endif
             }
         }
 

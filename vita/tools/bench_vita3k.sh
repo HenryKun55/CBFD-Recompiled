@@ -16,13 +16,15 @@
 #        PROFILE_FROM  seconds after the start the profiled window begins (default 0);
 #                 Vita3K rewrites the profile every 5 s
 #        TIMEOUT  seconds before giving up (default seconds + 300)
+#        UX0      the emulated ux0 (default Vita3K's; a copy lets a run go beside a
+#                 Vita3K the user is playing in)
 set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SECS=${1:-60}
 BUILD=${BUILD:-$ROOT/build}
 VITA3K=${VITA3K:-$HOME/Documents/workspace/games/Vita3K/build/macos-ninja/bin/Release/Vita3K.app/Contents/MacOS/Vita3K}
 TIMEOUT=${TIMEOUT:-$((SECS + 300))}
-UX0="$HOME/Library/Application Support/Vita3K/Vita3K/fs/ux0"
+UX0=${UX0:-"$HOME/Library/Application Support/Vita3K/Vita3K/fs/ux0"}
 APP="$UX0/app/CBFD00064"
 DATA="$UX0/data/conker"
 LOG=${TMPDIR:-/tmp}/conker_bench_vita3k.log
