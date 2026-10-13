@@ -1048,8 +1048,15 @@ namespace {
                 std::fprintf(stderr, "[renderer] dumping display list #%u\n", dl_count);
             }
             update_debug_flags();
+            // Debug (ux0:data/conker/debug_ab): the parts' cost without the clock's, the lists
+            // going in turn without triangles, texture loads, or vertices and triangles (a list
+            // each: a short scene gets them all).
+            ab_phase = ab_on ? dl_count % 4 : 0;
             if (dumping()) std::fprintf(stderr, "[dl] start %u\n", dl_count);
+            // One list in 300 timed by parts (two of them averaged in each [parts] line): the clock
+            // costs ~1 us a read on the Vita, so a timed list takes half as long again.
             profiling = (dl_count % 300) == 0;
+            const bool timing_tail = profiling;
             const uint64_t list_t0 = profiling ? sceKernelGetProcessTimeWide() : 0;
             run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
             if (profiling) {
@@ -1079,12 +1086,32 @@ namespace {
                 }
             }
             if (dumping()) std::fprintf(stderr, "[dl] end %u\n", dl_count);
+            const uint64_t tail_t0 = timing_tail ? sceKernelGetProcessTimeWide() : 0;
             flush();
+            const uint64_t tail_t1 = timing_tail ? sceKernelGetProcessTimeWide() : 0;
             settle_signatures();
+            const uint64_t tail_t2 = timing_tail ? sceKernelGetProcessTimeWide() : 0;
             write_back_framebuffers();
+            const uint64_t tail_t3 = timing_tail ? sceKernelGetProcessTimeWide() : 0;
             // The GL thread draws it; the game can go on.
             submit();
+            if (timing_tail) {
+                const uint64_t tail_t4 = sceKernelGetProcessTimeWide();
+                std::fprintf(stderr, "[parts] after the list: flush %.1f ms, signatures %.1f, write-back %.1f, submit %.1f; whole send_dl %.1f\n",
+                    (tail_t1 - tail_t0) / 1000.0, (tail_t2 - tail_t1) / 1000.0, (tail_t3 - tail_t2) / 1000.0, (tail_t4 - tail_t3) / 1000.0,
+                    (tail_t4 - dl_start) / 1000.0);
+            }
             const uint32_t dl_us = (uint32_t)(sceKernelGetProcessTimeWide() - dl_start);
+            if (ab_on) {
+                ab_us[ab_phase] += dl_us;
+                ab_lists[ab_phase]++;
+                if (++ab_count % 60 == 0) {
+                    std::fprintf(stderr, "[ab] list ms: all %.1f (%u), no triangles %.1f (%u), no texture loads %.1f (%u), no vertices or triangles %.1f (%u)\n",
+                        ab_lists[0] ? ab_us[0] / 1000.0 / ab_lists[0] : 0.0, ab_lists[0], ab_lists[1] ? ab_us[1] / 1000.0 / ab_lists[1] : 0.0, ab_lists[1],
+                        ab_lists[2] ? ab_us[2] / 1000.0 / ab_lists[2] : 0.0, ab_lists[2], ab_lists[3] ? ab_us[3] / 1000.0 / ab_lists[3] : 0.0, ab_lists[3]);
+                    for (int k = 0; k < 4; k++) { ab_us[k] = 0; ab_lists[k] = 0; }
+                }
+            }
             conker::vita::bench::on_display_list(dl_us, stats.tris);
             if ((dl_count % 300) == 0) {
                 enqueue([](Backend& b, CommandList&) { b.log_health(); });
@@ -1276,6 +1303,9 @@ namespace {
                 if (n + k > l->verts.size()) l->verts.resize(std::max(l->verts.size() * 2, n + k));
                 if (n + k > l->vin.size()) l->vin.resize(std::max(l->vin.size() * 2, n + k));
                 VertexIn* p = &l->vin[n];
+                // The lines a few vertices on, before they're written (the list's arrays are larger
+                // than the caches: each new line waited for the memory).
+                if (n + k + 8 <= l->vin.size()) __builtin_prefetch(p + 8, 1);
                 n += k;
                 return p;
             }
@@ -1375,6 +1405,9 @@ namespace {
                     cmd_page = pc >> capture::page_shift;
                     cmd_mem = mem(pc);
                 }
+                // The list's next lines asked for ahead (past the page it's harmless: a prefetch
+                // never faults).
+                __builtin_prefetch(cmd_mem + ((pc + 256) & rdram_mask));
                 const uint32_t w0 = read32(cmd_mem, pc); // the command's 8 bytes are in one page
                 const uint32_t w1 = read32(cmd_mem, pc + 4);
                 mark_read(pc, 8, 1);
@@ -1522,6 +1555,7 @@ namespace {
                         break;
                     case G_LOADTLUT: {
                         PartTimer part_timer(*this, P_LOAD);
+                        if (__builtin_expect(ab_phase == 2, 0)) break;
                         const Tile& t = tiles[(w1 >> 24) & 7];
                         load_tlut(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
                         stats.tlut_loads++;
@@ -1539,7 +1573,7 @@ namespace {
                     }
                     case G_LOADBLOCK: {
                         PartTimer part_timer(*this, P_LOAD);
-                        if (__builtin_expect((debug_flags & 1048576) != 0, 0)) break; // debug: no texture loads
+                        if (__builtin_expect((debug_flags & 1048576) != 0 || ab_phase == 2, 0)) break; // debug: no texture loads
                         const Tile& t = tiles[(w1 >> 24) & 7];
                         load_block(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
                         stats.block_loads++;
@@ -1894,6 +1928,7 @@ namespace {
 
         __attribute__((noinline)) void load_vertices(uint32_t addr, uint32_t count, int32_t dst) {
             PartTimer part_timer(*this, P_VTX);
+            if (__builtin_expect(ab_phase == 3, 0)) return;
             if (dst < 0 || dst + (int32_t)count > max_vertices) {
                 return;
             }
@@ -2007,6 +2042,11 @@ namespace {
             const uint32x4_t below4 = vld1q_u32(below_bits), above4 = vld1q_u32(above_bits);
             const float32x2_t tiny_w = vdup_n_f32(1e-6f);
 #endif
+            // The vertices' memory asked for at once (the game has just written it, so it isn't in
+            // the cache; read in turn, each line waited for the memory on the Vita).
+            for (uint32_t a = addr & ~31u; a < addr + count * 16; a += 32) {
+                __builtin_prefetch(mem(a) + (a & rdram_mask));
+            }
             uint32_t vtx_page = ~0u;
             const uint8_t* vtx_mem = nullptr;
             for (uint32_t i = 0; i < count; i++) {
@@ -2192,7 +2232,7 @@ namespace {
                 return;
             }
             // Debug (flag 524288): triangles not drawn (what they cost, against the frame's time).
-            if (__builtin_expect((debug_flags & 524288) != 0, 0)) return;
+            if (__builtin_expect((debug_flags & 524288) != 0 || ab_phase == 1 || ab_phase == 3, 0)) return;
             triangle_draw(ia, ib, ic);
         }
 
@@ -3120,6 +3160,14 @@ namespace {
         uint32_t debug_flags = file_debug_flags;
         // Programs made with other flags: kept (draw states point at them), not used.
         std::vector<std::unordered_map<ShaderKey, Program, ShaderKeyHash>> retired_programs;
+
+        const bool ab_on = [] {
+            FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_ab", "r");
+            if (f) std::fclose(f);
+            return f != nullptr;
+        }();
+        uint32_t ab_phase = 0, ab_count = 0, ab_lists[4] = {};
+        uint64_t ab_us[4] = {};
 
         void update_debug_flags() {
             const uint32_t flags = file_debug_flags | conker::vita::menu::debug_flags();

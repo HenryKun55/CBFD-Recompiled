@@ -60,6 +60,18 @@ namespace n64gfx {
     }
 
     namespace {
+        // Asks for the start of what a load reads (its first 512 bytes, a cache line in 32 bytes)
+        // before reading it: RDRAM the game has just written isn't in the cache, and on the Vita
+        // each line read in turn waited for the memory (~10 us a 2 KB texture). The loops
+        // ask for the rest as they go.
+        inline void prefetch_range(const uint8_t* rdram, uint32_t addr, uint32_t bytes) {
+            const uint32_t start = addr & rdram_mask & ~31u;
+            const uint32_t end = std::min(start + std::min(bytes, 512u) + 32, rdram_size);
+            for (uint32_t a = start; a < end; a += 32) {
+                __builtin_prefetch(rdram + a);
+            }
+        }
+
         // A load writing TMEM's upper half goes after the palette copied there.
         inline void before_write(Tmem& tmem, uint32_t start, uint32_t bytes, bool both_halves) {
             if (tmem.tlut_dirty_lo <= tmem.tlut_dirty_hi && (both_halves || (start & 0xFFF) + bytes > 0x800 || (start & 0xFFF) >= 0x800)) {
@@ -108,6 +120,7 @@ namespace n64gfx {
 
         const uint32_t words = (texels * bpt + 63) / 64;
         uint32_t dst = tile.tmem * 8;
+        prefetch_range(rdram, src, words * 8);
         if ((src & 3) == 0) {
             // RDRAM holds big-endian words in host order: a byte swap per word. The
             // words go in runs of a line (dxt counts the lines), odd lines with their
@@ -145,12 +158,14 @@ namespace n64gfx {
                     uint8_t* dp = &tmem.data[d0];
                     if (odd) {
                         for (uint32_t k = 0; k < n; k += 2, sp += 16, dp += 16) {
+                            __builtin_prefetch(sp + 512);
                             const uint8x16_t v = vrev32q_u8(vld1q_u8(sp));
                             vst1q_u8(dp, vreinterpretq_u8_u32(vrev64q_u32(vreinterpretq_u32_u8(v))));
                         }
                     }
                     else {
                         for (uint32_t k = 0; k < n; k += 2, sp += 16, dp += 16) {
+                            __builtin_prefetch(sp + 512);
                             vst1q_u8(dp, vrev32q_u8(vld1q_u8(sp)));
                         }
                     }
@@ -237,6 +252,7 @@ namespace n64gfx {
         const uint32_t count = std::min<uint32_t>(x1 - x0 + 1, 256);
         const uint32_t src = img.addr + (y0 * img.width + x0) * 2;
         const uint32_t first = (tile.tmem - 256) & 0xFF;
+        prefetch_range(rdram, src, count * 2);
         uint32_t i = 0;
         if ((src & 3) == 0) {
 #if defined(__ARM_NEON)
