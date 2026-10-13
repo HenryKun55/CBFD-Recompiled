@@ -1920,9 +1920,21 @@ namespace {
                 float x = mv.m[0][0] * d[0] + mv.m[0][1] * d[1] + mv.m[0][2] * d[2];
                 float y = mv.m[1][0] * d[0] + mv.m[1][1] * d[1] + mv.m[1][2] * d[2];
                 float z = mv.m[2][0] * d[0] + mv.m[2][1] * d[1] + mv.m[2][2] * d[2];
-                float len = std::sqrt(x * x + y * y + z * z);
-                if (len > 0.0f) {
-                    out[0] = x / len; out[1] = y / len; out[2] = z / len;
+                const float len2 = x * x + y * y + z * z;
+                if (len2 > 0.0f) {
+                    // 1/length: NEON's estimate and two refining steps, not a square root and three
+                    // divisions (each stalls the Cortex-A9 for tens of cycles; this runs for every
+                    // light after every matrix).
+#if defined(__ARM_NEON)
+                    const float32x2_t l2 = vdup_n_f32(len2);
+                    float32x2_t r = vrsqrte_f32(l2);
+                    r = vmul_f32(r, vrsqrts_f32(vmul_f32(l2, r), r));
+                    r = vmul_f32(r, vrsqrts_f32(vmul_f32(l2, r), r));
+                    const float inv = vget_lane_f32(r, 0);
+#else
+                    const float inv = 1.0f / std::sqrt(len2);
+#endif
+                    out[0] = x * inv; out[1] = y * inv; out[2] = z * inv;
                 }
                 else {
                     out[0] = out[1] = out[2] = 0.0f;
