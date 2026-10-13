@@ -57,7 +57,12 @@ namespace {
     // view to the window's aspect ratio unless the aspect ratio is set to Original.
     float widescreen_ratio() {
 #if defined(__vita__)
-        // The Vita's screen (960x544) when its widescreen setting is on.
+        // The Vita's screen (960x544) when its widescreen setting is on; 4:3 in a cutscene shown
+        // in 4:3 (its speech bubbles kept inside the 4:3 frame, as on the N64, not moved past
+        // its edges into the part the cutscene's black bars hide).
+        if (conker::cutscene_aspect::pillarbox_now()) {
+            return 1.0f;
+        }
         return conker::vita_widescreen_ratio();
 #endif
         if (ultramodern::renderer::get_graphics_config().ar_option == ultramodern::renderer::AspectRatio::Original || window == nullptr) {

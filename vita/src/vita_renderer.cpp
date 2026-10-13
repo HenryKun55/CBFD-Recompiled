@@ -39,18 +39,14 @@
 #include <psp2/kernel/cpu.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
-#include <vitaGL.h>
 #include <vitashark.h>
-#if CONKER_GXM
 #include <cstddef>
 #include <psp2/display.h>
 #include <psp2/gxm.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/kernel/sysmem.h>
-#endif
-#if !CONKER_GXM
-extern "C" uint32_t vgl_frag_rebuilds; // our vitaGL build counts them
-#endif
+
+#include "gl_enums.h"
 
 #include "ultramodern/ultramodern.hpp"
 #include "ultramodern/renderer_context.hpp"
@@ -74,9 +70,181 @@ using namespace n64gfx;
 void ultramodern_trace(const char* what, uint32_t arg);
 extern "C" volatile bool ultramodern_vita_sync_dl;
 
+// ---------------------------------------------------------------- list capture
+// The game rewrites the next frame's vertices, matrices and lights as soon as it submitted a
+// frame (they're single-buffered: the N64's RSP has read them by then, in a few ms). Reading the
+// list on the game's thread was correct but cost the game the whole read (15-35 ms a frame).
+// Instead, as the game submits it, a quick walk of the list finds the 4 KB pages it reads them
+// from (the list itself, vertices, matrices, the movemem data), copies those, and the renderer
+// then reads the list on its own core from that copy (textures and images from RDRAM itself).
+namespace capture {
+    constexpr uint32_t page_shift = 12, pages = (16u << 20) >> page_shift, pool_pages = 1024;
+    struct Slot {
+        std::vector<uint8_t> pool;            // the copied pages
+        const uint8_t* pt[pages] = {};        // page -> copy, biased so that pt[p] + addr reads it
+        std::vector<uint16_t> used;
+        uint64_t bits[pages / 64] = {};
+    };
+    Slot slots[2];
+    std::atomic<uint32_t> busy{0}; // bit per slot
+    SceUID free_sema = -1;
+    uint32_t segments[16] = {};     // the walk's own (they change as the lists do)
+    uint32_t segments_version = 0;  // bumped when one changes
+    uint32_t walked = 0, dl_calls = 0, branches = 0, seg_changes = 0; // debug: the last walk's
+    // The sublists and branch targets already walked with the segments as they were (walking a
+    // list both ways at each conditional branch went over the same ones thousands of times: up to
+    // 170 ms a frame on the Vita as the chainsaw cuts the N64 logo).
+    constexpr uint32_t visited_size = 4096;
+    uint64_t visited[visited_size];
+    uint32_t visited_count = 0;
+    bool first_visit(uint32_t pc) {
+        const uint64_t key = ((uint64_t)segments_version << 32) | pc | 1ull << 63;
+        uint32_t i = (uint32_t)((key * 0x9E3779B97F4A7C15ull) >> 52) & (visited_size - 1);
+        for (uint32_t n = 0; n < visited_size; n++, i = (i + 1) & (visited_size - 1)) {
+            if (visited[i] == key) return false;
+            if (visited[i] == 0) {
+                if (visited_count >= visited_size * 3 / 4) return true; // full: walk it again
+                visited[i] = key;
+                visited_count++;
+                return true;
+            }
+        }
+        return true;
+    }
+    std::atomic<uint64_t> copy_us{0}, wait_us{0}, copied_pages{0};
+
+    inline void mark(Slot& s, uint32_t addr, uint32_t bytes) {
+        addr &= 0x00FFFFFF;
+        const uint32_t last = std::min<uint32_t>(addr + (bytes ? bytes - 1 : 0), 0x00FFFFFF) >> page_shift;
+        for (uint32_t p = addr >> page_shift; p <= last; p++) {
+            uint64_t& w = s.bits[p >> 6];
+            const uint64_t b = 1ull << (p & 63);
+            if (!(w & b)) { w |= b; s.used.push_back((uint16_t)p); }
+        }
+    }
+    inline uint32_t seg(uint32_t addr) {
+        return (segments[(addr >> 24) & 0xF] + (addr & 0x00FFFFFF)) & 0x00FFFFFF;
+    }
+
+    // The pages a list reads, following it as the renderer will (both ways at a conditional).
+    void walk(const uint8_t* rdram, Slot& s, uint32_t start) {
+        uint32_t stack[64];
+        int depth = 0;
+        uint32_t pc = start & 0x00FFFFFF;
+        uint32_t half1 = 0;
+        for (uint32_t guard = 0; guard < 2000000; guard++) {
+            walked++;
+            mark(s, pc, 8);
+            const uint32_t w0 = n64gfx::read32(rdram, pc), w1 = n64gfx::read32(rdram, pc + 4);
+            pc += 8;
+            switch (w0 >> 24) {
+                case 0x01: mark(s, seg(w1), ((w0 >> 12) & 0xFF) * 16); break;                 // G_VTX
+                case 0xDA: mark(s, seg(w1), 64); break;                                        // G_MTX
+                case 0xDC: mark(s, seg(w1), 256); break;                                       // G_MOVEMEM
+                case 0xDB:                                                                     // G_MOVEWORD
+                    if (((w0 >> 16) & 0xFF) == 0x06) {
+                        segments[((w0 & 0xFFFF) / 4) & 0xF] = w1 & 0x00FFFFFF;
+                        segments_version++;
+                        seg_changes++;
+                    }
+                    break;
+                case 0xE1: half1 = w1; break;                                                  // G_RDPHALF_1
+                case 0x04: {                                                                   // G_BRANCH_Z: both ways
+                    const uint32_t target = seg(half1) & 0x00FFFFFF;
+                    branches++;
+                    if (depth < 64 && first_visit(target)) { stack[depth++] = pc; pc = target; }
+                    break;
+                }
+                case 0xDE: {                                                                   // G_DL
+                    const uint32_t target = seg(w1) & 0x00FFFFFF;
+                    const bool call = ((w0 >> 16) & 0xFF) == 0;
+                    dl_calls++;
+                    if (!first_visit(target)) {
+                        // Walked already with these segments: a call is done; a branch ends this list.
+                        if (call) break;
+                        if (depth == 0) return;
+                        pc = stack[--depth];
+                        break;
+                    }
+                    if (call) {
+                        if (depth >= 64) return;
+                        stack[depth++] = pc;
+                    }
+                    pc = target;
+                    break;
+                }
+                case 0xDF:                                                                     // G_ENDDL
+                    if (depth == 0) return;
+                    pc = stack[--depth];
+                    break;
+                case 0xE4: case 0xE5: mark(s, pc, 16); pc += 16; break;                        // G_TEXRECT(FLIP)
+                case 0x64:                                                                     // RT64's extended
+                    switch (w0 & 0x00FFFFFF) {
+                        case 0x000002: mark(s, pc, 16); pc += 16; break;                       // G_EX_TEXRECT_V1
+                        case 0x000003: mark(s, pc, 8); pc += 8; break;                         // G_EX_FILLRECT_V1
+                        case 0x00000C: pc += 8; break;                                         // G_EX_MATRIXGROUP_V1
+                        default: break;
+                    }
+                    break;
+                default: break;
+            }
+        }
+    }
+}
+
+extern "C" int ultramodern_vita_capture(uint8_t* rdram, const OSTask* task) {
+    using namespace capture;
+    const uint64_t t0 = sceKernelGetProcessTimeWide();
+    if (free_sema < 0) free_sema = sceKernelCreateSema("list_capture", 0, 2, 2, nullptr);
+    sceKernelWaitSema(free_sema, 1, nullptr);
+    const uint64_t t1 = sceKernelGetProcessTimeWide();
+    int index = (busy.load() & 1) ? 1 : 0;
+    busy |= 1u << index;
+    Slot& s = slots[index];
+    if (s.pool.empty()) s.pool.resize((size_t)pool_pages << page_shift);
+    std::memset(visited, 0, sizeof(visited));
+    visited_count = 0;
+    walked = dl_calls = branches = seg_changes = 0;
+    const uint64_t tw = sceKernelGetProcessTimeWide();
+    walk(rdram, s, (uint32_t)task->t.data_ptr);
+    const uint64_t tw2 = sceKernelGetProcessTimeWide();
+    if (tw2 - tw > 5000) {
+        std::fprintf(stderr, "[capture] slow walk: %llu us, %u commands, %u calls, %u branches, %u segment changes, %u pages\n",
+            (unsigned long long)(tw2 - tw), walked, dl_calls, branches, seg_changes, (unsigned)s.used.size());
+    }
+    uint32_t n = 0;
+    for (uint16_t p : s.used) {
+        if (n >= pool_pages) break; // past the pool: read from RDRAM itself
+        uint8_t* dst = s.pool.data() + ((size_t)n << page_shift);
+        std::memcpy(dst, rdram + ((size_t)p << page_shift), 1u << page_shift);
+        s.pt[p] = dst - ((size_t)p << page_shift);
+        n++;
+    }
+    const uint64_t t2 = sceKernelGetProcessTimeWide();
+    wait_us += t1 - t0;
+    copy_us += t2 - t1;
+    copied_pages += n;
+    return index;
+}
+
+extern "C" void ultramodern_vita_release_capture(int index) {
+    using namespace capture;
+    if (index < 0) return;
+    Slot& s = slots[index];
+    for (uint16_t p : s.used) s.pt[p] = nullptr;
+    for (uint64_t& w : s.bits) w = 0;
+    s.used.clear();
+    busy &= ~(1u << index);
+    sceKernelSignalSema(free_sema, 1);
+}
+
+// The capture the list being read uses (set by the gfx thread around send_dl).
+extern "C" { volatile int ultramodern_vita_current_capture = -1; }
+
 // Where the renderer's threads are (conker::vita::renderer_status): the front's stage (0 idle,
 // 1 reading a list, 2 showing a frame, 3 waiting to hand a list over), the back's operation
 // (its Op, 99 none), whether it compiles a shader or waits for the display, and lists done.
+static std::atomic<uint64_t> g_back_busy_total_us{0};
 static std::atomic<uint32_t> g_front_stage{0}, g_back_op{99}, g_back_compiling{0}, g_back_waiting{0}, g_back_lists{0}, g_front_lists{0};
 
 namespace {
@@ -349,61 +517,6 @@ namespace {
         out[2] = (float)((c >> 8) & 0xFF) / 255.0f;
         out[3] = (float)(c & 0xFF) / 255.0f;
     }
-
-    const char* vertex_shader_source =
-        "attribute vec4 aPos;\n"
-        "attribute vec4 aColor;\n"
-        "attribute vec4 aUV;\n"
-        "varying vec4 vColor;\n"
-        "varying vec4 vUV;\n"
-        "void main() {\n"
-        "  gl_Position = aPos;\n"
-        "  vColor = aColor;\n"
-        "  vUV = aUV;\n"
-        "}\n";
-
-    const char* present_vertex_source =
-        "attribute vec4 aPos;\n"
-        "attribute vec4 aUV;\n"
-        "varying vec2 vUV;\n"
-        "void main() {\n"
-        "  gl_Position = aPos;\n"
-        "  vUV = aUV.xy;\n"
-        "}\n";
-
-    const char* copy_fragment_source =
-        "uniform sampler2D uTex0;\n"
-        "varying vec2 vUV;\n"
-        "void main() {\n"
-        "  gl_FragColor = texture2D(uTex0, vUV);\n"
-        "}\n";
-
-    const char* ui_fragment_source =
-        "uniform sampler2D uTex0;\n"
-        "varying vec2 vUV;\n"
-        "varying vec4 vColor;\n"
-        "void main() {\n"
-        "  gl_FragColor = vec4(vColor.rgb, vColor.a * texture2D(uTex0, vUV).a);\n"
-        "}\n";
-
-    const char* ui_vertex_source =
-        "attribute vec4 aPos;\n"
-        "attribute vec4 aColor;\n"
-        "attribute vec4 aUV;\n"
-        "varying vec2 vUV;\n"
-        "varying vec4 vColor;\n"
-        "void main() {\n"
-        "  gl_Position = aPos;\n"
-        "  vUV = aUV.xy;\n"
-        "  vColor = aColor;\n"
-        "}\n";
-
-    const char* present_fragment_source =
-        "uniform sampler2D uTex0;\n"
-        "varying vec2 vUV;\n"
-        "void main() {\n"
-        "  gl_FragColor = vec4(texture2D(uTex0, vUV).rgb, 1.0);\n"
-        "}\n";
 
     // ============================================================ combiner -> GLSL
     // Cycle 1 of a 2-cycle mode reads the texels the other way round: its TEXEL0 is
@@ -736,13 +849,8 @@ namespace {
         bool strong_decal = false; // debug (flag 262144): a larger depth bias for decals
     };
 
-#if CONKER_GXM
     class GxmBackend;
     using Backend = GxmBackend;
-#else
-    class GlBackend;
-    using Backend = GlBackend;
-#endif
 
     struct CommandList {
         std::vector<std::function<void(Backend&, CommandList&)>> cmds;
@@ -819,712 +927,13 @@ namespace {
             d.vcount, d.tex[0], d.tex[1], a0, a1, r / n, g / n, b / n, u0, u1, v0, v1, d.prim[3], d.env[3], d.primlod);
     }
 
-#if CONKER_GXM
 #include "gxm_backend.inc"
-#else
-    class GlBackend {
-    public:
-        // The hand-over uses the kernel's semaphores: a condition variable here lost
-        // wake-ups (the front then slept until its time-out with the back idle).
-        GlBackend() {
-            work_sema = sceKernelCreateSema("gl_work", 0, 0, 64, nullptr);
-            slot_sema = sceKernelCreateSema("gl_slot", 0, 1, 1, nullptr);
-            thread = std::thread([this] { run(); });
-            while (!ready.load()) {
-                sceKernelDelayThread(1000);
-            }
-        }
-
-        ~GlBackend() {
-            quit = true;
-            sceKernelSignalSema(work_sema, 1);
-            if (thread.joinable()) thread.join();
-            sceKernelDeleteSema(work_sema);
-            sceKernelDeleteSema(slot_sema);
-        }
-
-        // ---------------------------------------------------- the front's side
-        // Hands a list over; waits while the back is more than a list behind.
-        void submit(std::unique_ptr<CommandList> list) {
-            ultramodern_trace("submit", (uint32_t)list->cmds.size());
-            const uint64_t start = sceKernelGetProcessTimeWide();
-            // One list may wait while another runs.
-            sceKernelWaitSema(slot_sema, 1, nullptr);
-            {
-                std::lock_guard lock{mutex};
-                pending.push_back(std::move(list));
-            }
-            submitted++;
-            sceKernelSignalSema(work_sema, 1);
-            wait_us += (uint32_t)(sceKernelGetProcessTimeWide() - start);
-            ultramodern_trace("submit end", 0);
-        }
-        // Statistics: the front's time waiting in submit, the back's running lists.
-        std::atomic<uint32_t> wait_us{0}, busy_us{0};
-
-        // A list to record into (one the back finished with, kept for its memory).
-        std::unique_ptr<CommandList> take_list() {
-            std::lock_guard lock{mutex};
-            if (!free_lists.empty()) {
-                std::unique_ptr<CommandList> l = std::move(free_lists.back());
-                free_lists.pop_back();
-                return l;
-            }
-            auto l = std::make_unique<CommandList>();
-            l->verts.resize(16384);
-            l->vin.resize(16384);
-            l->idx.resize(32768);
-            l->ctxs.reserve(1024);
-            l->uvmaps.reserve(512);
-            l->cmds.reserve(2048);
-            l->draws.reserve(1024);
-            return l;
-        }
-
-        // Waits until every list handed over has run (rare: read backs, shutting down).
-        void wait_idle() {
-            while (done.load() != submitted.load()) {
-                sceKernelDelayThread(200);
-            }
-        }
-        std::atomic<uint32_t> running_cmd{0}, running_cmds{0};
-
-        // ---------------------------------------------------- the back's side (GL)
-        GLuint tex(uint32_t id) const { return id < textures.size() ? textures[id] : 0; }
-
-        // Where the GL thread's time goes, by operation (logged every 30 lists): on the
-        // Vita the GPU's waits show up in the calls that wait for it.
-        enum Op { OP_DRAW, OP_VERTS, OP_SWITCH, OP_COPY, OP_READ, OP_UPLOAD, OP_CLEAR, OP_PRESENT, OP_PROGRAM, OP_SCISSOR, OP_COUNT };
-        uint32_t op_n[OP_COUNT] = {};
-        uint64_t op_us[OP_COUNT] = {};
-        struct OpTimer {
-            Backend& b; Op op; uint64_t t0;
-            OpTimer(Backend& b, Op op) : b(b), op(op), t0(sceKernelGetProcessTimeWide()) {}
-            ~OpTimer() { b.op_n[op]++; b.op_us[op] += sceKernelGetProcessTimeWide() - t0; }
-        };
-        uint32_t lists_run = 0;
-        // How draws follow each other (for batching): the same pipeline state (target,
-        // program, textures, blending, depth, scissor) and the same uniforms too, or not.
-        DrawCmd prev_draw{};
-        uint32_t follow_same = 0, follow_uniforms = 0, follow_textures = 0, follow_other = 0;
-        static bool same_pipeline(const DrawCmd& a, const DrawCmd& b, bool textures) {
-            return a.fbo == b.fbo && a.fb_w == b.fb_w && a.fb_h == b.fb_h && a.program == b.program &&
-                (!textures || (a.tex[0] == b.tex[0] && a.tex[1] == b.tex[1])) &&
-                std::memcmp(a.tex_intensity, b.tex_intensity, 8) == 0 && a.blend == b.blend &&
-                a.blend_src == b.blend_src && a.blend_dst == b.blend_dst && a.color_write == b.color_write &&
-                a.depth_test == b.depth_test && a.depth_write == b.depth_write && a.decal == b.decal &&
-                a.depth_func == b.depth_func && std::memcmp(a.scissor, b.scissor, sizeof(a.scissor)) == 0;
-        }
-        static bool same_uniforms(const DrawCmd& a, const DrawCmd& b) {
-            return std::memcmp(a.prim, b.prim, sizeof(a.prim) * 5) == 0 && a.primlod == b.primlod &&
-                std::memcmp(a.convert, b.convert, sizeof(a.convert)) == 0;
-        }
-        void note_follow(const DrawCmd& d) {
-            if (same_pipeline(prev_draw, d, true)) {
-                if (same_uniforms(prev_draw, d)) follow_same++; else follow_uniforms++;
-            }
-            else if (same_pipeline(prev_draw, d, false)) follow_textures++;
-            else follow_other++;
-            prev_draw = d;
-        }
-        void log_ops() {
-            static const char* const names[OP_COUNT] = { "draw", "verts", "fb switch", "copy", "read", "upload", "clear", "present", "program", "scissor" };
-            char line[512];
-            int n = std::snprintf(line, sizeof(line), "[renderer] GL ops (30 lists):");
-            for (int i = 0; i < OP_COUNT; i++) {
-                if (op_n[i] == 0) continue;
-                n += std::snprintf(line + n, sizeof(line) - n, " %s %u/%llums", names[i], op_n[i], (unsigned long long)(op_us[i] / 1000));
-                if (n >= (int)sizeof(line)) break;
-            }
-            std::fprintf(stderr, "%s, %u fragment re-patches; after the last: %u same, %u uniforms differ, %u textures differ, %u other\n",
-                line, vgl_frag_rebuilds, follow_same, follow_uniforms, follow_textures, follow_other);
-            follow_same = follow_uniforms = follow_textures = follow_other = 0;
-            vgl_frag_rebuilds = 0;
-            std::memset(op_n, 0, sizeof(op_n));
-            std::memset(op_us, 0, sizeof(op_us));
-        }
-
-        void debug_finish() { glFinish(); }
-        void probe_water(uint32_t, uint32_t, uint32_t) {}
-
-        void log_health() {
-            const GLenum error = glGetError();
-            std::fprintf(stderr, "[renderer] GL error 0x%X, free: vram %u KB, ram %u KB, phycont %u KB\n", error,
-                (unsigned)(vglMemFree(VGL_MEM_VRAM) / 1024), (unsigned)(vglMemFree(VGL_MEM_RAM) / 1024),
-                (unsigned)(vglMemFree(VGL_MEM_PHYCONT) / 1024));
-        }
-
-        void create_texture(uint32_t id) {
-            if (id >= textures.size()) textures.resize(id + 256, 0);
-            if (textures[id] == 0) glGenTextures(1, &textures[id]);
-        }
-
-        void delete_texture(uint32_t id) {
-            if (id < textures.size() && textures[id] != 0) {
-                glDeleteTextures(1, &textures[id]);
-                textures[id] = 0;
-            }
-            gl.tex[0] = gl.tex[1] = ~0u;
-        }
-
-        // A texture of decoded texels (RGBA8888).
-        void upload_texture(uint32_t id, uint32_t w, uint32_t h, const uint32_t* texels, bool linear, GLenum wrap_s, GLenum wrap_t) {
-            OpTimer timer(*this, OP_UPLOAD);
-            create_texture(id);
-            glBindTexture(GL_TEXTURE_2D, tex(id));
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, texels);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_t);
-            gl.tex[0] = gl.tex[1] = ~0u;
-        }
-
-        // A colour image's texture and framebuffer (its depth shared by size), cleared.
-        void create_framebuffer(uint32_t fbo_id, uint32_t tex_id, uint32_t w, uint32_t h, bool with_depth) {
-            create_texture(tex_id);
-            glBindTexture(GL_TEXTURE_2D, tex(tex_id));
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w * render_scale, h * render_scale, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            gl.tex[0] = gl.tex[1] = ~0u;
-            if (fbo_id >= fbos.size()) fbos.resize(fbo_id + 64, 0);
-            glGenFramebuffers(1, &fbos[fbo_id]);
-            glBindFramebuffer(GL_FRAMEBUFFER, fbos[fbo_id]);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex(tex_id), 0);
-            if (with_depth) {
-                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_for(w, h));
-            }
-            glViewport(0, 0, w * render_scale, h * render_scale);
-            glDisable(GL_SCISSOR_TEST);
-            glClearColor(0, 0, 0, 1);
-            glClearDepthf(1.0f);
-            glDepthMask(GL_TRUE);
-            glClear(with_depth ? (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) : GL_COLOR_BUFFER_BIT);
-            gl.fbo = fbo_id;
-            gl.fb_w = w;
-            gl.fb_h = h;
-            gl.scissor[0] = -1;
-            gl.depth_write = 1;
-        }
-
-        void delete_framebuffer(uint32_t fbo_id) {
-            if (fbo_id < fbos.size() && fbos[fbo_id] != 0) {
-                glDeleteFramebuffers(1, &fbos[fbo_id]);
-                fbos[fbo_id] = 0;
-            }
-            gl.fbo = ~0u;
-        }
-
-        // Binds a framebuffer (0: the screen) and its viewport.
-        void bind_framebuffer(uint32_t fbo_id, uint32_t w, uint32_t h) {
-            if (gl.fbo != fbo_id || gl.fb_w != w || gl.fb_h != h) {
-                OpTimer timer(*this, OP_SWITCH);
-                glBindFramebuffer(GL_FRAMEBUFFER, fbo_id == 0 ? 0 : fbos[fbo_id]);
-                if (fbo_id == 0) glViewport(0, 0, screen_width, screen_height);
-                else glViewport(0, 0, w * render_scale, h * render_scale);
-                gl.fbo = fbo_id;
-                gl.fb_w = w;
-                gl.fb_h = h;
-            }
-        }
-
-        void set_scissor(const int sc[4]) {
-            if (std::memcmp(gl.scissor, sc, sizeof(gl.scissor)) != 0) {
-                op_n[OP_SCISSOR]++;
-                glEnable(GL_SCISSOR_TEST);
-                glScissor(sc[0], sc[1], sc[2], sc[3]);
-                std::memcpy(gl.scissor, sc, sizeof(gl.scissor));
-            }
-        }
-
-        void clear_color(const float c[4]) {
-            OpTimer timer(*this, OP_CLEAR);
-            if (gl.color_write != 1) {
-                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                gl.color_write = 1;
-            }
-            glClearColor(c[0], c[1], c[2], c[3]);
-            glClear(GL_COLOR_BUFFER_BIT);
-        }
-
-        void clear_depth() {
-            OpTimer timer(*this, OP_CLEAR);
-            glDepthMask(GL_TRUE);
-            gl.depth_write = 1;
-            glClearDepthf(1.0f);
-            glClear(GL_DEPTH_BUFFER_BIT);
-        }
-
-        // Copies a texture into another framebuffer's (the snapshot of an image drawn into).
-        void copy_texture(uint32_t src_tex, uint32_t dst_fbo, uint32_t dst_tex, uint32_t w, uint32_t h) {
-            OpTimer timer(*this, OP_COPY);
-            if (dst_fbo >= fbos.size() || fbos[dst_fbo] == 0) {
-                create_framebuffer(dst_fbo, dst_tex, w, h, false);
-            }
-            bind_framebuffer(dst_fbo, w, h);
-            glDisable(GL_SCISSOR_TEST);
-            gl.scissor[0] = -1;
-            glDisable(GL_DEPTH_TEST);
-            gl.depth_test = 0;
-            glDisable(GL_BLEND);
-            gl.blend = 0;
-            if (gl.color_write != 1) {
-                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                gl.color_write = 1;
-            }
-            use_program(copy_program);
-            glUniform1i(copy_tex0, 0);
-            bind_texture(0, src_tex);
-            static const GLVertex quad_verts[4] = {
-                { -1.0f, -1.0f, 0, 1, {255, 255, 255, 255}, 0, 0, 0, 0 },
-                {  1.0f, -1.0f, 0, 1, {255, 255, 255, 255}, 1, 0, 0, 0 },
-                { -1.0f,  1.0f, 0, 1, {255, 255, 255, 255}, 0, 1, 0, 0 },
-                {  1.0f,  1.0f, 0, 1, {255, 255, 255, 255}, 1, 1, 0, 0 },
-            };
-            draw_arrays(quad_verts, 4, GL_TRIANGLE_STRIP);
-        }
-
-        // Reads a framebuffer back (RGBA8888, GL's rows going up).
-        void read_framebuffer(uint32_t fbo_id, uint32_t w, uint32_t h, std::vector<uint32_t>& out) {
-            OpTimer timer(*this, OP_READ);
-            bind_framebuffer(fbo_id, w, h);
-            out.resize((size_t)w * render_scale * h * render_scale);
-            glFinish();
-            glReadPixels(0, 0, w * render_scale, h * render_scale, GL_RGBA, GL_UNSIGNED_BYTE, out.data());
-        }
-
-        // A combiner's program, from its fragment shader.
-        void create_program(uint32_t id, const std::string& fs) {
-            OpTimer timer(*this, OP_PROGRAM);
-            if (id >= programs.size()) programs.resize(id + 64);
-            BackProgram& p = programs[id];
-            p.program = cached_program(fs);
-            p.u_prim = glGetUniformLocation(p.program, "uPrim");
-            p.u_env = glGetUniformLocation(p.program, "uEnv");
-            p.u_fog = glGetUniformLocation(p.program, "uFog");
-            p.u_blend = glGetUniformLocation(p.program, "uBlend");
-            p.u_fill = glGetUniformLocation(p.program, "uFill");
-            p.u_primlod = glGetUniformLocation(p.program, "uPrimLod");
-            p.u_convert = glGetUniformLocation(p.program, "uConvert");
-            p.u_texi = glGetUniformLocation(p.program, "uTexI");
-            const GLint u_tex0 = glGetUniformLocation(p.program, "uTex0");
-            const GLint u_tex1 = glGetUniformLocation(p.program, "uTex1");
-            use_program(p.program);
-            if (u_tex0 >= 0) glUniform1i(u_tex0, 0);
-            if (u_tex1 >= 0) glUniform1i(u_tex1, 1);
-        }
-
-        void draw(CommandList& list, const DrawCmd& d) {
-            OpTimer timer(*this, OP_DRAW);
-            note_follow(d);
-            if (d.raw) {
-                OpTimer verts_timer(*this, OP_VERTS);
-                finish_vertices(list, d);
-            }
-            bind_framebuffer(d.fbo, d.fb_w, d.fb_h);
-            BackProgram& p = programs[d.program];
-            use_program(p.program);
-            auto set4 = [](GLint loc, float* cached, const float* v) {
-                if (loc >= 0 && std::memcmp(cached, v, 16) != 0) {
-                    glUniform4fv(loc, 1, v);
-                    std::memcpy(cached, v, 16);
-                }
-            };
-            set4(p.u_prim, p.prim, d.prim);
-            set4(p.u_env, p.env, d.env);
-            set4(p.u_fog, p.fog, d.fog);
-            set4(p.u_blend, p.blend, d.blendc);
-            set4(p.u_fill, p.fill, d.fill);
-            if (p.u_primlod >= 0 && p.primlod != d.primlod) {
-                glUniform1f(p.u_primlod, d.primlod);
-                p.primlod = d.primlod;
-            }
-            if (p.u_convert >= 0 && std::memcmp(p.convert, d.convert, 8) != 0) {
-                glUniform2fv(p.u_convert, 1, d.convert);
-                std::memcpy(p.convert, d.convert, 8);
-            }
-            if (p.u_texi >= 0 && std::memcmp(p.texi, d.tex_intensity, 8) != 0) {
-                glUniform2fv(p.u_texi, 1, d.tex_intensity);
-                std::memcpy(p.texi, d.tex_intensity, 8);
-            }
-            bind_texture(0, d.tex[0]);
-            bind_texture(1, d.tex[1]);
-
-            if (gl.blend != (int)d.blend) {
-                if (d.blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
-                gl.blend = d.blend;
-            }
-            if (d.blend && (gl.blend_src != d.blend_src || gl.blend_dst != d.blend_dst)) {
-                glBlendFunc(d.blend_src, d.blend_dst);
-                gl.blend_src = d.blend_src;
-                gl.blend_dst = d.blend_dst;
-            }
-            if (gl.color_write != (int)d.color_write) {
-                const GLboolean c = d.color_write ? GL_TRUE : GL_FALSE;
-                glColorMask(c, c, c, c);
-                gl.color_write = d.color_write;
-            }
-            // GL only writes depth with the test on: an always-passing test writes it.
-            const bool test_on = d.depth_test || d.depth_write;
-            if (gl.depth_test != (int)test_on) {
-                if (test_on) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
-                gl.depth_test = test_on;
-            }
-            const GLenum func = d.depth_test ? d.depth_func : GL_ALWAYS;
-            if (test_on && gl.depth_func != func) {
-                glDepthFunc(func);
-                gl.depth_func = func;
-            }
-            if (gl.depth_write != (int)d.depth_write) {
-                glDepthMask(d.depth_write ? GL_TRUE : GL_FALSE);
-                gl.depth_write = d.depth_write;
-            }
-            if (gl.decal != (int)d.decal) {
-                if (d.decal) {
-                    glEnable(GL_POLYGON_OFFSET_FILL);
-                    glPolygonOffset(-1.0f, -2.0f);
-                }
-                else {
-                    glDisable(GL_POLYGON_OFFSET_FILL);
-                }
-                gl.decal = d.decal;
-            }
-            set_scissor(d.scissor);
-
-            const GLVertex* v = &list.verts[d.vbase];
-            glEnableVertexAttribArray(0);
-            glEnableVertexAttribArray(1);
-            glEnableVertexAttribArray(2);
-            glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLVertex), &v->x);
-            glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(GLVertex), &v->color[0]);
-            glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(GLVertex), &v->u0);
-            glDrawElements(GL_TRIANGLES, (GLsizei)d.icount, GL_UNSIGNED_SHORT, &list.idx[d.ibase]);
-        }
-
-        // The frame to the screen: a texture (0: none) 4:3 in the middle, the menu over it.
-        void present(uint32_t source_tex, const float uv[4], const std::vector<uint32_t>* cpu_frame, uint32_t cpu_w, uint32_t cpu_h,
-                     float aspect, const std::vector<GLVertex>& menu) {
-            OpTimer timer(*this, OP_PRESENT);
-            if (cpu_frame != nullptr) {
-                glBindTexture(GL_TEXTURE_2D, tex(TEX_CPU_FRAME));
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cpu_w, cpu_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, cpu_frame->data());
-                gl.tex[0] = gl.tex[1] = ~0u;
-            }
-            bind_framebuffer(0, 0, 0);
-            glDisable(GL_SCISSOR_TEST);
-            gl.scissor[0] = -1;
-            glDisable(GL_DEPTH_TEST);
-            gl.depth_test = 0;
-            glDisable(GL_BLEND);
-            gl.blend = 0;
-            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            gl.color_write = 1;
-            glDisable(GL_POLYGON_OFFSET_FILL);
-            gl.decal = 0;
-            glClearColor(0, 0, 0, 1);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            if (source_tex != 0) {
-                // In the middle of the screen, at its aspect ratio (4:3, or up to the screen's).
-                const float target_w = std::min((float)screen_width, (float)screen_height * aspect);
-                const float x0 = -target_w / screen_width, x1 = target_w / screen_width;
-                const float u0 = uv[0], v0 = uv[1], u1 = uv[2], v1 = uv[3];
-                const GLVertex quad_verts[4] = {
-                    { x0, 1.0f, 0, 1, {255, 255, 255, 255}, u0, v1, 0, 0 },
-                    { x1, 1.0f, 0, 1, {255, 255, 255, 255}, u1, v1, 0, 0 },
-                    { x0, -1.0f, 0, 1, {255, 255, 255, 255}, u0, v0, 0, 0 },
-                    { x1, -1.0f, 0, 1, {255, 255, 255, 255}, u1, v0, 0, 0 },
-                };
-                use_program(present_program);
-                glUniform1i(present_tex0, 0);
-                bind_texture(0, source_tex);
-                draw_arrays(quad_verts, 4, GL_TRIANGLE_STRIP);
-            }
-
-            if (!menu.empty()) {
-                // Over the frame just drawn: binding the screen again would start a new
-                // scene in vitaGL and lose it.
-                glEnable(GL_BLEND);
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                gl.blend = 1;
-                gl.blend_src = GL_SRC_ALPHA;
-                gl.blend_dst = GL_ONE_MINUS_SRC_ALPHA;
-                use_program(ui_program);
-                glUniform1i(ui_tex0, 0);
-                bind_texture(0, TEX_FONT);
-                draw_arrays(menu.data(), menu.size(), GL_TRIANGLES);
-                glDisable(GL_BLEND);
-                gl.blend = 0;
-            }
-            vglSwapBuffers(GL_FALSE);
-        }
-
-    private:
-        struct BackProgram {
-            GLuint program = 0;
-            GLint u_prim = -1, u_env = -1, u_fog = -1, u_blend = -1, u_fill = -1, u_primlod = -1, u_convert = -1, u_texi = -1;
-            // The uniforms' values last given to it: vitaGL copies them at every call.
-            float prim[4] = {-1, -1, -1, -1}, env[4] = {-1, -1, -1, -1}, fog[4] = {-1, -1, -1, -1};
-            float blend[4] = {-1, -1, -1, -1}, fill[4] = {-1, -1, -1, -1};
-            float primlod = -1, convert[2] = {-1, -1}, texi[2] = {-1, -1};
-        };
-        struct DepthBuffer {
-            uint32_t width = 0, height = 0;
-            GLuint rb = 0;
-        };
-
-        std::thread thread;
-        std::mutex mutex; // the lists (held briefly)
-        SceUID work_sema = -1, slot_sema = -1;
-        std::atomic<bool> ready{false}, quit{false};
-        std::deque<std::unique_ptr<CommandList>> pending;
-        std::vector<std::unique_ptr<CommandList>> free_lists;
-        std::atomic<uint64_t> submitted{0}, done{0};
-
-        std::vector<GLuint> textures;
-        std::vector<GLuint> fbos;
-        std::vector<BackProgram> programs;
-        std::vector<DepthBuffer> depth_buffers;
-        GLuint present_program = 0, copy_program = 0, ui_program = 0;
-        GLint present_tex0 = -1, copy_tex0 = -1, ui_tex0 = -1;
-        GLuint shared_vertex_shader = 0;
-
-        // What GL has bound, to skip redundant calls.
-        struct {
-            uint32_t fbo = ~0u, fb_w = 0, fb_h = 0;
-            GLuint program = ~0u;
-            uint32_t tex[2] = {~0u, ~0u};
-            int blend = -1;
-            GLenum blend_src = 0, blend_dst = 0;
-            int color_write = -1;
-            int depth_test = -1, depth_write = -1, decal = -1;
-            GLenum depth_func = 0;
-            int scissor[4] = {-1, -1, -1, -1};
-        } gl;
-
-        void use_program(GLuint program) {
-            if (gl.program != program) {
-                glUseProgram(program);
-                gl.program = program;
-            }
-        }
-
-        void bind_texture(int unit, uint32_t id) {
-            if (gl.tex[unit] != id) {
-                glActiveTexture(GL_TEXTURE0 + unit);
-                glBindTexture(GL_TEXTURE_2D, tex(id));
-                gl.tex[unit] = id;
-            }
-        }
-
-        static void draw_arrays(const GLVertex* v, size_t count, GLenum mode) {
-            glEnableVertexAttribArray(0);
-            glEnableVertexAttribArray(1);
-            glEnableVertexAttribArray(2);
-            glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(GLVertex), &v->x);
-            glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(GLVertex), &v->color[0]);
-            glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(GLVertex), &v->u0);
-            glDrawArrays(mode, 0, (GLsizei)count);
-        }
-
-        GLuint depth_for(uint32_t w, uint32_t h) {
-            for (const DepthBuffer& d : depth_buffers) {
-                if (d.width == w && d.height == h) {
-                    return d.rb;
-                }
-            }
-            DepthBuffer d;
-            d.width = w;
-            d.height = h;
-            glGenRenderbuffers(1, &d.rb);
-            glBindRenderbuffer(GL_RENDERBUFFER, d.rb);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w * render_scale, h * render_scale);
-            depth_buffers.push_back(d);
-            return d.rb;
-        }
-
-        void run() {
-            // The renderer's other half runs on the display list's core; this one shares
-            // the game's and the audio's.
-            sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), SCE_KERNEL_CPU_MASK_USER_0 | SCE_KERNEL_CPU_MASK_USER_2);
-            init();
-            ready = true;
-            for (;;) {
-                sceKernelWaitSema(work_sema, 1, nullptr);
-                std::unique_ptr<CommandList> list;
-                {
-                    std::lock_guard lock{mutex};
-                    if (pending.empty()) {
-                        if (quit) return;
-                        continue;
-                    }
-                    list = std::move(pending.front());
-                    pending.pop_front();
-                }
-                // The front may hand over the next list meanwhile.
-                sceKernelSignalSema(slot_sema, 1);
-                const uint64_t start = sceKernelGetProcessTimeWide();
-                ultramodern_trace("gl list", (uint32_t)list->cmds.size());
-                running_cmds = (uint32_t)list->cmds.size();
-                for (uint32_t i = 0; i < list->cmds.size(); i++) {
-                    running_cmd = i;
-                    const uint64_t t0 = sceKernelGetProcessTimeWide();
-                    list->cmds[i](*this, *list);
-                    const uint64_t dt = sceKernelGetProcessTimeWide() - t0;
-                    if (dt > 300000) {
-                        std::fprintf(stderr, "[renderer] GL command %u of %u took %llu ms (%u draws in the list)\n", i, (unsigned)list->cmds.size(),
-                            (unsigned long long)(dt / 1000), (unsigned)list->draws.size());
-                    }
-                }
-                busy_us += (uint32_t)(sceKernelGetProcessTimeWide() - start);
-                if (++lists_run % 30 == 0) log_ops();
-                ultramodern_trace("gl list end", 0);
-                list->reset();
-                {
-                    std::lock_guard lock{mutex};
-                    free_lists.push_back(std::move(list));
-                }
-                done++;
-            }
-        }
-
-        void init() {
-            vglSetupRuntimeShaderCompiler(SHARK_OPT_FAST, GL_TRUE, GL_FALSE, GL_TRUE);
-            SceKernelFreeMemorySizeInfo mem{};
-            mem.size = sizeof(mem);
-            sceKernelGetFreeMemorySize(&mem);
-            std::fprintf(stderr, "[renderer] free memory: main %u KB, cdram %u KB, phycont %u KB\n",
-                mem.size_user / 1024, mem.size_cdram / 1024, mem.size_phycont / 1024);
-            // The legacy pool holds the client-side vertex arrays every draw copies (a frame's
-            // triangles are a few MB at most); 16MB of the main memory stays free for the
-            // game's threads' stacks.
-            // Its result isn't reliable (it reports failure with a working context): carry on,
-            // as other vitaGL ports do.
-            if (!vglInitExtended(16 * 1024 * 1024, screen_width, screen_height, 16 * 1024 * 1024, SCE_GXM_MULTISAMPLE_NONE)) {
-                std::fprintf(stderr, "[renderer] vglInitExtended reported failure, continuing\n");
-            }
-            // Presents happen when the game shows a frame: no waiting for the vblank.
-            vglWaitVblankStart(GL_FALSE);
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
-            vglSwapBuffers(GL_FALSE);
-
-            present_program = build_program(present_vertex_source, present_fragment_source);
-            present_tex0 = glGetUniformLocation(present_program, "uTex0");
-            copy_program = build_program(present_vertex_source, copy_fragment_source);
-            copy_tex0 = glGetUniformLocation(copy_program, "uTex0");
-            ui_program = build_program(ui_vertex_source, ui_fragment_source);
-            ui_tex0 = glGetUniformLocation(ui_program, "uTex0");
-            {
-                // The menu's font: alpha only, white.
-                std::vector<uint32_t> rgba(font_atlas_width * font_atlas_height);
-                for (size_t i = 0; i < rgba.size(); i++) rgba[i] = 0x00FFFFFFu | ((uint32_t)font_atlas[i] << 24);
-                upload_texture(TEX_FONT, font_atlas_width, font_atlas_height, rgba.data(), true, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-            }
-            // A white texture for texels the combiner reads with texturing off.
-            const uint32_t white[4] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-            upload_texture(TEX_WHITE, 2, 2, white, false, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-            upload_texture(TEX_CPU_FRAME, 2, 2, white, true, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-            std::fprintf(stderr, "[renderer] vitaGL ready\n");
-        }
-
-        static GLuint compile(GLenum type, const char* source) {
-            GLuint shader = glCreateShader(type);
-            glShaderSource(shader, 1, &source, nullptr);
-            glCompileShader(shader);
-            GLint status = 0;
-            glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-            if (!status) {
-                char log[1024];
-                glGetShaderInfoLog(shader, sizeof(log), nullptr, log);
-                std::fprintf(stderr, "[renderer] shader compile failed: %s\n%s\n", log, source);
-            }
-            else {
-                std::fprintf(stderr, "[renderer] shader compiled (%s)\n", type == GL_VERTEX_SHADER ? "vertex" : "fragment");
-            }
-            return shader;
-        }
-
-        static GLuint build_program(const char* vs, const char* fs) {
-            GLuint program = glCreateProgram();
-            GLuint v = compile(GL_VERTEX_SHADER, vs);
-            GLuint f = compile(GL_FRAGMENT_SHADER, fs);
-            glAttachShader(program, v);
-            glAttachShader(program, f);
-            glBindAttribLocation(program, 0, "aPos");
-            glBindAttribLocation(program, 1, "aColor");
-            glBindAttribLocation(program, 2, "aUV");
-            glLinkProgram(program);
-            return program;
-        }
-
-        // Compiling a shader takes a quarter of a second on the Vita: programs are kept on
-        // the memory card by the hash of their source, and loaded from there afterwards.
-        GLuint cached_program(const std::string& fs) {
-            const std::string key_source = std::string(vertex_shader_source) + fs;
-            const uint64_t hash = XXH3_64bits(key_source.data(), key_source.size());
-            char path[128];
-            std::snprintf(path, sizeof(path), CONKER_VITA_DATA_DIR "/" CONKER_SHADER_CACHE_DIR "/%016llx.bin", (unsigned long long)hash);
-            if (FILE* f = std::fopen(path, "rb")) {
-                uint32_t format = 0, length = 0;
-                std::vector<uint8_t> data;
-                if (std::fread(&format, 4, 1, f) == 1 && std::fread(&length, 4, 1, f) == 1 && length > 0 && length < (4u << 20)) {
-                    data.resize(length);
-                    if (std::fread(data.data(), 1, length, f) != length) data.clear();
-                }
-                std::fclose(f);
-                if (!data.empty()) {
-                    GLuint program = glCreateProgram();
-                    glProgramBinary(program, format, data.data(), (GLsizei)length);
-                    GLint linked = 0;
-                    glGetProgramiv(program, GL_LINK_STATUS, &linked);
-                    if (linked) {
-                        return program;
-                    }
-                    glDeleteProgram(program);
-                }
-            }
-            if (shared_vertex_shader == 0) {
-                shared_vertex_shader = compile(GL_VERTEX_SHADER, vertex_shader_source);
-            }
-            GLuint program = glCreateProgram();
-            GLuint f = compile(GL_FRAGMENT_SHADER, fs.c_str());
-            glAttachShader(program, shared_vertex_shader);
-            glAttachShader(program, f);
-            glBindAttribLocation(program, 0, "aPos");
-            glBindAttribLocation(program, 1, "aColor");
-            glBindAttribLocation(program, 2, "aUV");
-            glLinkProgram(program);
-            GLint length = 0;
-            glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &length);
-            if (length > 0) {
-                std::vector<uint8_t> data((size_t)length);
-                GLenum format = 0;
-                GLsizei written = 0;
-                glGetProgramBinary(program, length, &written, &format, data.data());
-                if (written > 0) {
-                    std::filesystem::create_directories(CONKER_VITA_DATA_DIR "/" CONKER_SHADER_CACHE_DIR);
-                    if (FILE* out = std::fopen(path, "wb")) {
-                        const uint32_t header[2] = { (uint32_t)format, (uint32_t)written };
-                        std::fwrite(header, 4, 2, out);
-                        std::fwrite(data.data(), 1, (size_t)written, out);
-                        std::fclose(out);
-                    }
-                }
-            }
-            return program;
-        }
-    };
-#endif
 }
 
 namespace {
     class VitaRenderer : public ultramodern::renderer::RendererContext {
     public:
-        explicit VitaRenderer(uint8_t* rdram_) : rdram(rdram_) {
+        explicit VitaRenderer(uint8_t* rdram_) : rdram(rdram_), game_rdram(rdram_) {
             chosen_api = ultramodern::renderer::GraphicsApi::Auto;
             backend = std::make_unique<Backend>();
             list = backend->take_list();
@@ -1548,8 +957,12 @@ namespace {
         void enable_instant_present() override {}
 
         void send_dl(const OSTask* task) override {
-            // Debug (flag 32768): lists read on the gfx thread, as before (ultramodern events.cpp).
-            ultramodern_vita_sync_dl = !(debug_flags & 32768);
+            // Debug (flag 32768): lists read on the game's thread, as before (ultramodern events.cpp);
+            // otherwise from the capture taken as the game submitted it.
+            ultramodern_vita_sync_dl = (debug_flags & 32768) != 0;
+            const int cap = ultramodern_vita_current_capture;
+            cap_pt = cap >= 0 ? capture::slots[cap].pt : nullptr;
+            struct CapEnd { const uint8_t* const*& p; ~CapEnd() { p = nullptr; } } cap_end{ cap_pt };
             g_front_stage = 1;
             struct StageEnd { ~StageEnd() { g_front_stage = 0; g_front_lists++; } } stage_end;
             // The Debug page's "Capture 5 seconds", once its menu is closed: the GPU's frames as
@@ -1565,6 +978,7 @@ namespace {
             struct TraceScope { TraceScope() { ultramodern_trace("send_dl", 0); } ~TraceScope() { ultramodern_trace("send_dl end", 0); } } trace_scope;
             // Conker's microcode starts every task in its basic lighting mode (RT64's reset).
             cbfd_advanced_lighting = false;
+            vctx_dirty = true;
             if (dl_count < 5 || dl_count % 120 == 0) {
                 std::fprintf(stderr, "[renderer] display list #%u at 0x%08X\n", dl_count, (uint32_t)task->t.data_ptr);
             }
@@ -1623,7 +1037,22 @@ namespace {
             }
             update_debug_flags();
             if (dumping()) std::fprintf(stderr, "[dl] start %u\n", dl_count);
+            profiling = (dl_count % 30) == 0;
+            const uint64_t list_t0 = profiling ? sceKernelGetProcessTimeWide() : 0;
             run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
+            if (profiling) {
+                part_total_us += sceKernelGetProcessTimeWide() - list_t0;
+                profiling = false;
+                if (++part_lists == 10) {
+                    // Triangles include their textures' preparing (tiles), shown apart too.
+                    const double n = (double)part_lists * 1000.0;
+                    std::fprintf(stderr, "[parts] list %.1f ms: vertices %.1f, triangles %.1f (tiles %.1f), texture loads %.1f, other %.1f\n",
+                        part_total_us / n, part_us[P_VTX] / n, part_us[P_TRI] / n, part_us[P_TILE] / n, part_us[P_LOAD] / n,
+                        (double)((int64_t)part_total_us - (int64_t)(part_us[P_VTX] + part_us[P_TRI] + part_us[P_LOAD])) / n);
+                    part_lists = part_total_us = 0;
+                    for (uint64_t& u : part_us) u = 0;
+                }
+            }
             if (dumping()) std::fprintf(stderr, "[dl] end %u\n", dl_count);
             flush();
             settle_signatures();
@@ -1704,7 +1133,8 @@ namespace {
         float get_resolution_scale() const override { return (float)render_scale; }
 
     private:
-        uint8_t* rdram;
+        uint8_t* rdram;      // where RDRAM is read: the game's, or the copy of the list being read
+        uint8_t* game_rdram; // the game's own (written back to)
         bool ok = false;
         uint32_t dl_count = 0;
         struct {
@@ -1721,6 +1151,7 @@ namespace {
         Mat4 projection = identity();
         Mat4 mvp = identity();
         bool mvp_dirty = true;
+        bool vctx_dirty = true; // the vertex context (vctx) needs working out again
         float vscale[3] = {160, 120, 511}, vtrans[3] = {160, 120, 511};
         uint32_t geometry_mode = 0;
         struct {
@@ -1850,11 +1281,37 @@ namespace {
         // 4 matrices, 8 movemem), to match against what the game wrote meanwhile.
         std::vector<uint8_t> read_mark;
         bool watching = false;
-        void mark_read(uint32_t addr, uint32_t bytes, uint8_t kind) {
-            if (!watching) return;
+        // Debug: the highest addresses the list read above 8 MB, by kind (flag 2048's run).
+        uint32_t high_read_max[16] = {}, high_read_min[16] = {};
+        inline void mark_read(uint32_t addr, uint32_t bytes, uint8_t kind) {
+            if (__builtin_expect(!watching, 1)) return;
             addr &= 0x7FFFFF;
             for (uint32_t g = addr >> 6; g <= ((addr + bytes - 1) >> 6) && g < read_mark.size(); g++) read_mark[g] |= kind;
         }
+
+        // RDRAM as the list reads it: from the capture's copy of a page when there is one.
+        const uint8_t* const* cap_pt = nullptr;
+        inline const uint8_t* mem(uint32_t addr) const {
+            if (cap_pt != nullptr) {
+                const uint8_t* b = cap_pt[(addr & rdram_mask) >> capture::page_shift];
+                if (b != nullptr) return b;
+            }
+            return rdram;
+        }
+        uint32_t m32(uint32_t a) const { return read32(mem(a), a); }
+        uint16_t m16(uint32_t a) const { return read16(mem(a), a); }
+        uint8_t m8(uint32_t a) const { return read8(mem(a), a); }
+
+        // Where the list's reading goes, timed in one display list in 30 (the clock costs too much
+        // to read in every one): vertices, triangles, texture loads, the tiles' textures, the rest.
+        enum Part { P_VTX, P_TRI, P_LOAD, P_TILE, P_COUNT };
+        bool profiling = false;
+        uint64_t part_us[P_COUNT] = {}, part_total_us = 0, part_lists = 0;
+        struct PartTimer {
+            VitaRenderer& r; Part p; uint64_t t0;
+            PartTimer(VitaRenderer& r, Part p) : r(r), p(p), t0(r.profiling ? sceKernelGetProcessTimeWide() : 0) {}
+            ~PartTimer() { if (r.profiling) r.part_us[p] += sceKernelGetProcessTimeWide() - t0; }
+        };
 
         uint32_t segmented(uint32_t addr) const {
             return (segments[(addr >> 24) & 0xF] + (addr & 0x00FFFFFF)) & 0x00FFFFFF;
@@ -1875,12 +1332,19 @@ namespace {
             uint32_t pc = start & rdram_mask;
             // A runaway list (bad pointer) stops after this many commands.
             for (uint32_t guard = 0; guard < 2000000; guard++) {
-                const uint32_t w0 = read32(rdram, pc);
-                const uint32_t w1 = read32(rdram, pc + 4);
+                const uint8_t* const cmd = mem(pc); // the command's 8 bytes are in one page
+                const uint32_t w0 = read32(cmd, pc);
+                const uint32_t w1 = read32(cmd, pc + 4);
                 mark_read(pc, 8, 1);
                 pc += 8;
                 const uint8_t op = w0 >> 24;
-                // What changes how vertices are lit or textured finishes the pending ones.
+                // What changes how vertices are lit or textured: the next vertex load works the
+                // context out again (otherwise loads in a row share it).
+                if (op == G_MTX || op == G_POPMTX || op == G_MOVEWORD || op == G_MOVEMEM ||
+                    op == G_GEOMETRYMODE || op == G_TEXTURE || op == G_LOAD_UCODE || op == G_RT64_EXTENDED) {
+                    vctx_dirty = true;
+                }
+                // ... and finishes the pending ones.
                 if (pending_vertices) {
                     if (op == G_MODIFYVTX) {
                         finish_pending_vertices();
@@ -1987,8 +1451,8 @@ namespace {
                     case G_TEXRECT:
                     case G_TEXRECTFLIP: {
                         // The coordinates follow in RDPHALF_1 and RDPHALF_2.
-                        const uint32_t h1 = read32(rdram, pc + 4);
-                        const uint32_t h2 = read32(rdram, pc + 12);
+                        const uint32_t h1 = m32(pc + 4);
+                        const uint32_t h2 = m32(pc + 12);
                         pc += 16;
                         const int32_t lrx = (w0 >> 12) & 0xFFF, lry = w0 & 0xFFF;
                         const int32_t ulx = (w1 >> 12) & 0xFFF, uly = w1 & 0xFFF;
@@ -2021,6 +1485,7 @@ namespace {
                         state_dirty = true;
                         break;
                     case G_LOADTLUT: {
+                        PartTimer part_timer(*this, P_LOAD);
                         const Tile& t = tiles[(w1 >> 24) & 7];
                         load_tlut(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
                         stats.tlut_loads++;
@@ -2037,6 +1502,7 @@ namespace {
                         break;
                     }
                     case G_LOADBLOCK: {
+                        PartTimer part_timer(*this, P_LOAD);
                         const Tile& t = tiles[(w1 >> 24) & 7];
                         load_block(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
                         stats.block_loads++;
@@ -2106,15 +1572,15 @@ namespace {
         uint32_t extended_command(uint32_t w0, uint32_t w1, uint32_t pc) {
             switch (w0 & 0x00FFFFFF) {
                 case G_EX_TEXRECT_V1: {
-                    const uint32_t c1w0 = read32(rdram, pc), c1w1 = read32(rdram, pc + 4);
-                    const uint32_t c2w0 = read32(rdram, pc + 8), c2w1 = read32(rdram, pc + 12);
+                    const uint32_t c1w0 = m32(pc), c1w1 = m32(pc + 4);
+                    const uint32_t c2w0 = m32(pc + 8), c2w1 = m32(pc + 12);
                     texture_rectangle(w1 & 7,
                         (int16_t)(c1w0 >> 16), (int16_t)(c1w0 & 0xFFFF), (int16_t)(c1w1 >> 16), (int16_t)(c1w1 & 0xFFFF),
                         (int16_t)(c2w0 >> 16), (int16_t)(c2w0 & 0xFFFF), (int16_t)(c2w1 >> 16), (int16_t)(c2w1 & 0xFFFF), false);
                     return pc + 16;
                 }
                 case G_EX_FILLRECT_V1: {
-                    const uint32_t c1w0 = read32(rdram, pc), c1w1 = read32(rdram, pc + 4);
+                    const uint32_t c1w0 = m32(pc), c1w1 = m32(pc + 4);
                     fill_rectangle((int16_t)(c1w0 >> 16), (int16_t)(c1w0 & 0xFFFF), (int16_t)(c1w1 >> 16), (int16_t)(c1w1 & 0xFFFF));
                     return pc + 8;
                 }
@@ -2133,8 +1599,8 @@ namespace {
                 for (int i = 0; i < 4; i++) {
                     for (int j = 0; j < 4; j++) {
                         const uint32_t off = (uint32_t)(i * 8 + j * 2);
-                        const int16_t hi = (int16_t)read16(rdram, addr + off);
-                        const uint16_t lo = read16(rdram, addr + 32 + off);
+                        const int16_t hi = (int16_t)m16(addr + off);
+                        const uint16_t lo = m16(addr + 32 + off);
                         r.m[i][j] = (float)(((int32_t)hi << 16) | lo) * (1.0f / 65536.0f);
                     }
                 }
@@ -2144,8 +1610,8 @@ namespace {
             for (int i = 0; i < 4; i++) {
                 for (int j = 0; j < 4; j += 2) {
                     const uint32_t off = (uint32_t)(i * 8 + j * 2);
-                    const uint32_t hi = read32(rdram, addr + off);
-                    const uint32_t lo = read32(rdram, addr + 32 + off);
+                    const uint32_t hi = m32(addr + off);
+                    const uint32_t lo = m32(addr + 32 + off);
                     r.m[i][j] = (float)(int32_t)((hi & 0xFFFF0000u) | (lo >> 16)) * (1.0f / 65536.0f);
                     r.m[i][j + 1] = (float)(int32_t)((hi << 16) | (lo & 0xFFFFu)) * (1.0f / 65536.0f);
                 }
@@ -2212,8 +1678,8 @@ namespace {
                     // x and y are in 10.2; z isn't.
                     for (int i = 0; i < 3; i++) {
                         const float div = i < 2 ? 4.0f : 1.0f;
-                        vscale[i] = (float)(int16_t)read16(rdram, addr + i * 2) / div;
-                        vtrans[i] = (float)(int16_t)read16(rdram, addr + 8 + i * 2) / div;
+                        vscale[i] = (float)(int16_t)m16(addr + i * 2) / div;
+                        vtrans[i] = (float)(int16_t)m16(addr + 8 + i * 2) / div;
                     }
                     break;
                 case G_MV_LIGHT: {
@@ -2236,9 +1702,9 @@ namespace {
         }
 
         void set_lookat(uint32_t n, uint32_t addr) {
-            float x = (float)(int8_t)read8(rdram, addr + 8);
-            float y = (float)(int8_t)read8(rdram, addr + 9);
-            float z = (float)(int8_t)read8(rdram, addr + 10);
+            float x = (float)(int8_t)m8(addr + 8);
+            float y = (float)(int8_t)m8(addr + 9);
+            float z = (float)(int8_t)m8(addr + 10);
             float len = std::sqrt(x * x + y * y + z * z);
             if (len > 0.0f) {
                 x /= len; y /= len; z /= len;
@@ -2253,21 +1719,21 @@ namespace {
                 return;
             }
             CbfdLight& l = cbfd_lights[index];
-            l.r = read8(rdram, addr + 0) / 255.0f;
-            l.g = read8(rdram, addr + 1) / 255.0f;
-            l.b = read8(rdram, addr + 2) / 255.0f;
-            float dx = (float)(int8_t)read8(rdram, addr + 8);
-            float dy = (float)(int8_t)read8(rdram, addr + 9);
-            float dz = (float)(int8_t)read8(rdram, addr + 10);
+            l.r = m8(addr + 0) / 255.0f;
+            l.g = m8(addr + 1) / 255.0f;
+            l.b = m8(addr + 2) / 255.0f;
+            float dx = (float)(int8_t)m8(addr + 8);
+            float dy = (float)(int8_t)m8(addr + 9);
+            float dz = (float)(int8_t)m8(addr + 10);
             float len = std::sqrt(dx * dx + dy * dy + dz * dz);
             if (len > 0.0f) {
                 dx /= len; dy /= len; dz /= len;
             }
             l.dir[0] = dx; l.dir[1] = dy; l.dir[2] = dz;
-            l.pos[0] = (float)(int16_t)read16(rdram, addr + 32);
-            l.pos[1] = (float)(int16_t)read16(rdram, addr + 34);
-            l.pos[2] = (float)(int16_t)read16(rdram, addr + 36);
-            l.ca = read8(rdram, addr + 12) / 16.0f;
+            l.pos[0] = (float)(int16_t)m16(addr + 32);
+            l.pos[1] = (float)(int16_t)m16(addr + 34);
+            l.pos[2] = (float)(int16_t)m16(addr + 36);
+            l.ca = m8(addr + 12) / 16.0f;
         }
 
         void set_coord_mod(uint32_t w0, uint32_t w1) {
@@ -2356,8 +1822,8 @@ namespace {
                 out[0] = out[1] = 0;
                 return;
             }
-            out[0] = (int8_t)read8(rdram, na);
-            out[1] = (int8_t)read8(rdram, na + 1);
+            out[0] = (int8_t)m8(na);
+            out[1] = (int8_t)m8(na + 1);
         }
         uint32_t slot_normal_addr[max_vertices] = {};
 
@@ -2371,6 +1837,7 @@ namespace {
         static_assert(max_vertices <= 64);
 
         __attribute__((noinline)) void load_vertices(uint32_t addr, uint32_t count, int32_t dst) {
+            PartTimer part_timer(*this, P_VTX);
             if (dst < 0 || dst + (int32_t)count > max_vertices) {
                 return;
             }
@@ -2383,8 +1850,12 @@ namespace {
             const float half_w = fb_w * 0.5f, half_h = fb_h * 0.5f;
             const float x_off = current_fb ? current_fb->off : 0.0f; // the 4:3 view in a wider image
 
-            // Conker's lighting needs the directional lights in model space.
+            // Conker's lighting needs the directional lights in model space. Worked out again only
+            // when a command changed what goes into it (most loads in a row share it: in the
+            // intro's bar, 1400 loads a frame, each normalising up to 12 lights before).
             VertexContext& c = vctx;
+            if (vctx_dirty) {
+            vctx_dirty = false;
             c.num_lights = (int)std::min<uint32_t>(cbfd_light_count, (uint32_t)cbfd_lights.size() - 1);
             c.lighting = cbfd_lighting;
             c.texgen = cbfd_lighting && cbfd_texgen;
@@ -2440,6 +1911,7 @@ namespace {
             const float* mod = cbfd_coord_mod;
             c.mod8 = mod[8]; c.mod9 = mod[9]; c.mod10 = mod[10];
             c.mod12 = mod[12]; c.mod13 = mod[13]; c.mod14 = mod[14];
+            }
 
             const float sx = vscale[0] / half_w, tx = (vtrans[0] + x_off) / half_w - 1.0f;
             const float sy = vscale[1] / half_h, ty = 1.0f - vtrans[1] / half_h;
@@ -2458,10 +1930,12 @@ namespace {
 
             for (uint32_t i = 0; i < count; i++) {
                 const uint32_t va = addr + i * 16;
-                const uint32_t w_xy = read32(rdram, va);
-                const uint32_t w_zf = read32(rdram, va + 4);
-                const uint32_t w_st = read32(rdram, va + 8);
-                const uint32_t w_c = read32(rdram, va + 12);
+                // The vertex's 16 bytes: one page (looked up once) unless it straddles two.
+                const uint8_t* const vb = (va & 0xFFF) <= 0xFF0 ? mem(va) : nullptr;
+                const uint32_t w_xy = vb ? read32(vb, va) : m32(va);
+                const uint32_t w_zf = vb ? read32(vb, va + 4) : m32(va + 4);
+                const uint32_t w_st = vb ? read32(vb, va + 8) : m32(va + 8);
+                const uint32_t w_c = vb ? read32(vb, va + 12) : m32(va + 12);
                 const float px = (float)(int16_t)(w_xy >> 16);
                 const float py = (float)(int16_t)(w_xy & 0xFFFF);
                 const float pz = (float)(int16_t)(w_zf >> 16);
@@ -2607,6 +2081,7 @@ namespace {
         struct { uint32_t tris = 0, clipped = 0, culled = 0; float sum = 0; } water_stats;
 
         __attribute__((noinline)) void triangle(uint32_t ia, uint32_t ib, uint32_t ic) {
+            PartTimer part_timer(*this, P_TRI);
             if (ia >= max_vertices || ib >= max_vertices || ic >= max_vertices) {
                 return;
             }
@@ -2648,7 +2123,7 @@ namespace {
             stats.tris++;
             const bool flat = (geometry_mode & G_SHADING_SMOOTH) == 0;
             const bool zprim = (other_mode_l & OML_ZS_PRIM) != 0;
-            const float prim_z = prim_depth_ndc();
+            const float prim_z = zprim ? prim_depth_ndc() : 0.0f;
             const TileTexture& tt0 = tile_textures[texture.tile & 7];
             const TileTexture& tt1 = tile_textures[(texture.tile + 1) & 7];
             if (batch.size() + 3 > 65535) {
@@ -2661,11 +2136,13 @@ namespace {
             const uint32_t slots[3] = { ia, ib, ic };
             const uint16_t uv = current_uv_index(tt0, tt1);
             batch_raw = true;
-            // Through the near plane (a vertex at z < -w: behind the camera, or nearly): cut
-            // here, as the RSP's microcode does, so the GPU never gets a vertex at w <= 0. The
-            // Vita's GPU dropped such triangles (rivers running under the camera vanished in
-            // most frames); Vita3K draws them, which hid it. Debug flag 16384: uncut.
-            if (((v[0]->clip | v[1]->clip | v[2]->clip) & 16) && !(debug_flags & 16384)) {
+            // A vertex behind the camera (w <= 0): cut the triangle at the camera's plane, so the GPU
+            // never gets one (the Vita's GPU dropped such triangles: rivers running under the
+            // camera vanished in most frames; Vita3K draws them). Only there: Conker's microcode
+            // doesn't clip at the near plane (the RDP clamps the depth of what's nearer, done in
+            // finish_vertices), and cutting there holed the N64 logo as the camera went inside it.
+            // Debug flag 16384: uncut.
+            if ((v[0]->w <= w_cut || v[1]->w <= w_cut || v[2]->w <= w_cut) && !(debug_flags & 16384)) {
                 clipped_triangle(v, slots, uv, flat, zprim, prim_z);
                 return;
             }
@@ -2713,6 +2190,8 @@ namespace {
                 if (i == 0) first_vertex = (uint32_t)(batch.base + at);
             }
         }
+
+        static constexpr float w_cut = 1e-3f; // where triangles through the camera's plane are cut
 
         // A triangle vertex as the GL thread gets it (raw: lit and mapped there).
         void make_vertex_in(VertexIn& in, uint32_t slot, const RspVertex& rv, uint16_t uv, bool zprim, float prim_z) {
@@ -2777,8 +2256,8 @@ namespace {
                 const VertexContext& c = tri[0].ctx < list->ctxs.size() ? list->ctxs[tri[0].ctx] : vctx;
                 normals = (c.lighting || c.texgen) && !c.advanced;
             }
-            // In front of the near plane (z = -w), a little in so w stays positive.
-            auto dist = [](const VertexIn& p) { return p.z + p.w - 1e-4f * std::fabs(p.w) - 1e-5f; };
+            // In front of the camera (w > 0), a little in.
+            auto dist = [](const VertexIn& p) { return p.w - w_cut; };
             VertexIn poly[4];
             int n = 0;
             for (int i = 0; i < 3; i++) {
@@ -3344,6 +2823,7 @@ namespace {
         // ======================================================== textures
         // Binds the texture tile index would sample, or white when texturing is off.
         void update_tile_texture(uint32_t index) {
+            PartTimer part_timer(*this, P_TILE);
             TileTexture& tt = tile_textures[index];
             const Tile& tile = tiles[index];
             const uint32_t tlut = (other_mode_h >> OMH_TLUT_SHIFT) & 3;
@@ -3940,7 +3420,8 @@ namespace {
                         const uint32_t c = src[x_off + x * render_scale];
                         const uint16_t p = (uint16_t)((((c >> 3) & 0x1F) << 11) | (((c >> 11) & 0x1F) << 6) | (((c >> 19) & 0x1F) << 1) | 1);
                         const uint32_t addr = base + (y * fb.width + x) * 2;
-                        std::memcpy(rdram + ((addr & rdram_mask) ^ 2), &p, 2);
+                        std::memcpy(game_rdram + ((addr & rdram_mask) ^ 2), &p, 2);
+                        if (rdram != game_rdram) std::memcpy(rdram + ((addr & rdram_mask) ^ 2), &p, 2);
                     }
                 }
                 // RDRAM now holds the picture: the signature follows it.
@@ -4116,4 +3597,20 @@ std::unique_ptr<ultramodern::renderer::RendererContext> conker::vita::create_ren
 void conker::vita::renderer_status(char* out, unsigned size) {
     std::snprintf(out, size, "front stage %u (lists %u), back op %u compiling %u waiting %u (lists %u)",
         g_front_stage.load(), g_front_lists.load(), g_back_op.load(), g_back_compiling.load(), g_back_waiting.load(), g_back_lists.load());
+}
+
+unsigned conker::vita::renderer_back_busy_ms() {
+    return (unsigned)(g_back_busy_total_us.exchange(0) / 1000);
+}
+
+unsigned long long conker::vita::renderer_snapshot_us() {
+    return capture::copy_us.exchange(0);
+}
+
+unsigned long long conker::vita::renderer_capture_wait_us() {
+    return capture::wait_us.exchange(0);
+}
+
+unsigned long long conker::vita::renderer_capture_pages() {
+    return capture::copied_pages.exchange(0);
 }

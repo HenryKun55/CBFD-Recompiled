@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.20)
 #   cmake -S vita -B vita/build -G Ninja -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake
 #   cmake --build vita/build
 #
-# Instead of RT64 (Vulkan/D3D12/Metal) it draws with vitaGL through a small HLE
+# Instead of RT64 (Vulkan/D3D12/Metal) it draws with sceGxm through a small HLE
 # renderer for the game's microcode (F3DEX2, Conker's variant), and it has no
 # launcher: it boots straight into the game with the ROM at ux0:data/conker/.
 
@@ -131,31 +131,12 @@ target_compile_options(ConkerVita PRIVATE -Wno-psabi -g)
 set_source_files_properties(src/vita_renderer.cpp PROPERTIES COMPILE_OPTIONS "-O3;-ffast-math")
 set_source_files_properties(src/tmem.cpp PROPERTIES COMPILE_OPTIONS "-O3;-ffast-math")
 
-# The renderer draws with sceGxm directly (src/gxm_backend.inc); OFF goes through vitaGL.
-option(CONKER_GXM "Draw with sceGxm directly instead of vitaGL" ON)
-if(CONKER_GXM)
-    target_compile_definitions(ConkerVita PRIVATE CONKER_GXM=1)
-else()
-    target_compile_definitions(ConkerVita PRIVATE CONKER_GXM=0)
-endif()
-
-# vitaGL has to be built with STORE_DEPTH_STENCIL=1: the game draws its shadow textures in
-# the middle of a frame, and otherwise every switch of render target resets the frame's
-# depth buffer (what's drawn after shows through walls). VITAGL_LIBRARY points at it.
-set(VITAGL_LIBRARY "${REPO_ROOT}/../vitaGL/libvitaGL.a" CACHE FILEPATH "vitaGL built with STORE_DEPTH_STENCIL=1")
-if(NOT EXISTS "${VITAGL_LIBRARY}")
-    message(WARNING "${VITAGL_LIBRARY} not found: using the SDK's vitaGL (depth breaks around shadows)")
-    set(VITAGL_LIBRARY vitaGL)
-else()
-    # Its own header (the SDK's is another version's).
-    get_filename_component(VITAGL_DIR "${VITAGL_LIBRARY}" DIRECTORY)
-    target_include_directories(ConkerVita BEFORE PRIVATE "${VITAGL_DIR}/source")
-endif()
-
+# The renderer draws with sceGxm directly (src/gxm_backend.inc). vitaGL (the SDK's) is only
+# used to show the startup error dialog, before there is a renderer.
 target_link_libraries(ConkerVita PRIVATE
     -Wl,--whole-archive RecompiledFuncs -Wl,--no-whole-archive
     librecomp ultramodern
-    "${VITAGL_LIBRARY}" vitashark SceShaccCgExt mathneon taihen_stub kubridge_stub
+    vitaGL vitashark SceShaccCgExt mathneon taihen_stub kubridge_stub
     SceShaccCg_stub SceKernelDmacMgr_stub SceIme_stub
     SceAppMgr_stub SceAppUtil_stub SceAudio_stub SceCtrl_stub SceTouch_stub
     SceCommonDialog_stub SceDisplay_stub SceGxm_stub SceMotion_stub

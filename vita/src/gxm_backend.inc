@@ -1127,6 +1127,7 @@ private:
                 list->cmds[i](*this, *list);
             }
             busy_us += (uint32_t)(sceKernelGetProcessTimeWide() - start);
+            g_back_busy_total_us += sceKernelGetProcessTimeWide() - start;
             if (++lists_run % 30 == 0) log_ops();
             ultramodern_trace("gl list end", 0);
             // The vertices went to the ring: the list can be filled again at once.

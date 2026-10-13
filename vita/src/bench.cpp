@@ -15,6 +15,7 @@
 
 #include "bench.hpp"
 #include "vita_platform.hpp"
+#include "vita_renderer.hpp"
 
 namespace {
     struct Press {
@@ -49,6 +50,11 @@ namespace {
     double next_shot = 0;
 
     uint64_t now_us() { return sceKernelGetProcessTimeWide(); }
+
+    // Always on (outside the benchmark too): a line a second in the log while playing.
+    std::atomic<uint32_t> live_frames{0}, live_presents{0}, live_render_max{0}, live_audio_tasks{0};
+    std::atomic<uint64_t> live_render_us{0}, live_tris{0}, live_audio_us{0};
+    uint64_t live_next_us = 0;
     double elapsed() { return (double)(now_us() - start_us) / 1e6; }
 
     Second& current_second() {
@@ -167,6 +173,11 @@ uint32_t conker::vita::bench::scripted_vita_buttons() {
 }
 
 void conker::vita::bench::on_display_list(uint32_t render_us, uint32_t tris) {
+    live_frames++;
+    live_render_us += render_us;
+    live_tris += tris;
+    uint32_t m = live_render_max.load();
+    while (render_us > m && !live_render_max.compare_exchange_weak(m, render_us)) {}
     if (!enabled || finished) return;
     std::lock_guard lock{mutex};
     Second& s = current_second();
@@ -178,12 +189,15 @@ void conker::vita::bench::on_display_list(uint32_t render_us, uint32_t tris) {
 }
 
 void conker::vita::bench::on_present() {
+    live_presents++;
     if (!enabled || finished) return;
     std::lock_guard lock{mutex};
     current_second().presents++;
 }
 
 void conker::vita::bench::on_audio_task(uint32_t us) {
+    live_audio_tasks++;
+    live_audio_us += us;
     if (!enabled || finished) return;
     std::lock_guard lock{mutex};
     Second& s = current_second();
@@ -192,6 +206,23 @@ void conker::vita::bench::on_audio_task(uint32_t us) {
 }
 
 void conker::vita::bench::update() {
+    const uint64_t now = now_us();
+    if (live_next_us == 0) live_next_us = now + 1000000;
+    if (now >= live_next_us) {
+        // The game's frames (display lists) this second, the renderer's front (reading them,
+        // on the game's thread) average and worst, its back (drawing), and the audio's time.
+        const uint32_t f = live_frames.exchange(0), p = live_presents.exchange(0);
+        const uint64_t r = live_render_us.exchange(0), tr = live_tris.exchange(0), au = live_audio_us.exchange(0);
+        const uint32_t rmax = live_render_max.exchange(0), at = live_audio_tasks.exchange(0);
+        std::fprintf(stderr, "[perf] t=%llu fps=%u presents=%u front_ms avg=%.1f max=%.1f back_busy_ms=%u audio_ms=%.0f (%u tasks) tris=%llu copy_ms=%.2f wait_ms=%.2f pages=%llu\n",
+            (unsigned long long)(now / 1000000), f, p, f ? r / 1000.0 / f : 0.0, rmax / 1000.0,
+            conker::vita::renderer_back_busy_ms(), au / 1000.0, at, (unsigned long long)(f ? tr / f : 0),
+            f ? conker::vita::renderer_snapshot_us() / 1000.0 / f : 0.0,
+            f ? conker::vita::renderer_capture_wait_us() / 1000.0 / f : 0.0,
+            (unsigned long long)(f ? conker::vita::renderer_capture_pages() / f : 0));
+        live_next_us += 1000000;
+        if (now > live_next_us + 5000000) live_next_us = now + 1000000;
+    }
     if (!enabled || finished) return;
     const double t = elapsed();
     if (shot_every_s > 0 && t >= next_shot) {
