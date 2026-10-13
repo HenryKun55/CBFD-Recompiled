@@ -1048,9 +1048,9 @@ namespace {
                 std::fprintf(stderr, "[renderer] dumping display list #%u\n", dl_count);
             }
             update_debug_flags();
-            // Debug (ux0:data/conker/debug_ab): the parts' cost without the clock's, the lists
-            // going in turn without triangles, texture loads, or vertices and triangles (a list
-            // each: a short scene gets them all).
+            // Debug (ux0:data/conker/debug_ab): the triangles' parts' cost without the clock's, the
+            // lists going in turn with triangles only culled, prepared up to their draw state, or
+            // none (a list each: a short scene gets them all).
             ab_phase = ab_on ? dl_count % 4 : 0;
             if (dumping()) std::fprintf(stderr, "[dl] start %u\n", dl_count);
             // One list in 300 timed by parts (two of them averaged in each [parts] line): the clock
@@ -1106,7 +1106,7 @@ namespace {
                 ab_us[ab_phase] += dl_us;
                 ab_lists[ab_phase]++;
                 if (++ab_count % 60 == 0) {
-                    std::fprintf(stderr, "[ab] list ms: all %.1f (%u), no triangles %.1f (%u), no texture loads %.1f (%u), no vertices or triangles %.1f (%u)\n",
+                    std::fprintf(stderr, "[ab] list ms: all %.1f (%u), triangles culled only %.1f (%u), up to their state %.1f (%u), no triangles %.1f (%u)\n",
                         ab_lists[0] ? ab_us[0] / 1000.0 / ab_lists[0] : 0.0, ab_lists[0], ab_lists[1] ? ab_us[1] / 1000.0 / ab_lists[1] : 0.0, ab_lists[1],
                         ab_lists[2] ? ab_us[2] / 1000.0 / ab_lists[2] : 0.0, ab_lists[2], ab_lists[3] ? ab_us[3] / 1000.0 / ab_lists[3] : 0.0, ab_lists[3]);
                     for (int k = 0; k < 4; k++) { ab_us[k] = 0; ab_lists[k] = 0; }
@@ -1555,7 +1555,6 @@ namespace {
                         break;
                     case G_LOADTLUT: {
                         PartTimer part_timer(*this, P_LOAD);
-                        if (__builtin_expect(ab_phase == 2, 0)) break;
                         const Tile& t = tiles[(w1 >> 24) & 7];
                         load_tlut(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
                         stats.tlut_loads++;
@@ -1573,7 +1572,7 @@ namespace {
                     }
                     case G_LOADBLOCK: {
                         PartTimer part_timer(*this, P_LOAD);
-                        if (__builtin_expect((debug_flags & 1048576) != 0 || ab_phase == 2, 0)) break; // debug: no texture loads
+                        if (__builtin_expect((debug_flags & 1048576) != 0, 0)) break; // debug: no texture loads
                         const Tile& t = tiles[(w1 >> 24) & 7];
                         load_block(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
                         stats.block_loads++;
@@ -1928,7 +1927,6 @@ namespace {
 
         __attribute__((noinline)) void load_vertices(uint32_t addr, uint32_t count, int32_t dst) {
             PartTimer part_timer(*this, P_VTX);
-            if (__builtin_expect(ab_phase == 3, 0)) return;
             if (dst < 0 || dst + (int32_t)count > max_vertices) {
                 return;
             }
@@ -2046,6 +2044,13 @@ namespace {
             // the cache; read in turn, each line waited for the memory on the Vita).
             for (uint32_t a = addr & ~31u; a < addr + count * 16; a += 32) {
                 __builtin_prefetch(mem(a) + (a & rdram_mask));
+            }
+            // So are the advanced lighting's normals (two bytes a vertex), read as the triangles go.
+            if (c.advanced && (c.lighting || c.texgen) && count > 0) {
+                const uint32_t n0 = normal_base_at_load + ((uint32_t)dst << 1);
+                for (uint32_t a = n0 & ~31u; a < n0 + count * 2; a += 32) {
+                    __builtin_prefetch(mem(a) + (a & rdram_mask));
+                }
             }
             uint32_t vtx_page = ~0u;
             const uint8_t* vtx_mem = nullptr;
@@ -2232,7 +2237,7 @@ namespace {
                 return;
             }
             // Debug (flag 524288): triangles not drawn (what they cost, against the frame's time).
-            if (__builtin_expect((debug_flags & 524288) != 0 || ab_phase == 1 || ab_phase == 3, 0)) return;
+            if (__builtin_expect((debug_flags & 524288) != 0 || ab_phase == 3, 0)) return;
             triangle_draw(ia, ib, ic);
         }
 
@@ -2252,22 +2257,27 @@ namespace {
                 }
                 const float dx1 = v[1]->ndc_x - v[0]->ndc_x, dy1 = v[1]->ndc_y - v[0]->ndc_y;
                 const float dx2 = v[2]->ndc_x - v[0]->ndc_x, dy2 = v[2]->ndc_y - v[0]->ndc_y;
-                float cross = dx1 * dy2 - dy1 * dx2;
-                if (negative(v[0]->w) ^ negative(v[1]->w) ^ negative(v[2]->w)) {
-                    cross = -cross;
-                }
+                const float cross = dx1 * dy2 - dy1 * dx2;
+                // Its sign and whether it's 0 from its bits (a float compare's flags stall the
+                // Cortex-A9), the sign flipped by an odd number of vertices behind the camera.
+                uint32_t bits;
+                std::memcpy(&bits, &cross, 4);
+                const bool zero = (bits << 1) == 0;
+                const bool below = ((bits >> 31) ^ negative(v[0]->w) ^ negative(v[1]->w) ^ negative(v[2]->w)) != 0;
                 // N64 front faces wind counter-clockwise in normalised coordinates (y up).
-                if ((cull == G_CULL_FRONT && cross >= 0.0f) || (cull == G_CULL_BACK && cross <= 0.0f)) {
+                if (zero || (cull == G_CULL_FRONT ? !below : below)) {
                     stats.tris_culled++;
                     if (water) water_stats.culled++;
                     return;
                 }
             }
 
+            if (__builtin_expect(ab_phase == 1, 0)) return;
             if (!prepare_draw(false)) {
                 stats.tris_nofb++;
                 return;
             }
+            if (__builtin_expect(ab_phase == 2, 0)) return;
             stats.tris++;
             const bool flat = (geometry_mode & G_SHADING_SMOOTH) == 0;
             const bool zprim = (other_mode_l & OML_ZS_PRIM) != 0;
@@ -2290,7 +2300,7 @@ namespace {
             // doesn't clip at the near plane (the RDP clamps the depth of what's nearer, done in
             // finish_vertices), and cutting there holed the N64 logo as the camera went inside it.
             // Debug flag 16384: uncut.
-            if ((v[0]->w <= w_cut || v[1]->w <= w_cut || v[2]->w <= w_cut) && !(debug_flags & 16384)) {
+            if ((at_most_w_cut(v[0]->w) | at_most_w_cut(v[1]->w) | at_most_w_cut(v[2]->w)) && !(debug_flags & 16384)) {
                 clipped_triangle(v, slots, uv, flat, zprim, prim_z);
                 return;
             }
@@ -2340,6 +2350,16 @@ namespace {
         }
 
         static constexpr float w_cut = 1e-3f; // where triangles through the camera's plane are cut
+        // w <= w_cut, compared as integers: a float compare's flags stall the Cortex-A9's pipeline
+        // until the VFP is done. For a positive bound, floats order as their bits do as signed
+        // integers (negative ones are negative integers, below it too).
+        static bool at_most_w_cut(float w) {
+            int32_t a, b;
+            const float bound = w_cut;
+            std::memcpy(&a, &w, 4);
+            std::memcpy(&b, &bound, 4);
+            return a <= b;
+        }
 
         // A triangle vertex as the GL thread gets it (raw: lit and mapped there).
         void make_vertex_in(VertexIn& in, uint32_t slot, const RspVertex& rv, uint16_t uv, bool zprim, float prim_z) {
