@@ -641,6 +641,29 @@ func = "func_15019464"
 before_vram = 0x150194F8
 text = "{ extern void conker_camera_pass_sync(uint8_t*, recomp_context*); conker_camera_pass_sync(rdram, ctx); }"
 
+# Speech bubbles kept inside the camera's view (host/src/widescreen.cpp): func_1516B6BC draws one
+# ($a1) from pieces func_15095B08 lays out (its left edge $f20, width $f16; $v0 the camera, just
+# before it stores the layout, D_800D2C78...), then its text (func_1516C934, $f26 where it starts).
+[[patches.hook]]
+func = "func_1516B6BC"
+before_vram = 0x1516B6BC
+text = "{ extern void conker_bubble_draw_begin(uint8_t*, recomp_context*); conker_bubble_draw_begin(rdram, ctx); }"
+
+[[patches.hook]]
+func = "func_1516B6BC"
+before_vram = 0x1516C864
+text = "{ extern void conker_bubble_draw_end(uint8_t*, recomp_context*); conker_bubble_draw_end(rdram, ctx); }"
+
+[[patches.hook]]
+func = "func_15095B08"
+before_vram = 0x15095CC8
+text = "{ extern void conker_bubble_layout(uint8_t*, recomp_context*); conker_bubble_layout(rdram, ctx); }"
+
+[[patches.hook]]
+func = "func_1516C934"
+before_vram = 0x1516C9B0
+text = "{ extern void conker_bubble_text(uint8_t*, recomp_context*); conker_bubble_text(rdram, ctx); }"
+
 # After the piece's left edge is loaded ($f12, D_800D2C78; its right edge is that plus a width),
 # and where both of its returns meet ($v0 the end of what it wrote).
 [[patches.hook]]

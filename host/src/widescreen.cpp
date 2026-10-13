@@ -181,11 +181,13 @@ namespace {
     bool extended_enabled = false;
     gpr bubble_dl_start = 0;
     int32_t bubble_shift = 0;
+    uint32_t bubble_frame = 0; // counts the frames, for the bubbles' shifts below
 }
 
 // func_1501878C, as it starts the frame's display list.
 extern "C" void conker_frame_dl_begin(uint8_t* rdram, recomp_context* ctx) {
     extended_enabled = false;
+    bubble_frame++;
     conker::cutscene_aspect::update(rdram);
 #if defined(CONKER_RT64)
     conker::fps_counter::game_frame();
@@ -200,6 +202,105 @@ extern "C" void conker_camera_pass_sync(uint8_t* rdram, recomp_context* ctx) {
     }
     put_command(rdram, sync, (rt64_hook_opcode << 24) | rt64_hook_magic, (rt64_hook_op_enable << 28) | rt64_extended_opcode);
     extended_enabled = true;
+}
+
+// func_15095B08 lays a sprite out from a place on screen: centred on it. A speech bubble
+// (func_1516B6BC) is drawn as several of them: its halves, its tail and its frame, then its text
+// (func_1516C934). The Portuguese lines are longer than the English ones, and their bubbles went past
+// the 4:3 frame's edges (cut in half in 4:3 cutscenes). So the whole bubble, pieces and text, is moved
+// by one amount to fit inside the camera's view (+0x2C left, +0x30 right; widened in widescreen), a
+// few pixels in; one wider than the view is centred on it. The amount comes from the extent of the
+// bubble's pieces the frame before (it's only known once they've been drawn), kept for each bubble.
+namespace {
+    struct BubbleShift {
+        uint32_t bubble;
+        uint32_t last_frame;
+        float shift;
+    };
+    BubbleShift bubble_shifts[8] = {};
+    uint32_t bubble_current = 0;   // the bubble func_1516B6BC is drawing, or 0
+    float bubble_current_shift = 0.0f;
+    float bubble_min_x = 0.0f, bubble_max_x = 0.0f;
+    float bubble_left_bound = 0.0f, bubble_right_bound = 0.0f;
+
+    BubbleShift* find_bubble_shift(uint32_t bubble, bool create) {
+        BubbleShift* oldest = &bubble_shifts[0];
+        for (BubbleShift& entry : bubble_shifts) {
+            if (entry.bubble == bubble) {
+                return &entry;
+            }
+            if (entry.last_frame < oldest->last_frame) {
+                oldest = &entry;
+            }
+        }
+        if (!create) {
+            return nullptr;
+        }
+        *oldest = { bubble, bubble_frame, 0.0f };
+        return oldest;
+    }
+}
+
+// func_1516B6BC, as it starts drawing the bubble at $a1.
+extern "C" void conker_bubble_draw_begin(uint8_t* rdram, recomp_context* ctx) {
+    bubble_current = (uint32_t)ctx->r5;
+    bubble_current_shift = 0.0f;
+    bubble_min_x = INFINITY;
+    bubble_max_x = -INFINITY;
+    const BubbleShift* entry = find_bubble_shift(bubble_current, false);
+    // Only a bubble also drawn in the last couple of frames: a new one in the same place starts at 0.
+    if (entry != nullptr && bubble_frame - entry->last_frame <= 2) {
+        bubble_current_shift = entry->shift;
+    }
+}
+
+// Where func_1516B6BC's returns meet: the bubble's shift for the next frame, from its pieces' extent.
+extern "C" void conker_bubble_draw_end(uint8_t* rdram, recomp_context* ctx) {
+    const uint32_t bubble = bubble_current;
+    bubble_current = 0;
+    if (bubble == 0 || !(bubble_max_x > bubble_min_x) || !(bubble_right_bound > bubble_left_bound)) {
+        return;
+    }
+    float shift = 0.0f;
+    if (bubble_max_x - bubble_min_x >= bubble_right_bound - bubble_left_bound) {
+        shift = (bubble_left_bound + bubble_right_bound - bubble_min_x - bubble_max_x) * 0.5f;
+    }
+    else if (bubble_min_x < bubble_left_bound) {
+        shift = bubble_left_bound - bubble_min_x;
+    }
+    else if (bubble_max_x > bubble_right_bound) {
+        shift = bubble_right_bound - bubble_max_x;
+    }
+    BubbleShift* entry = find_bubble_shift(bubble, true);
+    entry->shift = std::round(shift); // whole pixels, so the texture lines up as before
+    entry->last_frame = bubble_frame;
+}
+
+// func_15095B08 just before it stores the layout: the left edge $f20, width $f16; $v0 the camera.
+extern "C" void conker_bubble_layout(uint8_t* rdram, recomp_context* ctx) {
+    if (bubble_current == 0) {
+        return;
+    }
+    const gpr camera = ctx->r2;
+    const float extra = sprite_cull_margin(rdram) - 8.0f; // past each 4:3 edge in widescreen, else 0
+    constexpr float margin = 4.0f;
+    bubble_left_bound = read_float(rdram, camera, 0x2C) - extra + margin;
+    bubble_right_bound = read_float(rdram, camera, 0x30) + extra - margin;
+    const float width = ctx->f16.fl;
+    const float left = ctx->f20.fl;
+    if (width > 0.0f) {
+        bubble_min_x = std::min(bubble_min_x, left);
+        bubble_max_x = std::max(bubble_max_x, left + width);
+    }
+    ctx->f20.fl = left + bubble_current_shift;
+}
+
+// func_1516C934 (the bubble's text, $s2 the bubble) at 0x1516C9B0: $f26 is where its lines start
+// across, from the bubble's place.
+extern "C" void conker_bubble_text(uint8_t* rdram, recomp_context* ctx) {
+    if (bubble_current != 0 && (uint32_t)ctx->r18 == bubble_current) {
+        ctx->f26.fl += bubble_current_shift;
+    }
 }
 
 // func_15095D34, after $f12 (the piece's left edge) is loaded; its display list ($a0) is at $sp + 0x88.

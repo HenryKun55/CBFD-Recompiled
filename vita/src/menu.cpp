@@ -29,7 +29,7 @@ namespace conker::vita::menu {
         std::atomic<bool> capture_requested{false}; // the Debug page's "Capture 5 seconds"
         int output_mode = 0; // 0 normal, 1 texture only, 2 shade only, 3 without the blender
         const char* const output_names[] = { "Normal", "Texture only", "Shade only", "No blender" };
-        constexpr int debug_count = 9;
+        constexpr int debug_count = 11;
 
         void set_flag(uint32_t bit, bool on) {
             uint32_t f = renderer_flags.load();
@@ -53,6 +53,8 @@ namespace conker::vita::menu {
                 case 4: set_flag(512, !(f & 512)); break;
                 case 7: set_flag(131072, !(f & 131072)); break;
                 case 8: set_flag(262144, !(f & 262144)); break;
+                case 9: set_flag(524288, !(f & 524288)); break;
+                case 10: set_flag(1048576, !(f & 1048576)); break;
                 case 5:
                     capture_requested = true;
                     set_status("Capturing 5 seconds once you close the menu...");
@@ -296,7 +298,7 @@ namespace conker::vita::menu {
         const char* titles[] = { "Conker's Bad Fur Day", "Controls", "Analog stick", "Debug" };
         text(x0 + 24, y0 + 16, titles[(int)page], 0xFFC34DFF, 1.0f);
 
-        const float row_h = page == Page::Controls ? 24.0f : page == Page::Main ? 30.0f : 34.0f;
+        const float row_h = page == Page::Controls ? 24.0f : (page == Page::Main || page == Page::Debug) ? 30.0f : 34.0f;
         const float list_y = y0 + (page == Page::Controls ? 82 : 62);
         auto row_highlight = [&](int i) {
             items.push_back({ Item::Rect, x0 + 12, list_y + i * row_h - 3, w - 24, row_h, 0x3A3A55FF, "" });
@@ -353,6 +355,8 @@ namespace conker::vita::menu {
                 { "Clear shader cache", "" },
                 { "Draw shadows", (f & 131072) ? "Off" : "On" },
                 { "Decal depth bias", (f & 262144) ? "Strong" : "Normal" },
+                { "Perf test: skip triangles", (f & 524288) ? "On" : "Off" },
+                { "Perf test: skip texture loads", (f & 1048576) ? "On" : "Off" },
             };
             for (int i = 0; i < debug_count; i++) {
                 if (i == cursor) row_highlight(i);

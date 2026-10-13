@@ -268,11 +268,23 @@ namespace {
     // Row vectors, as the N64: v' = v * M; mul(a, b) applies a then b.
     Mat4 mul(const Mat4& a, const Mat4& b) {
         Mat4 r;
+#if defined(__ARM_NEON)
+        // A row of the result: a's row's elements times b's rows, four at a time.
+        const float32x4_t b0 = vld1q_f32(b.m[0]), b1 = vld1q_f32(b.m[1]), b2 = vld1q_f32(b.m[2]), b3 = vld1q_f32(b.m[3]);
+        for (int i = 0; i < 4; i++) {
+            float32x4_t row = vmulq_n_f32(b0, a.m[i][0]);
+            row = vmlaq_n_f32(row, b1, a.m[i][1]);
+            row = vmlaq_n_f32(row, b2, a.m[i][2]);
+            row = vmlaq_n_f32(row, b3, a.m[i][3]);
+            vst1q_f32(r.m[i], row);
+        }
+#else
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
                 r.m[i][j] = a.m[i][0] * b.m[0][j] + a.m[i][1] * b.m[1][j] + a.m[i][2] * b.m[2][j] + a.m[i][3] * b.m[3][j];
             }
         }
+#endif
         return r;
     }
 
@@ -1037,18 +1049,31 @@ namespace {
             }
             update_debug_flags();
             if (dumping()) std::fprintf(stderr, "[dl] start %u\n", dl_count);
-            profiling = (dl_count % 30) == 0;
+            profiling = (dl_count % 300) == 0;
             const uint64_t list_t0 = profiling ? sceKernelGetProcessTimeWide() : 0;
             run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
             if (profiling) {
                 part_total_us += sceKernelGetProcessTimeWide() - list_t0;
                 profiling = false;
-                if (++part_lists == 10) {
+                if (++part_lists == 2) {
                     // Triangles include their textures' preparing (tiles), shown apart too.
                     const double n = (double)part_lists * 1000.0;
-                    std::fprintf(stderr, "[parts] list %.1f ms: vertices %.1f, triangles %.1f (tiles %.1f), texture loads %.1f, other %.1f\n",
+                    std::fprintf(stderr, "[parts] list %.1f ms: vertices %.1f, triangles %.1f (tiles %.1f), texture loads %.1f, matrices %.1f, draws out %.1f, other %.1f\n",
                         part_total_us / n, part_us[P_VTX] / n, part_us[P_TRI] / n, part_us[P_TILE] / n, part_us[P_LOAD] / n,
-                        (double)((int64_t)part_total_us - (int64_t)(part_us[P_VTX] + part_us[P_TRI] + part_us[P_LOAD])) / n);
+                        part_us[P_MTX] / n, part_us[P_FLUSH] / n,
+                        (double)((int64_t)part_total_us - (int64_t)(part_us[P_VTX] + part_us[P_TRI] + part_us[P_LOAD] + part_us[P_MTX] + part_us[P_FLUSH])) / n);
+                    {
+                        std::string top;
+                        for (int k = 0; k < 12; k++) {
+                            int best = 0;
+                            for (int o = 1; o < 256; o++) if (op_hist[o] > op_hist[best]) best = o;
+                            if (!op_hist[best]) break;
+                            char b[32]; std::snprintf(b, sizeof(b), " %02X:%u", best, op_hist[best] / (unsigned)part_lists); top += b;
+                            op_hist[best] = 0;
+                        }
+                        for (uint32_t& h : op_hist) h = 0;
+                        std::fprintf(stderr, "[parts] commands a list:%s\n", top.c_str());
+                    }
                     part_lists = part_total_us = 0;
                     for (uint64_t& u : part_us) u = 0;
                 }
@@ -1304,8 +1329,9 @@ namespace {
 
         // Where the list's reading goes, timed in one display list in 30 (the clock costs too much
         // to read in every one): vertices, triangles, texture loads, the tiles' textures, the rest.
-        enum Part { P_VTX, P_TRI, P_LOAD, P_TILE, P_COUNT };
+        enum Part { P_VTX, P_TRI, P_LOAD, P_TILE, P_MTX, P_FLUSH, P_COUNT };
         bool profiling = false;
+        uint32_t op_hist[256] = {};
         uint64_t part_us[P_COUNT] = {}, part_total_us = 0, part_lists = 0;
         struct PartTimer {
             VitaRenderer& r; Part p; uint64_t t0;
@@ -1338,6 +1364,7 @@ namespace {
                 mark_read(pc, 8, 1);
                 pc += 8;
                 const uint8_t op = w0 >> 24;
+                if (profiling) op_hist[op]++;
                 // What changes how vertices are lit or textured: the next vertex load works the
                 // context out again (otherwise loads in a row share it).
                 if (op == G_MTX || op == G_POPMTX || op == G_MOVEWORD || op == G_MOVEMEM ||
@@ -1503,6 +1530,7 @@ namespace {
                     }
                     case G_LOADBLOCK: {
                         PartTimer part_timer(*this, P_LOAD);
+                        if (__builtin_expect((debug_flags & 1048576) != 0, 0)) break; // debug: no texture loads
                         const Tile& t = tiles[(w1 >> 24) & 7];
                         load_block(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
                         stats.block_loads++;
@@ -1606,6 +1634,24 @@ namespace {
                 }
                 return r;
             }
+#if defined(__ARM_NEON)
+            if ((addr & 0xFFF) <= 0xFC0) {
+                // Its 64 bytes in one page: the integer halves (8 words, two elements each),
+                // then the fractions, joined and converted as 16.16 fixed point, four at a time.
+                const uint8_t* const b = mem(addr) + (addr & rdram_mask);
+                for (int i = 0; i < 4; i++) {
+                    const uint32x2_t hi = vld1_u32(reinterpret_cast<const uint32_t*>(b + i * 8));
+                    const uint32x2_t lo = vld1_u32(reinterpret_cast<const uint32_t*>(b + 32 + i * 8));
+                    // Element 2k: hi's high half and lo's high half; element 2k+1: the low halves.
+                    const uint32x2_t even = vorr_u32(vand_u32(hi, vdup_n_u32(0xFFFF0000u)), vshr_n_u32(lo, 16));
+                    const uint32x2_t odd = vorr_u32(vshl_n_u32(hi, 16), vand_u32(lo, vdup_n_u32(0xFFFFu)));
+                    const uint32x2x2_t z = vzip_u32(even, odd);
+                    const int32x4_t fixed = vreinterpretq_s32_u32(vcombine_u32(z.val[0], z.val[1]));
+                    vst1q_f32(r.m[i], vcvtq_n_f32_s32(fixed, 16));
+                }
+                return r;
+            }
+#endif
             // Two elements a word: the integer halves, then the fractions.
             for (int i = 0; i < 4; i++) {
                 for (int j = 0; j < 4; j += 2) {
@@ -1620,6 +1666,7 @@ namespace {
         }
 
         void load_matrix(uint32_t w0, uint32_t w1) {
+            PartTimer part_timer(*this, P_MTX);
             const uint32_t params = (w0 & 0xFF) ^ 1; // F3DEX2 inverts G_MTX_PUSH
             const bool push = params & 1, load = params & 2, proj = params & 4;
             mark_read(segmented(w1), 64, 4);
@@ -1967,7 +2014,17 @@ namespace {
                 slot_serial[vindex] = 0;
 
                 RspVertex& v = vertices[vindex];
-                const float rw = 1.0f / (std::fabs(cw) < 1e-6f ? 1e-6f : cw);
+                // 1/w for the culling's normalised coordinates: NEON's estimate and a refining step
+                // (a division costs the Cortex-A9 far more; culling needs no more precision).
+                const float wd = std::fabs(cw) < 1e-6f ? 1e-6f : cw;
+#if defined(__ARM_NEON)
+                float32x2_t est = vrecpe_f32(vdup_n_f32(wd));
+                est = vmul_f32(est, vrecps_f32(vdup_n_f32(wd), est));
+                est = vmul_f32(est, vrecps_f32(vdup_n_f32(wd), est));
+                const float rw = vget_lane_f32(est, 0);
+#else
+                const float rw = 1.0f / wd;
+#endif
                 v.ndc_x = cx * rw;
                 v.ndc_y = cy * rw;
                 // Through the viewport, into the framebuffer's normalised coordinates
@@ -2080,22 +2137,29 @@ namespace {
 
         struct { uint32_t tris = 0, clipped = 0, culled = 0; float sum = 0; } water_stats;
 
-        __attribute__((noinline)) void triangle(uint32_t ia, uint32_t ib, uint32_t ic) {
-            PartTimer part_timer(*this, P_TRI);
-            if (ia >= max_vertices || ib >= max_vertices || ic >= max_vertices) {
+        // A triangle: most (over half, in the intro's bar) are outside the view or facing away,
+        // turned down here inline; the rest drawn by triangle_draw.
+        inline __attribute__((always_inline)) void triangle(uint32_t ia, uint32_t ib, uint32_t ic) {
+            if (__builtin_expect(ia >= max_vertices || ib >= max_vertices || ic >= max_vertices, 0)) {
                 return;
             }
+            if ((vertices[ia].clip & vertices[ib].clip & vertices[ic].clip) && !(debug_flags & 1)) {
+                stats.tris_clipped++;
+                return;
+            }
+            // Debug (flag 524288): triangles not drawn (what they cost, against the frame's time).
+            if (__builtin_expect((debug_flags & 524288) != 0, 0)) return;
+            triangle_draw(ia, ib, ic);
+        }
+
+        __attribute__((noinline)) void triangle_draw(uint32_t ia, uint32_t ib, uint32_t ic) {
+            PartTimer part_timer(*this, P_TRI);
             const RspVertex* v[3] = { &vertices[ia], &vertices[ib], &vertices[ic] };
             // Debug (flag 512): the water's triangles (its combiner) in each display list.
-            const bool water = (debug_flags & 512) && combine_w0 == 0x26A004;
+            const bool water = __builtin_expect((debug_flags & 512) != 0, 0) && combine_w0 == 0x26A004;
             if (water) {
                 water_stats.tris++;
                 water_stats.sum += v[0]->ndc_x + v[1]->ndc_y + v[2]->w * 0.001f;
-            }
-            if (!(debug_flags & 1) && (v[0]->clip & v[1]->clip & v[2]->clip)) {
-                stats.tris_clipped++;
-                if (water) water_stats.clipped++;
-                return;
             }
             const uint32_t cull = (debug_flags & 2) ? 0 : geometry_mode & (G_CULL_FRONT | G_CULL_BACK);
             if (cull) {
@@ -3298,6 +3362,7 @@ namespace {
             if (batch.empty()) {
                 return;
             }
+            PartTimer part_timer(*this, P_FLUSH);
             const DrawState& s = batch_state;
             if (s.fb == nullptr || s.program == nullptr) {
                 batch.clear();
