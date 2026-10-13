@@ -155,6 +155,9 @@ namespace {
             }
             std::fprintf(stderr, "[vita] heartbeat: %u VIs, %u audio tasks, %u audio frames queued, running thread %d (pri %d, state %d)\n",
                 vi_count.load(), audio_tasks.load(), (unsigned)conker::vita::get_frames_remaining(), running_id, running_pri, running_state);
+            char renderer_line[160];
+            conker::vita::renderer_status(renderer_line, sizeof(renderer_line));
+            std::fprintf(stderr, "[vita] renderer: %s\n", renderer_line);
         }
         conker::vita::poll_input();
         conker::vita::bench::update();

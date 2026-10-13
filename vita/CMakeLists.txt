@@ -128,7 +128,8 @@ set_source_files_properties("${REPO_ROOT}/RecompiledFuncs/rsp/audio_ucode.cpp" P
 target_compile_options(ConkerVita PRIVATE -Wno-psabi -g)
 # The renderer's per-vertex and per-texel loops: full optimisation, and float maths
 # without IEEE corner cases (no NaNs or infinities reach them).
-set_source_files_properties(src/vita_renderer.cpp src/tmem.cpp PROPERTIES COMPILE_OPTIONS "-O3;-ffast-math")
+set_source_files_properties(src/vita_renderer.cpp PROPERTIES COMPILE_OPTIONS "-O3;-ffast-math")
+set_source_files_properties(src/tmem.cpp PROPERTIES COMPILE_OPTIONS "-O3;-ffast-math")
 
 # The renderer draws with sceGxm directly (src/gxm_backend.inc); OFF goes through vitaGL.
 option(CONKER_GXM "Draw with sceGxm directly instead of vitaGL" ON)

@@ -36,6 +36,10 @@ namespace conker {
         void update(uint8_t* rdram);
         // conker_config.cpp: whether the setting is 4:3.
         bool in_4x3();
+#if defined(__vita__)
+        // The Vita's renderer: whether the frame shown is a cutscene's, to show in 4:3.
+        bool pillarbox_now();
+#endif
     }
 
     // rom_versions.cpp: the ROMs the game accepts, and the versions of them kept for the
@@ -195,6 +199,8 @@ namespace conker {
 namespace conker {
     // How much wider than 4:3 the Vita build shows the 3D view (1: not at all).
     float vita_widescreen_ratio();
+    // Whether cutscenes are shown in 4:3 (the setting on, in widescreen).
+    bool vita_cutscene_4x3();
     // Which cutscenes L skips (host/src/cutscene_skip.cpp): 0 the game's rule, 1 any,
     // 2 also the ones the game never lets you skip.
     int cutscene_skip_mode();

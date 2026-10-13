@@ -76,6 +76,14 @@ namespace gxm {
 
     inline uint32_t align_up(uint32_t v, uint32_t a) { return (v + a - 1) & ~(a - 1); }
 
+    // A texture's wrapping, written into its control word as vitaGL does: the API refuses
+    // MIRROR on linear textures (SCE_GXM_ERROR_UNSUPPORTED, the texture left clamped: Conker's
+    // mirrored walls showed as stretched stripes on a Vita), but the hardware samples it.
+    inline void set_addr_modes(SceGxmTexture* texture, SceGxmTextureAddrMode u, SceGxmTextureAddrMode v) {
+        uint32_t* control = reinterpret_cast<uint32_t*>(texture);
+        control[0] = (control[0] & ~0x1F8u) | (((uint32_t)u << 6) & 0x1C0u) | (((uint32_t)v << 3) & 0x38u);
+    }
+
     SceGxmBlendFactor blend_factor(GLenum f) {
         switch (f) {
             case GL_ZERO: return SCE_GXM_BLEND_FACTOR_ZERO;
@@ -223,7 +231,9 @@ public:
     void submit(std::unique_ptr<CommandList> list) {
         ultramodern_trace("submit", (uint32_t)list->cmds.size());
         const uint64_t start = sceKernelGetProcessTimeWide();
+        const uint32_t stage = g_front_stage.exchange(3);
         sceKernelWaitSema(slot_sema, 1, nullptr);
+        g_front_stage = stage;
         {
             std::lock_guard lock{mutex};
             pending.push_back(std::move(list));
@@ -266,8 +276,8 @@ public:
     uint64_t op_us[OP_COUNT] = {};
     struct OpTimer {
         GxmBackend& b; Op op; uint64_t t0;
-        OpTimer(GxmBackend& b, Op op) : b(b), op(op), t0(sceKernelGetProcessTimeWide()) {}
-        ~OpTimer() { b.op_n[op]++; b.op_us[op] += sceKernelGetProcessTimeWide() - t0; }
+        OpTimer(GxmBackend& b, Op op) : b(b), op(op), t0(sceKernelGetProcessTimeWide()) { g_back_op = op; }
+        ~OpTimer() { b.op_n[op]++; b.op_us[op] += sceKernelGetProcessTimeWide() - t0; g_back_op = 99; }
     };
     uint32_t lists_run = 0;
     uint32_t fragment_patches = 0;
@@ -286,9 +296,56 @@ public:
         std::memset(op_us, 0, sizeof(op_us));
     }
 
+    void debug_finish() { drain(); }
+
+    // Debug (flag 8192): the GPU's own picture of the frame shown, read back once it finished,
+    // saved as a thumbnail (a quarter of each side; rows as in memory) in ux0:data/conker/probe.
+    uint32_t probes_saved = 0;
+    void probe_water(uint32_t tex_id, uint32_t present_number, uint32_t capture) {
+        if (tex_id >= textures.size() || !textures[tex_id].valid) return;
+        drain();
+        const Texture& t = textures[tex_id];
+        const uint32_t w = sceGxmTextureGetWidth(&t.tex), h = sceGxmTextureGetHeight(&t.tex);
+        const uint32_t stride = gxm::align_up(w, 8);
+        const uint32_t* px = (const uint32_t*)t.mem;
+        const uint32_t tw = w / 4, th = h / 4;
+        static std::vector<uint8_t> rgb;
+        rgb.resize((size_t)tw * th * 3);
+        for (uint32_t y = 0; y < th; y++) {
+            for (uint32_t x = 0; x < tw; x++) {
+                const uint32_t c = px[(y * 4) * stride + x * 4];
+                uint8_t* o = &rgb[((size_t)y * tw + x) * 3];
+                o[0] = c & 0xFF; o[1] = (c >> 8) & 0xFF; o[2] = (c >> 16) & 0xFF;
+            }
+        }
+        char path[96];
+        if (capture != 0) {
+            // A capture from the Debug page: its own folder.
+            std::snprintf(path, sizeof(path), CONKER_VITA_DATA_DIR "/probe/c%02u", capture);
+            std::error_code ec;
+            std::filesystem::create_directories(path, ec);
+            std::snprintf(path, sizeof(path), CONKER_VITA_DATA_DIR "/probe/c%02u/p%05u.ppm", capture, present_number);
+        }
+        else {
+            if (probes_saved == 0) { std::error_code ec; std::filesystem::create_directories(CONKER_VITA_DATA_DIR "/probe", ec); }
+            // A ring of the last 600 frames (the ones before quitting are kept).
+            std::snprintf(path, sizeof(path), CONKER_VITA_DATA_DIR "/probe/r%03u.ppm", present_number % 600);
+        }
+        if (FILE* f = std::fopen(path, "wb")) {
+            std::fprintf(f, "P6\n# present %u\n%u %u\n255\n", present_number, tw, th);
+            std::fwrite(rgb.data(), 1, rgb.size(), f);
+            std::fclose(f);
+            probes_saved++;
+        }
+        std::fprintf(stderr, "[probe] present %u tex %u saved\n", present_number, tex_id);
+    }
+
     void log_health() {
-        std::fprintf(stderr, "[gxm] frames %u submitted, %u shown; %u textures waiting to be freed\n",
-            frames_submitted, frames_shown.load(), (unsigned)deferred.size());
+        uint32_t live = 0;
+        for (const Texture& t : textures) live += t.valid ? 1 : 0;
+        std::fprintf(stderr, "[gxm] frames %u submitted, %u shown; %u textures waiting to be freed; %u textures, %u framebuffers; video memory %u KB in use, %u failed allocations\n",
+            frames_submitted, frames_shown.load(), (unsigned)deferred.size(), live, (unsigned)std::count_if(fbos.begin(), fbos.end(), [](const Fbo& f) { return f.valid; }),
+            heap_used >> 10, alloc_failures);
     }
 
     void create_texture(uint32_t id) {
@@ -322,8 +379,7 @@ public:
         const SceGxmTextureFilter filter = linear ? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
         sceGxmTextureSetMinFilter(&t.tex, filter);
         sceGxmTextureSetMagFilter(&t.tex, filter);
-        sceGxmTextureSetUAddrMode(&t.tex, gxm::addr_mode(wrap_s));
-        sceGxmTextureSetVAddrMode(&t.tex, gxm::addr_mode(wrap_t));
+        gxm::set_addr_modes(&t.tex, gxm::addr_mode(wrap_s), gxm::addr_mode(wrap_t));
         t.mem = mem;
         t.valid = true;
         invalidate_textures();
@@ -469,21 +525,22 @@ public:
             OpTimer verts_timer(*this, OP_VERTS);
             finish_vertices(list, d);
         }
+        if (d.debug) log_finished(list, d);
         bind_framebuffer(d.fbo, d.fb_w, d.fb_h);
-        if (!in_scene || cur_fbo != d.fbo || d.program >= programs.size()) return;
+        if (!in_scene || cur_fbo != d.fbo || d.program >= programs.size()) { dropped[0]++; return; }
         Program& p = programs[d.program];
-        if (!p.valid || d.icount == 0) return;
+        if (!p.valid || d.icount == 0) { dropped[p.valid ? 3 : 1]++; return; }
         // The data first: making room may wait for the GPU and start the scene again.
         GLVertex* v = (GLVertex*)ring_alloc(d.vcount * sizeof(GLVertex), 16);
         uint16_t* ix = (uint16_t*)ring_alloc(d.icount * 2, 16);
-        if (v == nullptr || ix == nullptr || !in_scene) return;
+        if (v == nullptr || ix == nullptr || !in_scene) { dropped[2]++; return; }
         std::memcpy(v, &list.verts[d.vbase], d.vcount * sizeof(GLVertex));
         std::memcpy(ix, &list.idx[d.ibase], d.icount * 2);
 
         set_scissor(d.scissor);
         apply_scissor();
         // Depth is written with GL's test on only: an always-passing test writes it.
-        set_depth(d.depth_test ? gxm::depth_func(d.depth_func) : SCE_GXM_DEPTH_FUNC_ALWAYS, d.depth_write, d.decal);
+        set_depth(d.depth_test ? gxm::depth_func(d.depth_func) : SCE_GXM_DEPTH_FUNC_ALWAYS, d.depth_write, d.decal ? (d.strong_decal ? 2 : 1) : 0);
         set_fragment(p, p.variant(*this, d.blend, d.blend_src, d.blend_dst, d.color_write));
         set_uniforms(p, d);
         set_texture(p.unit0, d.tex[0]);
@@ -549,6 +606,11 @@ public:
         gxm::DisplayData data{ display_mem[back].base };
         sceGxmDisplayQueueAddEntry(display_sync[shown_buffer], display_sync[back], &data);
         shown_buffer = back;
+        if (++presents_logged % 60 == 0 && (dropped[0] | dropped[1] | dropped[2] | drains)) {
+            std::fprintf(stderr, "[gxm] dropped draws: %u no scene, %u no program, %u no memory, %u empty; %u drains\n",
+                dropped[0], dropped[1], dropped[2], dropped[3], drains);
+            dropped[0] = dropped[1] = dropped[2] = dropped[3] = drains = 0;
+        }
         next_frame();
     }
 
@@ -634,6 +696,8 @@ private:
     SceGxmDepthStencilSurface display_depth{};
     SceGxmRenderTarget* display_rt = nullptr;
     uint32_t shown_buffer = 0;
+    // Debug: draws skipped (no scene, no program, no memory, no indices), GPU drains.
+    uint32_t dropped[4] = {}, drains = 0, presents_logged = 0;
 
     // The frames' vertices and indices: a third of a ring each, reused once that frame is shown.
     static constexpr uint32_t ring_parts = 3;
@@ -703,7 +767,7 @@ private:
         const uint32_t shown = frames_shown.load();
         size_t keep = 0;
         for (size_t i = 0; i < deferred.size(); i++) {
-            if ((int32_t)(shown - (deferred[i].first + 1)) >= 0) heap.free(deferred[i].second);
+            if ((int32_t)(shown - (deferred[i].first + 1)) >= 0) free_gpu(deferred[i].second);
             else deferred[keep++] = deferred[i];
         }
         deferred.resize(keep);
@@ -712,14 +776,30 @@ private:
     // Waits for the GPU to finish everything (the scene being drawn goes on afterwards).
     void drain() {
         OpTimer timer(*this, OP_WAIT);
+        drains++;
+        g_back_waiting = 2;
+        struct WaitEnd { ~WaitEnd() { g_back_waiting = 0; } } wait_end;
         const uint32_t fbo = cur_fbo;
         const bool reopen = in_scene && fbo != 0;
         end_scene();
         sceGxmFinish(ctx);
-        for (auto& d : deferred) heap.free(d.second);
+        for (auto& d : deferred) free_gpu(d.second);
         deferred.clear();
         ring_used = 0;
         if (reopen) bind_framebuffer(fbo, 0, 0);
+    }
+
+    // Video memory in use (for the health log), and allocations that failed.
+    uint32_t heap_used = 0, alloc_failures = 0;
+    std::unordered_map<void*, uint32_t> sizes;
+
+    void free_gpu(void* p) {
+        auto it = sizes.find(p);
+        if (it != sizes.end()) {
+            heap_used -= it->second;
+            sizes.erase(it);
+        }
+        heap.free(p);
     }
 
     void* alloc_gpu(uint32_t size, uint32_t align) {
@@ -732,7 +812,14 @@ private:
             drain();
             p = heap.alloc(size, align);
         }
-        if (p == nullptr) std::fprintf(stderr, "[gxm] out of GPU memory (%u KB)\n", size / 1024);
+        if (p == nullptr) {
+            std::fprintf(stderr, "[gxm] out of GPU memory (%u KB)\n", size / 1024);
+            alloc_failures++;
+        }
+        else {
+            heap_used += size;
+            sizes[p] = size;
+        }
         return p;
     }
 
@@ -755,9 +842,11 @@ private:
         ring_used = 0;
         {
             OpTimer timer(*this, OP_WAIT);
+            g_back_waiting = 1;
             while ((int32_t)(frames_shown.load() - (frames_submitted - (ring_parts - 1))) < 0) {
                 sceKernelDelayThread(100);
             }
+            g_back_waiting = 0;
         }
         free_shown();
     }
@@ -869,7 +958,7 @@ private:
         }
     }
 
-    void set_depth(SceGxmDepthFunc func, bool write, bool bias) {
+    void set_depth(SceGxmDepthFunc func, bool write, int bias) {
         if (st.depth_func != (int)func) {
             sceGxmSetFrontDepthFunc(ctx, func);
             st.depth_func = (int)func;
@@ -879,8 +968,9 @@ private:
             st.depth_write = write;
         }
         if (st.bias != (int)bias) {
-            // As glPolygonOffset(-1, -2): decals in front of what they lie on.
-            sceGxmSetFrontDepthBias(ctx, bias ? -1 : 0, bias ? -2 : 0);
+            // As glPolygonOffset(-1, -2): decals in front of what they lie on (2: a debug
+            // switch's larger bias).
+            sceGxmSetFrontDepthBias(ctx, bias == 2 ? -8 : bias ? -1 : 0, bias == 2 ? -64 : bias ? -2 : 0);
             st.bias = bias;
         }
     }
@@ -970,6 +1060,8 @@ private:
         }
         // In: the source's length; out: the program's.
         uint32_t size = (uint32_t)source.size();
+        g_back_compiling = 1;
+        struct CompileEnd { ~CompileEnd() { g_back_compiling = 0; } } compile_end;
         SceGxmProgram* out = shark_compile_shader_extended(source.c_str(), &size, fragment ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER,
             SHARK_OPT_FAST, SHARK_ENABLE, SHARK_DISABLE, SHARK_ENABLE);
         if (out == nullptr || size == 0) {
@@ -1044,6 +1136,7 @@ private:
                 free_lists.push_back(std::move(list));
             }
             done++;
+            g_back_lists++;
         }
     }
 
@@ -1126,26 +1219,40 @@ private:
         if (r < 0) std::fprintf(stderr, "[gxm] sceGxmShaderPatcherCreate: 0x%08X\n", (unsigned)r);
 
         // Memory: textures and surfaces in CDRAM, the frames' vertices in LPDDR.
-        const uint32_t cdram_free = mem.size_cdram;
+        // The screen's buffers first: the heap then takes what's left of CDRAM, less room
+        // for what the driver allocates itself (render targets). On a Vita the heap took
+        // the buffers' room and the screen stayed black (Vita3K has more to spare).
         const uint32_t display_bytes = gxm::align_up(screen_width * screen_height * 4, 256 * 1024);
-        const uint32_t heap_bytes = std::min<uint32_t>(96u << 20, (cdram_free - display_bytes * display_buffers - (4u << 20)) & ~((256u << 10) - 1));
-        if (!heap.init(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, heap_bytes, "gxm_heap")) {
-            std::fprintf(stderr, "[gxm] no CDRAM heap\n");
-        }
-        ring = gxm::alloc_mapped(lp, ring_parts * ring_part_size, "gxm_frame_ring");
-        gxm::Block seq = gxm::alloc_mapped(lp, 65536 * 2, "gxm_sequence");
-        sequence = (uint16_t*)seq.base;
-        for (uint32_t i = 0; i < 65536; i++) sequence[i] = (uint16_t)i;
-
-        // The screen.
         for (uint32_t i = 0; i < display_buffers; i++) {
             display_mem[i] = gxm::alloc_mapped(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, display_bytes, "gxm_display");
+            if (display_mem[i].base == nullptr) {
+                // No CDRAM left: the screen in main memory (slower, but it shows).
+                display_mem[i] = gxm::alloc_mapped(lp, display_bytes, "gxm_display_ram");
+            }
             std::memset(display_mem[i].base, 0, display_mem[i].size);
             sceGxmColorSurfaceInit(&display_surface[i], SCE_GXM_COLOR_FORMAT_A8B8G8R8, SCE_GXM_COLOR_SURFACE_LINEAR,
                 SCE_GXM_COLOR_SURFACE_SCALE_NONE, SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT, screen_width, screen_height, screen_width,
                 display_mem[i].base);
             sceGxmSyncObjectCreate(&display_sync[i]);
         }
+        SceKernelFreeMemorySizeInfo left{};
+        left.size = sizeof(left);
+        sceKernelGetFreeMemorySize(&left);
+        const uint32_t margin = 16u << 20;
+        uint32_t heap_bytes = left.size_cdram > margin + (16u << 20)
+            ? std::min<uint32_t>(96u << 20, (left.size_cdram - margin) & ~((256u << 10) - 1)) : (16u << 20);
+        // Smaller if CDRAM won't give that much in one block.
+        while (!heap.init(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, heap_bytes, "gxm_heap")) {
+            std::fprintf(stderr, "[gxm] no CDRAM heap of %u KB\n", heap_bytes >> 10);
+            if (heap_bytes <= (24u << 20)) break;
+            heap_bytes -= 8u << 20;
+        }
+        std::fprintf(stderr, "[gxm] CDRAM free after the screen %u KB: heap %u KB\n", left.size_cdram >> 10, heap_bytes >> 10);
+        ring = gxm::alloc_mapped(lp, ring_parts * ring_part_size, "gxm_frame_ring");
+        gxm::Block seq = gxm::alloc_mapped(lp, 65536 * 2, "gxm_sequence");
+        sequence = (uint16_t*)seq.base;
+        for (uint32_t i = 0; i < 65536; i++) sequence[i] = (uint16_t)i;
+
         {
             const uint32_t dw = gxm::align_up(screen_width, SCE_GXM_TILE_SIZEX), dh = gxm::align_up(screen_height, SCE_GXM_TILE_SIZEY);
             void* depth = alloc_gpu(dw * dh * 4, 4096);

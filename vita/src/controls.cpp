@@ -219,6 +219,7 @@ namespace conker::vita::controls {
             else if (!std::strcmp(key, "InvertY")) config.invert_y = std::atoi(a) != 0;
             else if (!std::strcmp(key, "StickThreshold")) config.stick_threshold = std::clamp(std::atoi(a), 20, 90);
             else if (!std::strcmp(key, "Widescreen")) config.widescreen = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "Cutscene4x3")) config.cutscene_4x3 = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Language")) config.language = std::clamp(std::atoi(a), 0, 1);
             else if (!std::strcmp(key, "Censored")) config.censored = std::atoi(a) != 0;
             else if (!std::strcmp(key, "CutsceneSkip")) config.cutscene_skip = std::clamp(std::atoi(a), 0, 2);
@@ -242,10 +243,10 @@ namespace conker::vita::controls {
             if (b != Input::None) std::fprintf(f, "%s = %s, %s\n", n64_names[i], input_names[(int)a], input_names[(int)b]);
             else std::fprintf(f, "%s = %s\n", n64_names[i], input_names[(int)a]);
         }
-        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nStickThreshold = %d\nWidescreen = %d\nCutsceneSkip = %d\nLanguage = %d\nCensored = %d\n",
+        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nCensored = %d\n",
             config.stick == StickSource::Right ? "Right" : "Left", config.deadzone, config.sensitivity,
             config.invert_x ? 1 : 0, config.invert_y ? 1 : 0, config.stick_threshold, config.widescreen ? 1 : 0,
-            config.cutscene_skip, config.language, config.censored ? 1 : 0);
+            config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.censored ? 1 : 0);
         std::fclose(f);
         return true;
     }
@@ -255,6 +256,11 @@ namespace conker {
     // The Vita's 960x544 over the N64's 4:3, when the widescreen setting is on.
     float vita_widescreen_ratio() {
         return vita::controls::current().widescreen ? (960.0f / 544.0f) / (4.0f / 3.0f) : 1.0f;
+    }
+
+    // Cutscenes in 4:3 (cutscene_aspect.cpp): the setting on, in widescreen.
+    bool vita_cutscene_4x3() {
+        return vita::controls::current().widescreen && vita::controls::current().cutscene_4x3;
     }
 
     int cutscene_skip_mode() {

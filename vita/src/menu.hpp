@@ -29,6 +29,8 @@ namespace conker::vita::menu {
     bool quit_requested();
     // The renderer's debug flags chosen on the Debug page (see vita_renderer.cpp).
     uint32_t debug_flags();
+    // The Debug page's "Capture 5 seconds": true once per request (the renderer takes it).
+    bool take_capture_request();
     // What to draw now (empty when closed).
     std::vector<Item> draw_list();
 }

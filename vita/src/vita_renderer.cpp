@@ -72,6 +72,13 @@ extern "C" uint32_t vgl_frag_rebuilds; // our vitaGL build counts them
 using namespace n64gfx;
 
 void ultramodern_trace(const char* what, uint32_t arg);
+extern "C" volatile bool ultramodern_vita_sync_dl;
+
+// Where the renderer's threads are (conker::vita::renderer_status): the front's stage (0 idle,
+// 1 reading a list, 2 showing a frame, 3 waiting to hand a list over), the back's operation
+// (its Op, 99 none), whether it compiles a shader or waits for the display, and lists done.
+static std::atomic<uint32_t> g_front_stage{0}, g_back_op{99}, g_back_compiling{0}, g_back_waiting{0}, g_back_lists{0}, g_front_lists{0};
+
 namespace {
     // ============================================================ settings
     constexpr int screen_width = 960;
@@ -191,6 +198,8 @@ namespace {
         // the target it draws to): made at the load, as TMEM holds a copy too.
         uint32_t snapshot_fbo = 0, snapshot_tex = 0;
         uint32_t last_drawn = 0; // present counter when last drawn into
+        uint32_t last_used = 0;  // ... when last read as a texture or shown
+        uint32_t water_draws = 0; // debug (flag 4096): the water's draws since its last clear
         // A sample of the RDRAM under the image when the GPU last drew it: while it's the
         // same, the CPU hasn't written there and the GPU's picture is the image.
         uint32_t rdram_sig = 0;
@@ -222,6 +231,7 @@ namespace {
     struct CachedTexture {
         uint32_t tex = 0;
         uint32_t last_used = 0;
+        uint32_t bytes = 0; // in video memory
     };
 
     // The decoded textures by their key: open addressing over a power of two, as an
@@ -722,6 +732,8 @@ namespace {
         uint32_t vbase = 0, ibase = 0, icount = 0; // in the list's vertex and index arrays
         uint32_t vcount = 0;
         bool raw = false; // its vertices are VertexIns to finish (triangles), not GLVertexes (rectangles)
+        bool debug = false; // debug: log its finished vertices
+        bool strong_decal = false; // debug (flag 262144): a larger depth bias for decals
     };
 
 #if CONKER_GXM
@@ -761,6 +773,13 @@ namespace {
             const VertexIn& v = in[i];
             GLVertex& g = out[i];
             g.x = v.x; g.y = v.y; g.z = v.z; g.w = v.w;
+            // The RDP clamps depth to its range; a GPU clips there instead (the Vita's does,
+            // Vita3K's doesn't): distant water at the far end of its depth range came and went
+            // with the camera's sway. Clamped as the N64 does.
+            if (g.w > 0.0f) {
+                const float lim = g.w * 0.99999f;
+                g.z = g.z > lim ? lim : (g.z < -lim ? -lim : g.z);
+            }
             float s, t;
             if (v.done) {
                 g.color[0] = v.r; g.color[1] = v.g; g.color[2] = v.b; g.color[3] = v.a;
@@ -783,6 +802,22 @@ namespace {
         }
     }
 
+
+    // Debug: a draw's finished vertices, summed up (from the back).
+    inline void log_finished(const CommandList& list, const DrawCmd& d) {
+        float a0 = 1e9f, a1 = -1e9f, u0 = 1e9f, u1 = -1e9f, v0 = 1e9f, v1 = -1e9f;
+        uint32_t r = 0, g = 0, b = 0;
+        for (uint32_t i = 0; i < d.vcount; i++) {
+            const GLVertex& v = list.verts[d.vbase + i];
+            a0 = std::min(a0, (float)v.color[3]); a1 = std::max(a1, (float)v.color[3]);
+            u0 = std::min(u0, v.u0); u1 = std::max(u1, v.u0);
+            v0 = std::min(v0, v.v0); v1 = std::max(v1, v.v0);
+            r += v.color[0]; g += v.color[1]; b += v.color[2];
+        }
+        const uint32_t n = d.vcount ? d.vcount : 1;
+        std::fprintf(stderr, "[back] draw n=%u tex %u,%u alpha[%.0f %.0f] rgb avg(%u %u %u) u[%.3f %.3f] v[%.3f %.3f] prim %.2f env %.2f primlod %.2f\n",
+            d.vcount, d.tex[0], d.tex[1], a0, a1, r / n, g / n, b / n, u0, u1, v0, v1, d.prim[3], d.env[3], d.primlod);
+    }
 
 #if CONKER_GXM
 #include "gxm_backend.inc"
@@ -908,6 +943,9 @@ namespace {
             std::memset(op_n, 0, sizeof(op_n));
             std::memset(op_us, 0, sizeof(op_us));
         }
+
+        void debug_finish() { glFinish(); }
+        void probe_water(uint32_t, uint32_t, uint32_t) {}
 
         void log_health() {
             const GLenum error = glGetError();
@@ -1510,12 +1548,69 @@ namespace {
         void enable_instant_present() override {}
 
         void send_dl(const OSTask* task) override {
+            // Debug (flag 32768): lists read on the gfx thread, as before (ultramodern events.cpp).
+            ultramodern_vita_sync_dl = !(debug_flags & 32768);
+            g_front_stage = 1;
+            struct StageEnd { ~StageEnd() { g_front_stage = 0; g_front_lists++; } } stage_end;
+            // The Debug page's "Capture 5 seconds", once its menu is closed: the GPU's frames as
+            // thumbnails (ux0:data/conker/probe/cNN) and two display lists' draws in the log.
+            const bool test_capture = (debug_flags & 65536) && dl_count == 1500; // debug: the same, from the flags file
+            if (capture_left == 0 && !conker::vita::menu::is_open() && (conker::vita::menu::take_capture_request() || test_capture)) {
+                capture_index++;
+                capture_left = 150;
+                dump_dl = dl_count;
+                dump_count = 2;
+                std::fprintf(stderr, "[capture] %u starts at present %u, display list %u\n", capture_index, present_count, dl_count);
+            }
             struct TraceScope { TraceScope() { ultramodern_trace("send_dl", 0); } ~TraceScope() { ultramodern_trace("send_dl end", 0); } } trace_scope;
             // Conker's microcode starts every task in its basic lighting mode (RT64's reset).
             cbfd_advanced_lighting = false;
             if (dl_count < 5 || dl_count % 120 == 0) {
                 std::fprintf(stderr, "[renderer] display list #%u at 0x%08X\n", dl_count, (uint32_t)task->t.data_ptr);
             }
+            // Debug (flag 2048): what the game writes in RDRAM while the list is read.
+            static std::vector<uint8_t> rdram_before;
+            const bool watch = (debug_flags & 2048) != 0 && (dl_count % 10) == 0;
+            if (watch) {
+                rdram_before.assign(rdram, rdram + 0x800000);
+                read_mark.assign(0x800000 / 64, 0);
+            }
+            watching = watch;
+            if (debug_flags & 1024) {
+                // Debug: a slow renderer (the Vita's front takes this long; Vita3K's less),
+                // to see what the game does meanwhile.
+                sceKernelDelayThread(20000);
+            }
+            struct WatchEnd {
+                const uint8_t* rdram; bool on; uint32_t dl; VitaRenderer* self;
+                ~WatchEnd() {
+                    if (!on) return;
+                    uint32_t ranges = 0, bytes = 0, start = ~0u, last = 0;
+                    std::string out;
+                    for (uint32_t a = 0x80000; a < 0x800000; a += 4) {
+                        if (std::memcmp(&rdram_before[a], rdram + a, 4) == 0) continue;
+                        bytes += 4;
+                        if (start != ~0u && a - last <= 64) { last = a; continue; }
+                        if (start != ~0u && ranges < 80) { char b[48]; std::snprintf(b, sizeof(b), " %06X-%06X", start, last + 3); out += b; }
+                        if (start != ~0u) ranges++;
+                        start = last = a;
+                    }
+                    if (start != ~0u) { if (ranges < 80) { char b[48]; std::snprintf(b, sizeof(b), " %06X-%06X", start, last + 3); out += b; } ranges++; }
+                    std::fprintf(stderr, "[rdram] dl %u: %u bytes written during the list, %u ranges:%s\n", dl, bytes, ranges, out.c_str());
+                    // Of those, what the list read.
+                    uint32_t hit[16] = {};
+                    std::string hits;
+                    for (uint32_t a = 0; a < 0x800000; a += 4) {
+                        const uint8_t kind = self->read_mark[a >> 6];
+                        if (!kind || std::memcmp(&rdram_before[a], rdram + a, 4) == 0) continue;
+                        hit[kind & 15] += 4;
+                        if (hits.size() < 600) { char b[32]; std::snprintf(b, sizeof(b), " %06X(%u)", a, kind); hits += b; }
+                    }
+                    std::fprintf(stderr, "[rdram] dl %u read-then-written: list %u, vertices %u, matrices %u, movemem %u bytes;%s\n", dl,
+                        hit[1] + hit[3] + hit[5] + hit[9], hit[2] + hit[6] + hit[10], hit[4] + hit[12], hit[8], hits.c_str());
+                    self->watching = false;
+                }
+            } watch_end{ rdram, watch, dl_count, this };
             const uint64_t dl_start = sceKernelGetProcessTimeWide();
             if (fb_trace_at >= 0 && dl_start >= (uint64_t)(fb_trace_at * 1e6)) {
                 fb_trace = true;
@@ -1527,7 +1622,9 @@ namespace {
                 std::fprintf(stderr, "[renderer] dumping display list #%u\n", dl_count);
             }
             update_debug_flags();
+            if (dumping()) std::fprintf(stderr, "[dl] start %u\n", dl_count);
             run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
+            if (dumping()) std::fprintf(stderr, "[dl] end %u\n", dl_count);
             flush();
             settle_signatures();
             write_back_framebuffers();
@@ -1555,6 +1652,15 @@ namespace {
                 std::fprintf(stderr, "[renderer] display list #%u: %u tris (+%u clipped, %u culled, %u without fb), %u rects, %u fills, %u draws, %u verts, cimg 0x%06X w%u\n",
                     dl_count, stats.tris, stats.tris_clipped, stats.tris_culled, stats.tris_nofb, stats.rects, stats.fills, stats.draws, stats.verts, cimg.addr, cimg.width);
             }
+            if (debug_flags & 512) {
+                std::fprintf(stderr, "[water] dl %u: %u tris (%u clipped, %u culled) sum %.3f; all %u tris\n", dl_count,
+                    water_stats.tris, water_stats.clipped, water_stats.culled, water_stats.sum, stats.tris);
+                water_stats = {};
+            }
+            if (debug_flags & 256) {
+                // Debug: the GPU finishes each display list before the next starts.
+                enqueue([](Backend& b, CommandList&) { b.debug_finish(); });
+            }
             stats = {};
             dl_count++;
         }
@@ -1562,6 +1668,8 @@ namespace {
         void send_dummy_workload(uint32_t) override {}
 
         void update_screen() override {
+            g_front_stage = 2;
+            struct StageEnd { ~StageEnd() { g_front_stage = 0; } } stage_end;
             struct TraceScope { TraceScope() { ultramodern_trace("update_screen", 0); } ~TraceScope() { ultramodern_trace("update_screen end", 0); } } trace_scope;
             flush();
             // Only when there's something new to show: the VI asks every 1/60s, the game
@@ -1574,12 +1682,15 @@ namespace {
                     return;
                 }
             }
+            present_fallback = origin == last_origin;
             same_origin_vis = 0;
             last_origin = origin;
             last_presented_dl = dl_count;
             present();
         }
         uint32_t same_origin_vis = 0;
+        uint32_t capture_index = 0, capture_left = 0; // "Capture 5 seconds": its number, presents to go
+        bool present_fallback = false;
         uint32_t last_origin = ~0u;
         uint32_t last_presented_dl = ~0u;
 
@@ -1735,6 +1846,16 @@ namespace {
         DrawState pending_state;
 
         // ======================================================== addresses
+        // Debug (flag 2048): what the list read, by 64-byte granule (1 list, 2 vertices,
+        // 4 matrices, 8 movemem), to match against what the game wrote meanwhile.
+        std::vector<uint8_t> read_mark;
+        bool watching = false;
+        void mark_read(uint32_t addr, uint32_t bytes, uint8_t kind) {
+            if (!watching) return;
+            addr &= 0x7FFFFF;
+            for (uint32_t g = addr >> 6; g <= ((addr + bytes - 1) >> 6) && g < read_mark.size(); g++) read_mark[g] |= kind;
+        }
+
         uint32_t segmented(uint32_t addr) const {
             return (segments[(addr >> 24) & 0xF] + (addr & 0x00FFFFFF)) & 0x00FFFFFF;
         }
@@ -1756,6 +1877,7 @@ namespace {
             for (uint32_t guard = 0; guard < 2000000; guard++) {
                 const uint32_t w0 = read32(rdram, pc);
                 const uint32_t w1 = read32(rdram, pc + 4);
+                mark_read(pc, 8, 1);
                 pc += 8;
                 const uint8_t op = w0 >> 24;
                 // What changes how vertices are lit or textured finishes the pending ones.
@@ -1773,6 +1895,7 @@ namespace {
                     case G_VTX: {
                         const uint32_t count = (w0 >> 12) & 0xFF;
                         const int32_t dst = (int32_t)((w0 >> 1) & 0x7F) - (int32_t)count;
+                        mark_read(segmented(w1), count * 16, 2);
                         load_vertices(segmented(w1), count, dst);
                         break;
                     }
@@ -2033,6 +2156,7 @@ namespace {
         void load_matrix(uint32_t w0, uint32_t w1) {
             const uint32_t params = (w0 & 0xFF) ^ 1; // F3DEX2 inverts G_MTX_PUSH
             const bool push = params & 1, load = params & 2, proj = params & 4;
+            mark_read(segmented(w1), 64, 4);
             const Mat4 m = read_matrix(segmented(w1));
             stats.matrices++;
             if (proj) {
@@ -2082,6 +2206,7 @@ namespace {
         void move_mem(uint32_t w0, uint32_t w1) {
             const uint32_t index = w0 & 0xFF;
             const uint32_t addr = segmented(w1);
+            mark_read(addr, ((w0 >> 16) & 0xFF) / 8 * 8 + 8, 8);
             switch (index) {
                 case G_MV_VIEWPORT:
                     // x and y are in 10.2; z isn't.
@@ -2479,13 +2604,22 @@ namespace {
             }
         }
 
+        struct { uint32_t tris = 0, clipped = 0, culled = 0; float sum = 0; } water_stats;
+
         __attribute__((noinline)) void triangle(uint32_t ia, uint32_t ib, uint32_t ic) {
             if (ia >= max_vertices || ib >= max_vertices || ic >= max_vertices) {
                 return;
             }
             const RspVertex* v[3] = { &vertices[ia], &vertices[ib], &vertices[ic] };
+            // Debug (flag 512): the water's triangles (its combiner) in each display list.
+            const bool water = (debug_flags & 512) && combine_w0 == 0x26A004;
+            if (water) {
+                water_stats.tris++;
+                water_stats.sum += v[0]->ndc_x + v[1]->ndc_y + v[2]->w * 0.001f;
+            }
             if (!(debug_flags & 1) && (v[0]->clip & v[1]->clip & v[2]->clip)) {
                 stats.tris_clipped++;
+                if (water) water_stats.clipped++;
                 return;
             }
             const uint32_t cull = (debug_flags & 2) ? 0 : geometry_mode & (G_CULL_FRONT | G_CULL_BACK);
@@ -2502,6 +2636,7 @@ namespace {
                 // N64 front faces wind counter-clockwise in normalised coordinates (y up).
                 if ((cull == G_CULL_FRONT && cross >= 0.0f) || (cull == G_CULL_BACK && cross <= 0.0f)) {
                     stats.tris_culled++;
+                    if (water) water_stats.culled++;
                     return;
                 }
             }
@@ -2526,6 +2661,14 @@ namespace {
             const uint32_t slots[3] = { ia, ib, ic };
             const uint16_t uv = current_uv_index(tt0, tt1);
             batch_raw = true;
+            // Through the near plane (a vertex at z < -w: behind the camera, or nearly): cut
+            // here, as the RSP's microcode does, so the GPU never gets a vertex at w <= 0. The
+            // Vita's GPU dropped such triangles (rivers running under the camera vanished in
+            // most frames); Vita3K draws them, which hid it. Debug flag 16384: uncut.
+            if (((v[0]->clip | v[1]->clip | v[2]->clip) & 16) && !(debug_flags & 16384)) {
+                clipped_triangle(v, slots, uv, flat, zprim, prim_z);
+                return;
+            }
             uint16_t* ix = batch.grow_indices(3);
             uint32_t first_vertex = ~0u;
             for (int i = 0; i < 3; i++) {
@@ -2568,6 +2711,108 @@ namespace {
                 // Flat shading: the triangle's first vertex's colour.
                 in.color_from = (flat && i > 0) ? first_vertex : ~0u;
                 if (i == 0) first_vertex = (uint32_t)(batch.base + at);
+            }
+        }
+
+        // A triangle vertex as the GL thread gets it (raw: lit and mapped there).
+        void make_vertex_in(VertexIn& in, uint32_t slot, const RspVertex& rv, uint16_t uv, bool zprim, float prim_z) {
+            if (pending_vertices & (1ull << slot)) {
+                const RawVertex& raw = raw_vertices[slot];
+                in.cx = raw.cx; in.cy = raw.cy; in.cz = raw.cz;
+                in.rs = raw.s; in.rt = raw.t; in.flag = raw.flag;
+                in.r = raw.r; in.g = raw.g; in.b = raw.b; in.a = raw.a;
+                int8_t n[2];
+                read_normal(slot, n);
+                in.n0 = n[0];
+                in.n1 = n[1];
+                in.done = 0;
+                in.ctx = slot_ctx[slot] == ctx_current ? current_ctx_index() : slot_ctx[slot];
+            }
+            else {
+                in.r = rv.r; in.g = rv.g; in.b = rv.b; in.a = rv.a;
+                in.s = rv.s; in.t = rv.t;
+                in.done = 1;
+            }
+            in.x = rv.x;
+            in.y = rv.y;
+            in.z = zprim ? prim_z * rv.w : rv.z;
+            in.w = rv.w;
+            in.uv = uv;
+            in.color_from = ~0u;
+        }
+
+        // A point along an edge, t of the way from a to b (clip space is linear in it).
+        static VertexIn lerp_vertex(const VertexIn& a, const VertexIn& b, float t, bool normals) {
+            auto lf = [t](float x, float y) { return x + (y - x) * t; };
+            auto li = [t](int x, int y) { return (int)std::lround(x + (y - x) * t); };
+            VertexIn o = a;
+            o.x = lf(a.x, b.x); o.y = lf(a.y, b.y); o.z = lf(a.z, b.z); o.w = lf(a.w, b.w);
+            o.cx = lf(a.cx, b.cx); o.cy = lf(a.cy, b.cy); o.cz = lf(a.cz, b.cz);
+            o.s = lf(a.s, b.s); o.t = lf(a.t, b.t);
+            o.rs = (int16_t)li(a.rs, b.rs); o.rt = (int16_t)li(a.rt, b.rt);
+            // Colours, or normals as signed bytes (lit without the advanced normals): each byte
+            // in its own sense.
+            const bool signed_bytes = normals;
+            auto lb = [&](uint8_t x, uint8_t y) {
+                return signed_bytes ? (uint8_t)(int8_t)li((int8_t)x, (int8_t)y) : (uint8_t)li(x, y);
+            };
+            o.r = lb(a.r, b.r); o.g = lb(a.g, b.g); o.b = lb(a.b, b.b);
+            o.a = (uint8_t)li(a.a, b.a);
+            o.n0 = (int8_t)li(a.n0, b.n0); o.n1 = (int8_t)li(a.n1, b.n1);
+            o.flag = (int16_t)((a.flag & 0xFF00) | ((uint8_t)(int8_t)li((int8_t)(a.flag & 0xFF), (int8_t)(b.flag & 0xFF))));
+            return o;
+        }
+
+        // A triangle through the near plane, cut to its part in front (a polygon of up to
+        // four vertices, drawn as a fan).
+        void clipped_triangle(const RspVertex* const v[3], const uint32_t slots[3], uint16_t uv, bool flat, bool zprim, float prim_z) {
+            VertexIn tri[3];
+            for (int i = 0; i < 3; i++) {
+                make_vertex_in(tri[i], slots[i], *v[i], uv, zprim, prim_z);
+            }
+            // Raw vertices carry normals in r, g, b when lit (or texture-generated) without
+            // the advanced lighting's own normals; otherwise colours.
+            bool normals = false;
+            if (!tri[0].done) {
+                const VertexContext& c = tri[0].ctx < list->ctxs.size() ? list->ctxs[tri[0].ctx] : vctx;
+                normals = (c.lighting || c.texgen) && !c.advanced;
+            }
+            // In front of the near plane (z = -w), a little in so w stays positive.
+            auto dist = [](const VertexIn& p) { return p.z + p.w - 1e-4f * std::fabs(p.w) - 1e-5f; };
+            VertexIn poly[4];
+            int n = 0;
+            for (int i = 0; i < 3; i++) {
+                const VertexIn& a = tri[i];
+                const VertexIn& b = tri[(i + 1) % 3];
+                const float da = dist(a), db = dist(b);
+                if (da >= 0.0f) poly[n++] = a;
+                if ((da >= 0.0f) != (db >= 0.0f) && n < 4) {
+                    poly[n++] = lerp_vertex(a, b, da / (da - db), normals);
+                }
+            }
+            if (n < 3) {
+                stats.tris_clipped++;
+                return;
+            }
+            if (batch.size() + 4 > 65535) {
+                flush();
+                batch_raw = true;
+            }
+            const uint16_t first = (uint16_t)batch.size();
+            VertexIn* out = batch.grow_in(n);
+            for (int i = 0; i < n; i++) {
+                out[i] = poly[i];
+                // Flat shading: every piece takes the first vertex's colour.
+                out[i].color_from = flat && i > 0 ? (uint32_t)(batch.base + first) : ~0u;
+            }
+            if (flat) {
+                out[0].r = tri[0].r; out[0].g = tri[0].g; out[0].b = tri[0].b; out[0].a = tri[0].a;
+            }
+            uint16_t* ix = batch.grow_indices((uint32_t)(n - 2) * 3);
+            for (int i = 1; i + 1 < n; i++) {
+                *ix++ = first;
+                *ix++ = (uint16_t)(first + i);
+                *ix++ = (uint16_t)(first + i + 1);
             }
         }
 
@@ -2729,6 +2974,9 @@ namespace {
                 std::fprintf(stderr, "[fill] cimg 0x%06X w%u rect (%d,%d)-(%d,%d) color %08X cycle %u\n", cimg.addr, cimg.width,
                     ulx / 4, uly / 4, lrx / 4, lry / 4, fill_color, (other_mode_h >> OMH_CYCLE_SHIFT) & 3);
             }
+            if ((debug_flags & 4096) && current_fb != nullptr && cimg.addr != zimg_addr && (lrx - ulx) >= 200 * 4) {
+                current_fb->water_draws = 0;
+            }
             const uint32_t cycle = (other_mode_h >> OMH_CYCLE_SHIFT) & 3;
             float x0 = ulx / 4.0f, y0 = uly / 4.0f, x1 = lrx / 4.0f, y1 = lry / 4.0f;
             if (cycle == CYCLE_FILL || cycle == CYCLE_COPY) {
@@ -2875,21 +3123,11 @@ namespace {
             const uint32_t gl_width = std::max<uint32_t>(width, (uint32_t)std::lround(width * ratio / 2.0f) * 2);
             auto it = framebuffers.find(addr);
             if (it != framebuffers.end() && it->second.width == width && it->second.gl_width == gl_width) {
+                it->second.last_used = present_count; // also an image only filled (the depth buffer's)
                 return &it->second;
             }
             if (it != framebuffers.end()) {
-                const Framebuffer old = it->second;
-                enqueue([old](Backend& b, CommandList&) {
-                    b.delete_framebuffer(old.fbo);
-                    b.delete_texture(old.tex);
-                    if (old.snapshot_tex) {
-                        b.delete_framebuffer(old.snapshot_fbo);
-                        b.delete_texture(old.snapshot_tex);
-                    }
-                });
-                free_tex_ids.push_back(old.tex);
-                if (old.snapshot_tex) free_tex_ids.push_back(old.snapshot_tex);
-                if (current_fb == &it->second) current_fb = nullptr;
+                release_framebuffer(it->second);
                 framebuffers.erase(it);
             }
             Framebuffer fb;
@@ -2900,6 +3138,7 @@ namespace {
             fb.siz = siz;
             fb.gl_width = gl_width;
             fb.off = (gl_width - width) * 0.5f;
+            fb.last_used = present_count;
             fb.tex = new_tex_id();
             fb.fbo = next_fbo_id++;
             enqueue([fbo = fb.fbo, tex = fb.tex, w = fb.gl_width, h = fb.height](Backend& b, CommandList&) {
@@ -2908,6 +3147,51 @@ namespace {
             std::fprintf(stderr, "[renderer] framebuffer 0x%06X %ux%u (GL %u wide)\n", addr, fb.width, fb.height, fb.gl_width);
             auto [inserted, _] = framebuffers.emplace(addr, fb);
             return &inserted->second;
+        }
+
+        // Frees a framebuffer's GL objects and forgets what points at it (the caller erases it).
+        void release_framebuffer(Framebuffer& fb) {
+            const Framebuffer old = fb;
+            enqueue([old](Backend& b, CommandList&) {
+                b.delete_framebuffer(old.fbo);
+                b.delete_texture(old.tex);
+                if (old.snapshot_tex) {
+                    b.delete_framebuffer(old.snapshot_fbo);
+                    b.delete_texture(old.snapshot_tex);
+                }
+            });
+            free_tex_ids.push_back(old.tex);
+            if (old.snapshot_tex) free_tex_ids.push_back(old.snapshot_tex);
+            if (current_fb == &fb) current_fb = nullptr;
+            if (batch_state.fb == &fb) batch_state.fb = nullptr;
+            for (FbLoad& l : fb_loads) {
+                if (l.fb == &fb) l = FbLoad{};
+            }
+            // Tiles may still name its texture.
+            for (TileTexture& tt : tile_textures) {
+                tt.generation = ~0u;
+            }
+            state_dirty = true;
+        }
+
+        // Framebuffers the game stopped using (another area's, a cutscene's): each holds a
+        // texture (and maybe a snapshot) in video memory, and every area change left more
+        // behind until textures failed to load (black) and the game crashed.
+        void evict_framebuffers(const Framebuffer* shown) {
+            constexpr uint32_t max_idle = 600; // presents (20 s at 30 frames a second)
+            for (auto it = framebuffers.begin(); it != framebuffers.end();) {
+                Framebuffer& fb = it->second;
+                const uint32_t used = std::max(fb.last_drawn, fb.last_used);
+                if (&fb != shown && &fb != current_fb && present_count - used > max_idle) {
+                    std::fprintf(stderr, "[renderer] freeing framebuffer 0x%06X %ux%u (idle %u presents)\n",
+                        fb.addr, fb.width, fb.height, present_count - used);
+                    release_framebuffer(fb);
+                    it = framebuffers.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
         }
 
         // ======================================================== framebuffer textures
@@ -2952,7 +3236,11 @@ namespace {
             Framebuffer* best = nullptr;
             for (auto& [base, fb] : framebuffers) {
                 const uint32_t bpp = fb.siz == SIZ_32b ? 4 : fb.siz == SIZ_16b ? 2 : 1;
-                if (addr < base || addr >= base + fb.width * fb.height * bpp) continue;
+                // Only the rows the GPU drew: the game's depth probes set a whole screen's
+                // width on a few pixels' worth of memory, and the textures right after them
+                // were taken for the probe's image (black, model to model as the camera turned).
+                const uint32_t rows = std::min(fb.rows_drawn, fb.height);
+                if (rows == 0 || addr < base || addr >= base + fb.width * rows * bpp) continue;
                 if (best == nullptr || base > best->addr) best = &fb;
             }
             return best;
@@ -2962,6 +3250,14 @@ namespace {
             Framebuffer* fb = framebuffer_containing(addr);
             if (fb == nullptr) return nullptr;
             if (fb->sig_pending) return fb; // being drawn in this display list
+            // Only one drawn lately: the GPU's drawing never reaches RDRAM, so memory an image
+            // once used and the game filled with textures since keeps its signature, and every
+            // texture loaded from there came out as that old (black) image: models and windmill
+            // sails black in some sessions, whichever addresses a cutscene had drawn to.
+            if (present_count - fb->last_drawn > 4) {
+                fb->gpu_valid = false;
+                return nullptr;
+            }
             if (fb->gpu_valid && rdram_signature(*fb) == fb->rdram_sig) return fb;
             fb->gpu_valid = false;
             return nullptr;
@@ -2988,6 +3284,7 @@ namespace {
             }
             // Pixels flushed so far are what the load sees.
             flush();
+            fb->last_used = present_count;
             const uint32_t bpp = fb->siz == SIZ_32b ? 4 : fb->siz == SIZ_16b ? 2 : 1;
             const uint32_t pixel = (timg.addr - fb->addr) / bpp;
             int32_t x0 = (int32_t)(pixel % fb->width), y0 = (int32_t)(pixel / fb->width);
@@ -3114,6 +3411,14 @@ namespace {
             if (CachedTexture* cached = texture_cache.find(key)) {
                 cached->last_used = present_count;
                 tt.tex = cached->tex;
+                if (dumping()) {
+                    std::vector<uint32_t> check((size_t)w * h);
+                    decode_tile(tmem, tile, w, h, tlut, check.data());
+                    uint32_t opaque = 0, clear = 0;
+                    for (uint32_t c : check) { const uint32_t a = c >> 24; opaque += a == 255; clear += a == 0; }
+                    std::fprintf(stderr, "[tex] hit id=%u hash=%08X fmt%u siz%u %ux%u tlut%u pal%u tmem%u alpha: %u opaque %u clear of %u\n",
+                        cached->tex, hash, tile.fmt, tile.siz, w, h, tlut, tile.palette, tile.tmem, opaque, clear, w * h);
+                }
                 return;
             }
             const uint64_t tex_start = sceKernelGetProcessTimeWide();
@@ -3121,10 +3426,18 @@ namespace {
             decode_tile(tmem, tile, w, h, tlut, texels.data());
             // Decoded here (TMEM is the front's), uploaded by the GL thread.
             const uint32_t tex = new_tex_id();
+            if (dumping()) {
+                uint32_t opaque = 0, clear = 0;
+                for (uint32_t c : texels) { const uint32_t a = c >> 24; opaque += a == 255; clear += a == 0; }
+                std::fprintf(stderr, "[tex] new id=%u hash=%08X fmt%u siz%u %ux%u tlut%u pal%u tmem%u alpha: %u opaque %u clear of %u\n",
+                    tex, hash, tile.fmt, tile.siz, w, h, tlut, tile.palette, tile.tmem, opaque, clear, w * h);
+            }
             enqueue([tex, w, h, texels = std::move(texels), linear, wrap_s, wrap_t](Backend& b, CommandList&) {
                 b.upload_texture(tex, w, h, texels.data(), linear, wrap_s, wrap_t);
             });
-            texture_cache.insert(key, CachedTexture{ tex, present_count });
+            const uint32_t bytes = ((w + 7) & ~7u) * h * 4;
+            texture_cache.insert(key, CachedTexture{ tex, present_count, bytes });
+            texture_bytes += bytes;
             tt.tex = tex;
             if (dump_textures && dumped_textures < 600) {
                 char path[160];
@@ -3141,16 +3454,33 @@ namespace {
             stats.texture_us += (uint32_t)(sceKernelGetProcessTimeWide() - tex_start);
         }
 
+        // The decoded textures' video memory: past this, the ones unused for a while go
+        // (with the framebuffers, it must fit the back's heap, 96 MB at most).
+        static constexpr uint32_t texture_budget = 40u << 20;
+        uint32_t texture_bytes = 0;
+        uint32_t last_evict = 0;
+
         void evict_textures() {
-            if (texture_cache.size() < 2048) {
+            if (texture_cache.size() < 2048 && texture_bytes < texture_budget) {
                 return;
             }
+            // Over the budget with everything in use: not again for a second.
+            if (present_count - last_evict < 30) {
+                return;
+            }
+            last_evict = present_count;
+            const size_t before = texture_cache.size();
+            const uint32_t bytes_before = texture_bytes;
             texture_cache.filter([this](const CachedTexture& t) {
                 if (present_count - t.last_used <= 120) return true;
                 enqueue([tex = t.tex](Backend& b, CommandList&) { b.delete_texture(tex); });
                 free_tex_ids.push_back(t.tex);
+                texture_bytes -= t.bytes;
                 return false;
             });
+            if (before != texture_cache.size()) std::fprintf(stderr, "[renderer] freed %u textures (%u KB); %u left (%u KB)\n",
+                (unsigned)(before - texture_cache.size()), (bytes_before - texture_bytes) >> 10,
+                (unsigned)texture_cache.size(), texture_bytes >> 10);
             // Tiles may still name deleted textures.
             for (TileTexture& tt : tile_textures) {
                 tt.generation = ~0u;
@@ -3169,7 +3499,8 @@ namespace {
         uint32_t dumped_textures = 0;
         // debug_flags: 1 no clip rejection, 2 no culling, 4 no depth test; the output of
         // the combiner's draws: 32 the first texture only, 64 the shade only, 128 without
-        // the blender. From the file debug_flags and the menu's Debug page.
+        // the blender; 256 the GPU finishes each display list. From the file debug_flags
+        // and the menu's Debug page.
         uint32_t file_debug_flags = [] {
             uint32_t n = 0;
             if (FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_flags", "r")) {
@@ -3366,7 +3697,11 @@ namespace {
                 alpha_mode = 1;
             }
             else if ((other_mode_l & OML_ALPHA_CVG_SEL) && !force_bl) {
-                alpha_mode = (other_mode_l & OML_CVG_X_ALPHA) ? 2 : 3;
+                // Coverage as the alpha: only times the alpha (CVG_X_ALPHA) can a pixel lose
+                // its coverage (RT64's RasterPS). On its own the combiner's alpha plays no part:
+                // the water's is its fog, and discarding by it made rivers vanish as the camera
+                // moved.
+                alpha_mode = (other_mode_l & OML_CVG_X_ALPHA) ? 2 : 0;
             }
             else if ((other_mode_l & OML_CVG_X_ALPHA) && !force_bl) {
                 // The coverage times the alpha: under 1/8 nothing is covered, nothing
@@ -3492,8 +3827,15 @@ namespace {
             s.fb->last_drawn = present_count;
             s.fb->sig_pending = true;
             s.fb->drawn_this_dl = true;
+            if ((debug_flags & 4096) && s.dbg_cc0 == 0x26A004 && s.blend) s.fb->water_draws++;
             mark_drawn(s.fb, s.scissor);
 
+            // Debug (flag 131072): no projected shadows (combiner FFE9FF), to tell them apart.
+            if ((debug_flags & 131072) && s.dbg_cc0 == 0xFFE9FF) {
+                batch.clear();
+                vertex_cache_serial++;
+                return;
+            }
             DrawCmd& d = list->draws.emplace_back();
             d.fbo = s.fb->fbo;
             d.fb_w = s.fb->gl_width;
@@ -3518,6 +3860,7 @@ namespace {
                 d.depth_write = false;
             }
             d.decal = s.decal;
+            d.strong_decal = (debug_flags & 262144) != 0;
             d.depth_func = s.depth_func;
             std::memcpy(d.scissor, s.scissor, sizeof(d.scissor));
             std::memcpy(d.prim, s.prim, sizeof(d.prim));
@@ -3533,6 +3876,7 @@ namespace {
             d.icount = (uint32_t)batch.index_count();
             d.vcount = (uint32_t)batch.size();
             d.raw = batch_raw;
+            d.debug = dumping();
             const uint32_t draw_index = (uint32_t)list->draws.size() - 1;
             enqueue([draw_index](Backend& b, CommandList& l) { b.draw(l, l.draws[draw_index]); });
 
@@ -3546,10 +3890,21 @@ namespace {
                 else {
                     v = batch[0];
                 }
-                std::fprintf(stderr, "[draw] n=%u cc=%06X:%08X omh=%06X oml=%08X geo=%06X tile=%u t0=%u t1=%u blend=%d(%X,%X) depth=%d/%d prim=%.2f,%.2f,%.2f,%.2f env=%.2f,%.2f,%.2f,%.2f v0 pos(%.2f %.2f %.2f %.2f) col(%u %u %u %u) uv(%.3f %.3f | %.3f %.3f)\n",
-                    (unsigned)batch.size(), s.dbg_cc0, s.dbg_cc1, s.dbg_omh, s.dbg_oml, s.dbg_geo, s.dbg_tile,
+                std::fprintf(stderr, "[draw] sc(%d %d %d %d) n=%u cc=%06X:%08X omh=%06X oml=%08X geo=%06X tile=%u t0=%u t1=%u blend=%d(%X,%X) depth=%d/%d prim=%.2f,%.2f,%.2f,%.2f env=%.2f,%.2f,%.2f,%.2f v0 pos(%.2f %.2f %.2f %.2f) col(%u %u %u %u) uv(%.3f %.3f | %.3f %.3f)\n",
+                    s.scissor[0], s.scissor[1], s.scissor[2], s.scissor[3], (unsigned)batch.size(), s.dbg_cc0, s.dbg_cc1, s.dbg_omh, s.dbg_oml, s.dbg_geo, s.dbg_tile,
                     s.tex[0], s.tex[1], s.blend, s.blend_src, s.blend_dst, s.depth_test, s.depth_write, s.prim[0], s.prim[1], s.prim[2], s.prim[3], s.env[0], s.env[1], s.env[2], s.env[3],
                     v.x, v.y, v.z, v.w, v.color[0], v.color[1], v.color[2], v.color[3], v.u0, v.v0, v.u1, v.v1);
+                if (batch_raw) {
+                    float x0 = 1e9f, x1 = -1e9f, y0 = 1e9f, y1 = -1e9f, wmin = 1e9f;
+                    for (size_t k = 0; k < batch.size(); k++) {
+                        const VertexIn& in = list->vin[batch.base + k];
+                        const float iw = std::fabs(in.w) > 1e-6f ? 1.0f / in.w : 0.0f;
+                        x0 = std::min(x0, in.x * iw); x1 = std::max(x1, in.x * iw);
+                        y0 = std::min(y0, in.y * iw); y1 = std::max(y1, in.y * iw);
+                        wmin = std::min(wmin, in.w);
+                    }
+                    std::fprintf(stderr, "        ndc x[%.2f %.2f] y[%.2f %.2f] wmin %.2f icount %u\n", x0, x1, y0, y1, wmin, (unsigned)batch.index_count());
+                }
                 const Tile& t = s.dbg_t0;
                 std::fprintf(stderr, "        tile%u fmt%u siz%u line%u tmem%u pal%u cms%u masks%u shifts%u cmt%u maskt%u shiftt%u ul(%u,%u) lr(%u,%u) scale(%.3f %.3f)\n",
                     s.dbg_tile & 7, t.fmt, t.siz, t.line, t.tmem, t.palette, t.cms, t.masks, t.shifts, t.cmt, t.maskt, t.shiftt, t.uls, t.ult, t.lrs, t.lrt, texture.scale_s, texture.scale_t);
@@ -3671,12 +4026,22 @@ namespace {
             float u0 = 0.0f;
             std::shared_ptr<std::vector<uint32_t>> cpu_frame;
             uint32_t cpu_w = 0, cpu_h = 0;
+            if (shown != nullptr) {
+                shown->last_used = present_count;
+            }
             if (shown != nullptr && present_count - shown->last_drawn <= 3) {
                 source_tex = shown->tex;
                 // Only what the game drew this frame (its scissor), as RT64 shows it.
                 if (shown->drawn_x1 > shown->drawn_x0 && shown->drawn_y1 > shown->drawn_y0) {
                     shown->shown_x0 = shown->drawn_x0; shown->shown_x1 = shown->drawn_x1;
                     shown->shown_y0 = shown->drawn_y0; shown->shown_y1 = shown->drawn_y1;
+                }
+                // A cutscene in 4:3: the N64's frame in the middle of the widened image (the
+                // game's cameras draw 2 pixels short of its sides, black on the N64), black
+                // bars beside it. Characters wait for their cue just past its edges.
+                if (shown->gl_width > shown->width && conker::cutscene_aspect::pillarbox_now()) {
+                    shown->shown_x0 = std::max(shown->shown_x0, shown->off + 2.0f);
+                    shown->shown_x1 = std::min(shown->shown_x1, shown->off + shown->width - 2.0f);
                 }
                 if (shown->shown_x1 > shown->shown_x0) {
                     // Half a texel in from the edges: the filtering mustn't reach outside.
@@ -3703,6 +4068,23 @@ namespace {
                 v1 = 0.0f;
             }
 
+            if (dumping() || (dump_dl != ~0u && dl_count - dump_dl < dump_count + 2)) {
+                std::fprintf(stderr, "[present] dl %u origin 0x%06X shown 0x%06X last_drawn %u present %u\n", dl_count, origin,
+                    shown ? shown->addr : 0, shown ? shown->last_drawn : 0, present_count);
+            }
+            if (((debug_flags & 8192) || capture_left > 0) && shown != nullptr) {
+                enqueue([tex = shown->tex, n = present_count, c = capture_left > 0 ? capture_index : 0u](Backend& b, CommandList&) {
+                    b.probe_water(tex, n, c);
+                });
+            }
+            if (capture_left > 0 && --capture_left == 0) {
+                std::fprintf(stderr, "[capture] %u ends at present %u\n", capture_index, present_count);
+            }
+            if (debug_flags & 4096) {
+                std::fprintf(stderr, "[showfb] present %u dl %u origin 0x%06X shown 0x%06X water %u last_drawn %u %s%s\n", present_count, dl_count,
+                    origin, shown ? shown->addr : 0, shown ? shown->water_draws : 0, shown ? shown->last_drawn : 0,
+                    present_fallback ? "fallback" : "swap", source_tex == TEX_CPU_FRAME ? " CPU" : "");
+            }
             const std::array<float, 4> uv = { u0, v0, u1, v1 };
             // The shown part's width on the screen: 4:3, or wider when the image is.
             float aspect = 4.0f / 3.0f;
@@ -3721,6 +4103,7 @@ namespace {
             }
             present_count++;
             evict_textures();
+            evict_framebuffers(shown);
         }
     };
 }
@@ -3728,4 +4111,9 @@ namespace {
 std::unique_ptr<ultramodern::renderer::RendererContext> conker::vita::create_renderer(
     uint8_t* rdram, ultramodern::renderer::WindowHandle, bool) {
     return std::make_unique<VitaRenderer>(rdram);
+}
+
+void conker::vita::renderer_status(char* out, unsigned size) {
+    std::snprintf(out, size, "front stage %u (lists %u), back op %u compiling %u waiting %u (lists %u)",
+        g_front_stage.load(), g_front_lists.load(), g_back_op.load(), g_back_compiling.load(), g_back_waiting.load(), g_back_lists.load());
 }

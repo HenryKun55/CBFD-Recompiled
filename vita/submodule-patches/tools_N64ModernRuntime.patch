@@ -1171,7 +1171,7 @@ index 8ca779e..1e250b8 100644
  #else
      std::quick_exit(exit_status);
 diff --git a/ultramodern/src/events.cpp b/ultramodern/src/events.cpp
-index 17d7a47..d29aedb 100644
+index 17d7a47..6376f6a 100644
 --- a/ultramodern/src/events.cpp
 +++ b/ultramodern/src/events.cpp
 @@ -6,6 +6,7 @@
@@ -1182,7 +1182,31 @@ index 17d7a47..d29aedb 100644
  #include <queue>
  #include <cstring>
  
-@@ -184,6 +185,31 @@ extern moodycamel::LightweightSemaphore graphics_shutdown_ready;
+@@ -26,6 +27,7 @@ void ultramodern::events::set_callbacks(const ultramodern::events::callbacks_t&
+ 
+ struct SpTaskAction {
+     OSTask task;
++    bool parsed = false; // the renderer already read the list (Vita: at submission)
+ };
+ 
+ struct ScreenUpdateAction {
+@@ -142,6 +144,15 @@ static struct {
+     moodycamel::ConcurrentQueue<OSThread*> deleted_threads{};
+ } events_context{};
+ 
++#if defined(__vita__)
++// The renderer, and its lock: the Vita reads a graphics task's list on the game's thread, as
++// it submits it (see submit_rsp_task); the gfx thread shows frames between those.
++static std::mutex vita_renderer_mutex;
++static ultramodern::renderer::RendererContext* vita_renderer = nullptr;
++// Debug: false reads lists on the gfx thread again (the renderer sets it from its flags).
++extern "C" { volatile bool ultramodern_vita_sync_dl = true; }
++#endif
++
+ ultramodern::renderer::ViRegs* ultramodern::renderer::get_vi_regs() {
+     return &events_context.vi.update_screen_regs;
+ }
+@@ -184,6 +195,31 @@ extern moodycamel::LightweightSemaphore graphics_shutdown_ready;
  
  void set_dummy_vi(bool odd);
  
@@ -1214,7 +1238,7 @@ index 17d7a47..d29aedb 100644
  void vi_thread_func() {
      ultramodern::set_native_thread_name("VI Thread");
      // This thread should be prioritized over every other thread in the application, as it's what allows
-@@ -247,6 +273,7 @@ void vi_thread_func() {
+@@ -247,6 +283,7 @@ void vi_thread_func() {
                      ultramodern::enqueue_external_message_src(cur_state->mq, cur_state->msg, false, ultramodern::EventMessageSource::Vi);
                  }
                  remaining_retraces = cur_state->retrace_count;
@@ -1222,7 +1246,7 @@ index 17d7a47..d29aedb 100644
              }
              if (events_context.ai.mq != NULLPTR) {
                  // Send a message to the VI queue, and do not set it to be requeued if the queue was full for the same reason as the VI message above.
-@@ -260,18 +287,42 @@ void vi_thread_func() {
+@@ -260,18 +297,42 @@ void vi_thread_func() {
      }
  }
  
@@ -1265,7 +1289,7 @@ index 17d7a47..d29aedb 100644
  void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_ready) {
      ultramodern::set_native_thread_name("SP Task Thread");
      ultramodern::set_native_thread_priority(ultramodern::ThreadPriority::Normal);
-@@ -288,6 +339,28 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
+@@ -288,6 +349,28 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
              return;
          }
  
@@ -1294,7 +1318,7 @@ index 17d7a47..d29aedb 100644
          if (!ultramodern::rsp::run_task(PASS_RDRAM task)) {
              fprintf(stderr, "Failed to execute task type: %" PRIu32 "\n", task->t.type);
              ULTRAMODERN_QUICK_EXIT();
-@@ -295,6 +368,7 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
+@@ -295,6 +378,7 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
  
          // Tell the game that the RSP has completed
          sp_complete();
@@ -1302,7 +1326,18 @@ index 17d7a47..d29aedb 100644
      }
  }
  
-@@ -362,8 +436,12 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -355,6 +439,10 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+ 
+     ultramodern::rsp::init();
+ 
++#if defined(__vita__)
++    vita_renderer = renderer_context.get();
++#endif
++
+     // Notify the caller thread that this thread is ready.
+     thread_ready->signal();
+ 
+@@ -362,8 +450,23 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
          // Try to pull an action from the queue
          Action action;
          if (events_context.action_queue.wait_dequeue_timed(action, 1ms)) {
@@ -1312,16 +1347,84 @@ index 17d7a47..d29aedb 100644
              // Determine the action type and act on it
              if (const auto* task_action = std::get_if<SpTaskAction>(&action)) {
 +                TRACE("gfx start", (uint32_t)task_action->task.t.data_ptr);
++                PTR(u64) displaylist = task_action->task.t.data_ptr;
++                if (task_action->parsed) {
++                    // Vita: the list was read at submission, the game held meanwhile.
++                    sp_complete();
++                    ultramodern::measure_input_latency();
++                    ultramodern::extensions::on_displaylist_submitted(displaylist);
++                    dp_complete();
++                    ultramodern::extensions::on_displaylist_parsed(displaylist);
++                    ultramodern::extensions::on_displaylist_completed(displaylist);
++                    continue;
++                }
                  // Tell the game that the RSP completed instantly. This will allow it to queue other task types, but it won't
                  // start another graphics task until the RDP is also complete. Games usually preserve the RSP inputs until the RDP
                  // is finished as well, so sending this early shouldn't be an issue in most cases.
-@@ -567,10 +645,13 @@ void ultramodern::submit_rsp_task(RDRAM_ARG PTR(OSTask) task_) {
+@@ -371,7 +474,6 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+                 sp_complete();
+                 ultramodern::measure_input_latency();
+ 
+-                PTR(u64) displaylist = task_action->task.t.data_ptr;
+                 ultramodern::extensions::on_displaylist_submitted(displaylist);
+ 
+                 [[maybe_unused]] auto renderer_start = std::chrono::high_resolution_clock::now();
+@@ -385,6 +487,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+                 // printf("Renderer ProcessDList time: %d us\n", static_cast<u32>(std::chrono::duration_cast<std::chrono::microseconds>(renderer_end - renderer_start).count()));
+             }
+             else if (const auto* screen_update_action = std::get_if<ScreenUpdateAction>(&action)) {
++#if defined(__vita__)
++                std::lock_guard renderer_lock{ vita_renderer_mutex };
++#endif
+                 events_context.vi.update_screen_regs = screen_update_action->regs;
+                 renderer_context->update_screen();
+                 display_refresh_rate = renderer_context->get_display_framerate();
+@@ -393,6 +498,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+             else if (const auto* config_action = std::get_if<UpdateConfigAction>(&action)) {
+                 (void)config_action;
+                 auto new_config = ultramodern::renderer::get_graphics_config();
++#if defined(__vita__)
++                std::lock_guard renderer_lock{ vita_renderer_mutex };
++#endif
+                 if (renderer_context->update_config(old_config, new_config)) {
+                     old_config = new_config;
+                 }
+@@ -404,6 +512,12 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+     }
+ 
+     graphics_shutdown_ready.wait();
++#if defined(__vita__)
++    {
++        std::lock_guard renderer_lock{ vita_renderer_mutex };
++        vita_renderer = nullptr;
++    }
++#endif
+     renderer_context->shutdown();
+ }
+ 
+@@ -567,10 +681,29 @@ void ultramodern::submit_rsp_task(RDRAM_ARG PTR(OSTask) task_) {
  
      // Send gfx tasks to the graphics action queue
      if (task->t.type == M_GFXTASK) {
 -        events_context.action_queue.enqueue(SpTaskAction{ *task });
 +        TRACE("gfx submit", (uint32_t)task_);
-+        bool ok = events_context.action_queue.enqueue(SpTaskAction{ *task });
++        SpTaskAction action{ *task };
++#if defined(__vita__)
++        // As an emulator does: the game's CPU waits while the RSP reads the list. The N64's RSP
++        // takes a few milliseconds, the Vita's renderer 20-30, and the game, running on, rewrote
++        // the next frame's vertices, matrices and lights (single-buffered) under it: water
++        // vanished, lit models went black. Read here, on the submitting thread, no game code
++        // runs until it returns; the GPU draws on its own thread, and the gfx thread signals
++        // the RSP and RDP done in order.
++        {
++            std::lock_guard renderer_lock{ vita_renderer_mutex };
++            if (vita_renderer != nullptr && ultramodern_vita_sync_dl) {
++                vita_renderer->send_dl(&action.task);
++                action.parsed = true;
++            }
++        }
++#endif
++        bool ok = events_context.action_queue.enqueue(action);
 +        debug_printf("[Events] gfx task submitted: %d, queue ~%u\n", (int)ok, (unsigned)events_context.action_queue.size_approx());
      }
      // Set all other tasks as the RSP task

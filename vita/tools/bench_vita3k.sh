@@ -63,7 +63,9 @@ if [ "${SHOT:-0}" -gt 0 ]; then
     [ "$WINID_BIN" -nt "$ROOT/tools/window_id.swift" ] || swiftc -O "$ROOT/tools/window_id.swift" -o "$WINID_BIN" || exit 1
 fi
 
-(VITA3K_CPU_MHZ=${MHZ:-444} "$VITA3K" -r CBFD00064 > "$LOG" 2>&1 &)
+# Our ux0, whatever Vita3K's config.yml points at: other ports' sessions share the
+# emulator and may set its pref-path to theirs (the local build reads VITA3K_PREF_PATH).
+(VITA3K_PREF_PATH="$UX0/../" VITA3K_CPU_MHZ=${MHZ:-444} "$VITA3K" -r CBFD00064 > "$LOG" 2>&1 &)
 echo "Vita3K started (CPU ${MHZ:-444} MHz), $SECS s run, waiting (timeout $TIMEOUT s)"
 started=0
 while [ $started -lt 30 ] && ! pgrep -f "Vita3K -r CBFD00064" > /dev/null; do

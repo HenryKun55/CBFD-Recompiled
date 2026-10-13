@@ -19,7 +19,9 @@
 // the new size, a moment with both sets in video memory, and in fullscreen at 4K a tester's game
 // crashed at those switches (issue #21). Drawing the bars changes nothing in the renderer.
 
+#include <atomic>
 #include <cstdint>
+#include <cstdio>
 
 #include "recomp.h"
 #include "ultramodern/config.hpp"
@@ -56,7 +58,7 @@ namespace {
     constexpr uint32_t bars_dl_slots = 32;
     uint32_t bars_dl_next = 0;
 
-    bool pillarbox = false; // this frame is a cutscene shown in 4:3
+    std::atomic<bool> pillarbox{false}; // this frame is a cutscene shown in 4:3
 
     bool cutscene_playing_now(uint8_t* rdram) {
         return MEM_BU(0, (gpr)(int32_t)cutscene_playing) == 1 || MEM_BU(1, (gpr)(int32_t)cutscene_playing) == 1;
@@ -83,15 +85,33 @@ void conker::cutscene_aspect::update(uint8_t* rdram) {
         recompui::config::get_graphics_config().get_option_value(recompui::config::graphics::options::ar_option)));
     pillarbox = conker::cutscene_aspect::in_4x3() && chosen != ultramodern::renderer::AspectRatio::Original &&
         cutscene_playing_now(rdram);
+#elif defined(__vita__)
+    // The Vita's renderer shows the 4:3 middle of its widened image (pillarbox_now).
+    const bool now = conker::vita_cutscene_4x3() && cutscene_playing_now(rdram);
+    if (now != pillarbox) {
+        std::fprintf(stderr, "[cutscene_aspect] %s\n", now ? "cutscene: 4:3" : "play: widescreen");
+    }
+    pillarbox = now;
 #else
     (void)rdram;
     pillarbox = false;
 #endif
 }
 
+#if defined(__vita__)
+bool conker::cutscene_aspect::pillarbox_now() {
+    return pillarbox;
+}
+#endif
+
 // func_1501878C at 0x15018C8C: the frame's display list is drawn; its full sync and end come next,
 // written at the pointer $s1 points to.
 extern "C" void conker_frame_dl_end(uint8_t* rdram, recomp_context* ctx) {
+#if defined(__vita__)
+    // RT64's extended commands aren't the Vita renderer's: it crops at the present instead.
+    (void)rdram; (void)ctx;
+    return;
+#endif
     if (!pillarbox) {
         return;
     }
