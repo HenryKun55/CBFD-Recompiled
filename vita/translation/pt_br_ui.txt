@@ -1,32 +1,44 @@
-# Conker: menus, telas e dicas em português (chaves de vita/tools/text_dump_ui.py).
+# Conker: menus, telas e dicas em português do Brasil, fiel ao jogo.
+# Conker: menus, telas, dicas, textos legais e créditos em português (fiel ao original).
 
-# assets1C/0000
+# assets1C/0000 block 0 (opções, multiplayer, telas legais; grade de letras e lista de palavrões dos cheats ficam em inglês)
 ca49069a = META
 f7d2780d = COLETA
-e361d0b2 = TRETA
+e361d0b2 = BRIGA
 46f98de2 = DONINHAS X TEDIZ
 6196e0e8 = TIMES
 aa60bcee = VIDAS
 472a1d49 = BOTS
+d833fd11 = ABAT.
+c9078274 = VOLT.
 299eb193 = IMAGEM
 0fda0134 = SOM
+5ed40761 = ESTÉR.
 bb65ab8b = MONO
 7ab89b39 = SURROUND
-0d83b2a3 = FONE
+0d83b2a3 = FONES
 12e8edf9 = IDIOMA
 13c6fc1a = INGLÊS
+5f8d09d8 = FRANC.
 52cc8727 = ALEMÃO
+0b5d0b2e = ESPANH.
 cca4dd22 = JAPONÊS
-536924a2 = TRETA BOMBA
+873a8884 = VER IA
+536924a2 = BRIGA BOMBA
+4a18b806 = CIVIL
+ac5b9a41 = ARTILHEIRO
+4d351d6e = RESOLUÇÃO MULTIPLAYER 1 JOGADOR
+d17daf62 = NORMAL
 fdb6d138 = NÍVEL IA
-dccc488e = JEGUE
+dccc488e = JECA
 45d4fda1 = LIXO
 394412a1 = {FDP}
 1dccb248 = EINSTEIN
 bccd3f6e = RADAR
+c5cdf5e1 = PTS
 7a88cf5c = SENTIDO
 d901e47d = PRA FRENTE
-43f23405 = DE RÉ
+43f23405 = PRA TRÁS
 17c76fcc = INFINITO
 ff200376 = BALÕES DE FALA
 a1aa1d0f = MACETE
@@ -36,90 +48,121 @@ a1aa1d0f = MACETE
 344920e3 = SEM CONTROLES
 c38394f2 = Multiplayer
 1f88c31b = Opções
+91994a93 = Metas
 aac9a62b = Jogo 3
 ddce96bd = Jogo 2
 44c7c707 = Jogo 1
-1e20752b = Macetes
+1e20752b = Usar macete
 e02cbe14 = PELA GRANA
-ba40e939 = CAGAÇO
+33cb5c06 = RAPTOR1
+ba40e939 = ARREPIO
 f3ac2816 = ATAQUE
 4cb99ba7 = PEGA BANDEIRA
-1251ac27 = PAU GERAL
-44ebe54c = GÁS NA CARA
+1251ac27 = GUERRÃO
+808fb235 = RACHA1
+44ebe54c = ATAQUE GÁS
+1986e38f = RACHA2
+fab5afbb = RIXA
 52420dd4 = TÚNEIS
 9ad066a8 = PRAIA
 c72b937a = RAPTOR
 abb64107 = COMEÇAR
+5b2be317 = Fase
+5ba5c229 = Início
+2741d15b = SemMeta
 516a51a4 = APAGA JOGO
 44193371 = CERTO? A SIM, B NÃO
 6e594cbe = QUAL JOGO?
 5665339d = MATA-MATA
-8297b5c8 = ESCOLHE O TIME
+8297b5c8 = ESCOLHA DO TIME
+5066dd51 = VERM.
 20c84ce4 = AZUIS
 a74f823d = VERDES
+442bbb28 = AMAREL.
 96c8131f = ESQUILOS
 7aed5fa3 = TEDIZ
+405f0d41 = DONINHA
 b342c5c3 = UGAS
 90775c72 = RAPTORS
 84a4218e = ESTATÍSTICAS
-fc0ea788 = BRABO
+238f3682 = IA LEVA
+fc0ea788 = VENCEU
 853630e4 =    GRANA
 a7bb958f = IA
 37dc5f5a = MIN
 abe98b76 = MINS
-9852b70b = SEM LIMITE
+9852b70b = ILIMITADO
+10457bc5 = COPYRIGHT RARE LTD 2001
 5e091351 = Pro bar
 307f51ca = Raptor
 9b970490 = Mata-mata
-0232be59 = Praia
-93b1e1e4 = BALANÇO
-94391b5d = DE NOVO
+0232be59 = Invasão
+545fabd1 = Rixa
+93b1e1e4 = SALDO
+94391b5d = OUTRA VEZ
 753f3a21 = SAIR
-8bf22056 = AJUSTAR
-3823d3c4 = Só pra {maiores}, {porra}
-db8ef288 = Enfia o rumble pak ]
+8bf22056 = CONFIG.
+b2b3e61a = TM & @ 2001 Rare
+f2d4260a = Lançado por
+cedd55ba = O logo Rareware é marca da Rare
+3f89b67e = Exibido em Dolby Surround.
+a3964817 = Dolby e o símbolo de duplo D são
+86ad45ee = marcas da Dolby Laboratories.
+81395a29 = Usa Miles Sound System. Copyright
+47e49816 = @1991-1999 RAD Game Tools, Inc.
+2f164004 = Reprodução MPEG Layer-3 fornecida com o
+b8ba974f = Miles Sound System da RAD Game Tools, Inc.
+0b60379b = Compressão de áudio MPEG Layer-3
+c8d78d61 = licenciada pela Fraunhofer IIS
+eb399a66 = e THOMPSON multimedia.
+3823d3c4 = Só para maiores
+db8ef288 = Insira rumble pak ]
+
+# assets1C/0000 block 1 (pausa)
 d5d0b693 = CONTINUA
-424ec64c = REINICIAR
-2d51ea52 = CAIR FORA
+424ec64c = REINICIAR JOGO
+2d51ea52 = DESISTIR
+
+# assets1C/0000 block 2 (capítulos)
 921bbe95 = RESSACA
-f3684e7b = AVE CAGONA
+f3684e7b = AVE MEDROSA
 480d3b6d = FRIGIDEIRADA
 f5f3afb7 = GÁRGULA
 56ab30ea = VENTO
 ded12fef = ABELHA
-2e33598b = CAGATÓRIO
-85f7546c = TOSADO
-2ddf20be = IIIHAAA!
-279a0ac5 = ESGOTO É {FODA}
-1f76f3dc = BOLÕES DE {BOSTA}
-be348829 = VESPAS {PUTAS}
+2e33598b = CASA COCÔ
+85f7546c = PODA
+2ddf20be = IIIRRÁ!
+279a0ac5 = ESGOTO É FOGO
+1f76f3dc = BOLONAS DE COCÔ
+be348829 = VESPAS VINGAM
 ca316c4b = SEU BARRIL
 1bad3142 = MORCEGOS
 2dc20529 = DONA BAGRE
 9ae1e650 = O PARÇA
-ccbe124f = COGS {PUTOS}
+ccbe124f = COGS VINGAM
 21c8ab9a = A COMBINAÇÃO
-cc7e9e98 = PORTÕES
-e18fc111 = O COVIL
-6fd4a533 = MIJÁSTICO
-6ae77e1c = FRIO DA {PORRA}
-e8405e2c = TOURIXE {PUTO}
+cc7e9e98 = PORTAS BLIND.
+e18fc111 = LAR DO CLANG
+6fd4a533 = {MIJÁSTICO}
+6ae77e1c = FRIO DE RACHAR
+e8405e2c = TOURIXE VINGA
 6043fdc2 = OS CAIPIRA
 de7dc418 = MARVIN
 a9b071f9 = FORCADO DOIDO
 b73a370a = DIAS DE SOL
-8b6cfca9 = BARRY & CIA
-de7ad4c1 = SE {FODEU}
-7acd9864 = TRETA DE FENO
+8b6cfca9 = BARRY + CIA
+de7ad4c1 = LUSTRE-SE
+7acd9864 = FENOGUERRA
 c70f74e1 = FRITURA HOJE
 b26a2f66 = ENTERRADA
-63f85d67 = SOPRANO
-f7f40736 = MILHO SOLTO
+63f85d67 = SOPRACÔ
+f7f40736 = MILHO DEBULHADO
 9c81489a = DOCE MELODIA
 f15a870c = BLUES DA PIA
 824a8eb5 = O BLEFE
 19044bd8 = UGA BUGA
-e2653534 = CACHACEIROS
+e2653534 = BEBUNS BOBOS
 35714f39 = OFERENDA
 c509f69d = RANHO
 2a22f5d9 = CULTO
@@ -145,12 +188,15 @@ ddb41d4b = O EXPERIMENTO
 73a99db9 = CONTAGEM
 3ff2c2c2 = PAZ, ENFIM!
 728abb3b = O MOINHO MORREU
-847343e3 = ENTRA NO VÉRTICE
+847343e3 = ENTRE NO VÉRTICE
 ec16fee8 = O COFRE
 eb648297 = CENA FINAL
+
+# assets1C/0000 block 3 (créditos; nomes ficam como estão)
 28518cce = Líder do Projeto e Game Design
 3f9660dc = Programador de Gameplay
-73f732b8 = Artista Chefe e Personagens
+3718a8c5 = Música Composta e Executada por
+73f732b8 = Artista-Chefe e Design de Pers.
 5359a8ca = Programadores Técnicos
 cde8d59b = Programador de Áudio
 50cb25eb = Programador de Tarefas e Câmera
@@ -162,80 +208,17 @@ d33c367e = Animadores 3-D e Artistas de Cenas
 2d0f077c = Design e Gravação de Som
 c58b1b53 = Game Design Adicional
 8af018c8 = Gráficos Adicionais
-23582f5f = Mais Programação de Tarefas
+23582f5f = Software de Tarefas Adicional
 6053170f = Roteiro das Cenas
 0313c06d = Vozes
-7d7a2ce2 = TESTADORES
-2ac4f67a = VALEU DEMAIS
-d8ab5065 = VALEU TAMBÉM
-29068c94 = Valeu demais a
-93443247 = pela hospedagem
-
-# assets1A/0000
-07a4494d = Ahh! Parece que é\num livro de instrução.\n<BA>
-4d3ac06b = Ah, saquei . . .\nÉ pras paradas\nmais cabulosas.\n<BA>
-64b6c3e4 = Ele aparece na\nprimeira vez que tu\nusa uma zona tensa.\n<BA>
-c1fdbb5c = E se precisar\ndele de novo, aperta\n<AF> e <A9> .\n<BA>
-34c9aa4d = Pra pular,\n só aperta <A9> .\n<BA>
-1a219742 = Aperta <AE>\nSeu <B4><B2><B5><B3> {otário}!\nAgora aperta <A8>. . .
-81afa273 = Serve pra mijar!
-8160a01b = Ah, não tô\nconseguindo\npassar daqui . . .\nTinha certeza\nque tinha algo . . .\n<BA>
-cc67bbbe = Ah é, agora\nlembrei!\nSegura <AE> que eu\n\nme agacho\n<BA>
-eafe5c3b = Então tá,\nque {porra} era?\nAh, é . . .\nAperta <A8> e\npulo bem alto\n<BA>
-1eee7b5f = Aí <A8> de novo pra fazer\naquele helicóptero de rabo.\nAí eu fico flutuando.\nHmm . . .  Moleza passar\npor esse buraco aí.\n<BA>
-7566b7df = Ô, tem certeza\nque tu entendeu?\n<A8> Sim <A9> Não
-1fca2d97 = E se eu tiver mais\nconfiança, aí eu\njá devo conseguir\nnadar debaixo d'água.\nHmmmm . . .\n Como é que faz isso?\nDeixa eu ver . . .\n<BA>
-4c84ec48 = Aperta <A9> que\neu afundo.\n<BA>
-98629efa = Aí, embaixo d'água,\nsegura <A9> pra\n eu nadar\n<BA>
-60968de8 = Aponta o <B1>\npra onde tu\nquer ir.\nÉ isso aí, {caralho}!\n<BA>
-
-# Menus, hints, the legal screen and the credits found later
-# assets1A/0000 entry 2
-96d44fff = A catapulta . . .\n<BA>
-968ac0dc = Deixa eu ver,\nMira com <B1>\n<BA>
-bfdf103f = e <AE> pra atirar.\n\n<BA>
-628de3b0 = Parece bem\nmoleza.
-# assets1A/0000 entry 44
-c409ab4a = Peraí . . . \nTá faltando\nalgo aqui. Eu não tinha um . . .\nAh . . .\nTenta apertar <A9>\npra ver no que\nque dá. . .\n<BA>
-# assets1C/0000 block 0
-5f8d09d8 = FRANC.
-0b5d0b2e = ESPANH.
-873a8884 = VER IA
-4a18b806 = CIVIL
-ac5b9a41 = ATIRADOR
-4d351d6e = 1 JOGADOR MULTIPLAYER RESOLUÇÃO
-c5cdf5e1 = PTS
-91994a93 = Metas
-808fb235 = RACHA1
-1986e38f = RACHA2
-fab5afbb = RIXA
-5b2be317 = Fase
-5ba5c229 = Início
-2741d15b = SemMeta
-238f3682 = IA LEVA
-545fabd1 = Rixa
-# assets1C/0000 block 0
-10457bc5 = COPYRIGHT RARE LTD 2001
-b2b3e61a = TM & @ 2001 Rare
-f2d4260a = Lançado por
-cedd55ba = O logo Rareware é uma marca da Rare
-3f89b67e = Som em Dolby Surround.
-a3964817 = Dolby e o símbolo duplo D são
-86ad45ee = marcas da Dolby Laboratories.
-81395a29 = Usa Miles Sound System. Copyright
-47e49816 = @1991-1999 RAD Game Tools, Inc.
-2f164004 = Reprodução MPEG Layer-3 fornecida pelo
-b8ba974f = Miles Sound System da RAD Game Tools, Inc.
-0b60379b = Compressão de áudio MPEG Layer-3
-c8d78d61 = licenciada pela Fraunhofer IIS
-eb399a66 = e THOMPSON multimedia.
-# assets1C/0000 block 3
-3718a8c5 = Música Composta e Executada por
 4eec7c79 = SUPORTE RARE
-a6f9a1b1 = VALEU, NOA
-8342d58b = TESTES DA NOA
-6867a137 = VALEU, NCL
-1620d233 = VALEU, NOE
+7d7a2ce2 = TESTES DE QUALIDADE
+a6f9a1b1 = AGRADEC. NOA
+8342d58b = TESTE DE PRODUTO NOA
+6867a137 = AGRADEC. NCL
+1620d233 = AGRADEC. NOE
+2ac4f67a = AGRADEC. ESPECIAIS
+d8ab5065 = OBRIGADO TAMBÉM A
 3ce491f4 = Composta por Robin Beanland
 07954b5a = Letra de Robin Beanland
 6723263c = Cantada por Chris Marlow
@@ -243,3 +226,40 @@ a6f9a1b1 = VALEU, NOA
 e3492486 = Composta por Henry Purcell
 4ffe8ac3 = Arranjo de Robin Beanland
 3fcbd242 = de
+29068c94 = Agradecimentos a
+93443247 = pela hospitalidade
+
+# assets1A/0000 hint-book pages
+
+# assets1A/0000 entry 2
+96d44fff = A catapulta . . .\n<BA>
+968ac0dc = Vamos ver,\nmire com <B1>\n<BA>
+bfdf103f = e <AE> pra atirar.\n\n<BA>
+628de3b0 = Parece bem\nsimples.
+
+# assets1A/0000 entry 3
+1a219742 = Aperte <AE>\nSeu <B4><B2><B5><B3> idiota!\nAgora aperte <A8>. . .
+81afa273 = Dá pra {mijar}!
+
+# assets1A/0000 entry 43
+8160a01b = Ah, parece que\nnão consigo\nir mais longe . . .\nTenho certeza\nque tinha algo . . .\n<BA>
+cc67bbbe = Ah é, agora\nlembrei!\nSegure <AE> e eu\n\nme agacho\n<BA>
+eafe5c3b = Então,\no que era mesmo?\nAh, é . . .\nAperte <A8> para\npular bem alto\n<BA>
+1eee7b5f = Aí <A8> de novo pra fazer\naquele lance de helicóptero\ncom o rabo. Aí eu flutuo.\nHmm . . .  Vou passar fácil\npor esse buraco.\n<BA>
+7566b7df = Hum, tem certeza\nque entendeu?\n<A8> Sim <A9> Não
+
+# assets1A/0000 entry 44
+c409ab4a = Peraí . . . \nTá faltando algo\naqui. Eu não tinha um . . .\nAh . . .\nTente apertar <A9>\npra ver o que\nacontece. . .\n<BA>
+
+# assets1A/0000 entry 66
+1fca2d97 = E se eu estiver bem\nmais confiante, já\ndevo conseguir\nnadar debaixo d'água.\nHmmmm . . .\n Como eu faço isso?\nDeixa eu ver . . .\n<BA>
+4c84ec48 = Aperte <A9> que\neu afundo.\n<BA>
+98629efa = Aí, debaixo d'água,\nsegure <A9> para\n eu nadar\n<BA>
+60968de8 = Aponte o <B1>\npara onde você\nquer ir.\nÉ isso aí!\n<BA>
+
+# assets1A/0000 entry 67
+07a4494d = Ahh !  Parece um\nlivro de instruções.\n<BA>
+4d3ac06b = Ah, entendi . . .\nÉ pras coisas\nmais complexas.\n<BA>
+64b6c3e4 = Ele aparece na\nprimeira vez que\nvocê usa uma zona\nmais complexa.\n<BA>
+c1fdbb5c = E se precisar\ndele de novo, aperte\n<AF> e <A9> .\n<BA>
+34c9aa4d = Para pular,\n só aperte <A9> .\n<BA>
