@@ -432,6 +432,7 @@ namespace {
         uint32_t real_fbo = 0, real_tex = 0;
         bool interp_ready = false; // tex holds an in-between frame not shown yet
         bool showing_real = false; // shown: real_tex
+        bool list_presented = false; // its frames were presented by its list, not at the VI
     };
 
     struct Program {
@@ -1565,6 +1566,14 @@ namespace {
             same_origin_vis = 0;
             last_origin = origin;
             last_presented_dl = dl_count;
+            // An interpolated list's frames went to the display as it was read (both).
+            if (!present_fallback) {
+                Framebuffer* shown = framebuffer_at(origin);
+                if (shown != nullptr && shown->list_presented) {
+                    shown->list_presented = false;
+                    return;
+                }
+            }
             present();
         }
         uint32_t same_origin_vis = 0;
@@ -2276,6 +2285,14 @@ namespace {
             fb->interp_ready = true;
             fb->showing_real = false;
             stats = {};
+            // Both frames to the display now, in turn: the display shows each for a VI (gxm
+            // display_callback waits for one). Presented at the VIs instead, they went late
+            // whenever this thread was still reading at one (the frame rate swaying round 60
+            // showed as a judder).
+            present(fb);
+            present(fb);
+            real_pending = false;
+            fb->list_presented = true;
             if (++interp_frames % 300 == 0) {
                 std::fprintf(stderr, "[interp] %u frames: matrices moved %u, left (far) %u; lists without one %u\n",
                     interp_frames, interp_lerped, interp_jumped, interp_skipped);
@@ -4489,12 +4506,8 @@ namespace {
         }
 
         // ======================================================== presenting
-        void present() {
-            const ultramodern::renderer::ViRegs* vi = ultramodern::renderer::get_vi_regs();
-            const uint32_t origin = vi->VI_ORIGIN_REG & 0x00FFFFFF;
-            const uint32_t vi_width = vi->VI_WIDTH_REG & 0xFFF;
-
-            // The framebuffer the VI shows: the one starting at or just before its origin.
+        // The framebuffer the VI shows: the one starting at or just before its origin.
+        Framebuffer* framebuffer_at(uint32_t origin) {
             Framebuffer* shown = nullptr;
             for (auto& [addr, fb] : framebuffers) {
                 const uint32_t size = fb.width * fb.height * (fb.siz == SIZ_32b ? 4 : 2);
@@ -4504,6 +4517,15 @@ namespace {
                     }
                 }
             }
+            return shown;
+        }
+
+        // Shows the framebuffer the VI points at (or force, an interpolated list's screen).
+        void present(Framebuffer* force = nullptr) {
+            const ultramodern::renderer::ViRegs* vi = ultramodern::renderer::get_vi_regs();
+            const uint32_t origin = vi->VI_ORIGIN_REG & 0x00FFFFFF;
+            const uint32_t vi_width = vi->VI_WIDTH_REG & 0xFFF;
+            Framebuffer* shown = force != nullptr ? force : framebuffer_at(origin);
 
             uint32_t source_tex = 0;
             float u1 = 1.0f, v0 = 0.0f, v1 = 1.0f;
