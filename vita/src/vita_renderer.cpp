@@ -2106,6 +2106,7 @@ namespace {
                     if (group_depth < max_groups) {
                         group_ids[group_depth] = w1;
                         group_counts[group_depth] = 0;
+                        group_loads[group_depth] = 0;
                     }
                     group_depth++;
                     return pc + 8;
@@ -2177,7 +2178,7 @@ namespace {
         float interp_t = 0.5f;
         static constexpr uint32_t interp_budget_us = 12000;
         static constexpr int max_groups = 16;
-        uint32_t group_ids[max_groups] = {}, group_counts[max_groups] = {};
+        uint32_t group_ids[max_groups] = {}, group_counts[max_groups] = {}, group_loads[max_groups] = {};
         int group_depth = 0;
         uint32_t loose_count = 0;
         struct MtxSlot { uint64_t key; uint32_t stamp; uint32_t index; };
@@ -2187,6 +2188,68 @@ namespace {
         std::vector<Mat4> mtx_values[2];
         uint32_t mtx_stamp[2] = { 1, 1 };
         int mtx_cur = 0; // this list's; the other holds the last list's
+        // An object's vertex loads (the game bends its joints on the CPU), paired the same way:
+        // the n-th load in the object, the same count. Positions as loaded (model space).
+        struct VtxSlot { uint64_t key; uint32_t stamp; uint32_t offset, count; };
+        static constexpr uint32_t vtx_slots = 8192;
+        std::vector<VtxSlot> vtx_table[2] = { std::vector<VtxSlot>(vtx_slots, VtxSlot{ 0, 0, 0, 0 }),
+                                              std::vector<VtxSlot>(vtx_slots, VtxSlot{ 0, 0, 0, 0 }) };
+        std::vector<int16_t> vtx_pos[2]; // x, y, z each
+        uint32_t interp_vtx_moved = 0, interp_vtx_kept = 0;
+        // The key of a load in an object (0: not in one).
+        uint64_t vertex_load_key(uint32_t count) {
+            if (group_depth <= 0) return 0;
+            const int d = std::min(group_depth, max_groups) - 1;
+            return ((uint64_t)group_ids[d] << 32) | ((uint64_t)(group_loads[d]++) << 8) | (count & 0xFF) | (1ull << 31);
+        }
+        // Records a load's positions (the real reading) or moves them halfway from the last
+        // frame's (the in-between one).
+        void interpolate_vertices(uint64_t key, SrcVertex* v, uint32_t count) {
+            if (key == 0 || count == 0) return;
+            const uint32_t slot0 = (uint32_t)((key * 0x9E3779B97F4A7C15ull) >> 51) & (vtx_slots - 1);
+            if (!interp_pass) {
+                const int c = mtx_cur;
+                for (uint32_t n = 0, i = slot0; n < vtx_slots; n++, i = (i + 1) & (vtx_slots - 1)) {
+                    VtxSlot& slot = vtx_table[c][i];
+                    if (slot.stamp != mtx_stamp[c] || slot.key == key) {
+                        slot.key = key;
+                        slot.stamp = mtx_stamp[c];
+                        slot.offset = (uint32_t)vtx_pos[c].size();
+                        slot.count = count;
+                        for (uint32_t k = 0; k < count; k++) {
+                            vtx_pos[c].push_back(v[k].x);
+                            vtx_pos[c].push_back(v[k].y);
+                            vtx_pos[c].push_back(v[k].z);
+                        }
+                        return;
+                    }
+                }
+                return;
+            }
+            const int p = mtx_cur ^ 1;
+            for (uint32_t n = 0, i = slot0; n < vtx_slots; n++, i = (i + 1) & (vtx_slots - 1)) {
+                const VtxSlot& slot = vtx_table[p][i];
+                if (slot.stamp != mtx_stamp[p]) return;
+                if (slot.key != key) continue;
+                if (slot.count != count) return;
+                const int16_t* last = &vtx_pos[p][slot.offset];
+                // A load whose vertices jumped (another shape in the same place) is left.
+                for (uint32_t k = 0; k < count * 3; k++) {
+                    const int16_t cur = k % 3 == 0 ? v[k / 3].x : k % 3 == 1 ? v[k / 3].y : v[k / 3].z;
+                    if (std::abs((int)cur - (int)last[k]) > 2048) {
+                        interp_vtx_kept++;
+                        return;
+                    }
+                }
+                for (uint32_t k = 0; k < count; k++) {
+                    v[k].x = (int16_t)(last[k * 3 + 0] + (int)std::lround((v[k].x - last[k * 3 + 0]) * interp_t));
+                    v[k].y = (int16_t)(last[k * 3 + 1] + (int)std::lround((v[k].y - last[k * 3 + 1]) * interp_t));
+                    v[k].z = (int16_t)(last[k * 3 + 2] + (int)std::lround((v[k].z - last[k * 3 + 2]) * interp_t));
+                }
+                interp_vtx_moved++;
+                return;
+            }
+        }
         Framebuffer* interp_main = nullptr; // the screen the last list drew
         uint32_t last_list_us = ~0u;
         bool real_pending = false;
@@ -2248,6 +2311,7 @@ namespace {
                 mtx_cur ^= 1;
                 mtx_stamp[mtx_cur]++;
                 mtx_values[mtx_cur].clear();
+                vtx_pos[mtx_cur].clear();
             }
         }
 
@@ -2294,9 +2358,9 @@ namespace {
             real_pending = false;
             fb->list_presented = true;
             if (++interp_frames % 300 == 0) {
-                std::fprintf(stderr, "[interp] %u frames: matrices moved %u, left (far) %u; lists without one %u\n",
-                    interp_frames, interp_lerped, interp_jumped, interp_skipped);
-                interp_lerped = interp_jumped = interp_skipped = 0;
+                std::fprintf(stderr, "[interp] %u frames: matrices moved %u, left (far) %u; vertex loads moved %u, left %u; lists without one %u\n",
+                    interp_frames, interp_lerped, interp_jumped, interp_vtx_moved, interp_vtx_kept, interp_skipped);
+                interp_lerped = interp_jumped = interp_skipped = interp_vtx_moved = interp_vtx_kept = 0;
             }
         }
     private:
@@ -2836,6 +2900,7 @@ namespace {
                 sv.fs = sv.ft = 0.0f;
                 slot_src[vindex] = (uint32_t)(base + i);
             }
+            interpolate_vertices(vertex_load_key(count), out, count);
             if (count > 0) {
                 slot_xformed &= ~((count >= 64 ? ~0ull : ((1ull << count) - 1)) << dst);
                 record_load((uint32_t)dst, count, (uint32_t)base);
