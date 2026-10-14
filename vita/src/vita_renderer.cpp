@@ -1405,7 +1405,8 @@ namespace {
             if (dumping()) std::fprintf(stderr, "[dl] start %u\n", dl_count);
             // One list in 300 timed by parts (two of them averaged in each [parts] line): the clock
             // costs ~1 us a read on the Vita, so a timed list takes half as long again.
-            profiling = (dl_count % 300) == 0;
+            profiling = (dl_count % (cmd_timing ? 30 : 300)) == 0;
+            last_op = -1;
             const bool timing_tail = profiling;
             const uint64_t list_t0 = profiling ? sceKernelGetProcessTimeWide() : 0;
             run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
@@ -1430,6 +1431,32 @@ namespace {
                         }
                         for (uint32_t& h : op_hist) h = 0;
                         std::fprintf(stderr, "[parts] commands a list:%s\n", top.c_str());
+                    }
+                    if (cmd_timing) {
+                        if (clock_us < 0.0) {
+                            const uint64_t c0 = sceKernelGetProcessTimeWide();
+                            for (int i = 0; i < 1000; i++) (void)sceKernelGetProcessTimeWide();
+                            clock_us = (sceKernelGetProcessTimeWide() - c0) / 1000.0;
+                        }
+                        std::string top;
+                        double sum = 0.0;
+                        for (int o = 0; o < 256; o++) sum += op_us[o] - clock_us * op_n[o];
+                        for (int k = 0; k < 16; k++) {
+                            int best = -1;
+                            double best_us = 0.0;
+                            for (int o = 0; o < 256; o++) {
+                                const double us = op_us[o] - clock_us * op_n[o];
+                                if (op_n[o] && us > best_us) { best = o; best_us = us; }
+                            }
+                            if (best < 0) break;
+                            char b[48];
+                            std::snprintf(b, sizeof(b), " %02X:%.2fms/%u", best, best_us / part_lists / 1000.0, op_n[best] / (unsigned)part_lists);
+                            top += b;
+                            op_n[best] = 0;
+                        }
+                        std::fprintf(stderr, "[cmdtime] list %.2f ms in commands (clock %.2f us, taken off):%s\n", sum / part_lists / 1000.0, clock_us, top.c_str());
+                        for (uint64_t& u : op_us) u = 0;
+                        for (uint32_t& n : op_n) n = 0;
                     }
                     part_lists = part_total_us = 0;
                     for (uint64_t& u : part_us) u = 0;
@@ -1720,6 +1747,19 @@ namespace {
         enum Part { P_VTX, P_TRI, P_LOAD, P_TILE, P_MTX, P_FLUSH, P_COUNT };
         bool profiling = false;
         uint32_t op_hist[256] = {};
+        // Debug (ux0:data/conker/debug_cmdtime): in the timed lists (one in 30 then), the time
+        // from each command to the next, by command (G_DL's and the branches' callees count apart),
+        // less the clock's own cost (worked out once).
+        const bool cmd_timing = [] {
+            FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_cmdtime", "r");
+            if (f) std::fclose(f);
+            return f != nullptr;
+        }();
+        uint64_t op_us[256] = {};
+        uint32_t op_n[256] = {};
+        int last_op = -1;
+        uint64_t last_op_t = 0;
+        double clock_us = -1.0;
         uint64_t part_us[P_COUNT] = {}, part_total_us = 0, part_lists = 0;
         struct PartTimer {
             VitaRenderer& r; Part p; uint64_t t0;
@@ -1771,7 +1811,15 @@ namespace {
                 mark_read(pc, 8, 1);
                 pc += 8;
                 const uint8_t op = w0 >> 24;
-                if (__builtin_expect(profiling, 0)) op_hist[op]++;
+                if (__builtin_expect(profiling, 0)) {
+                    op_hist[op]++;
+                    if (cmd_timing) {
+                        const uint64_t now = sceKernelGetProcessTimeWide();
+                        if (last_op >= 0) { op_us[last_op] += now - last_op_t; op_n[last_op]++; }
+                        last_op = op;
+                        last_op_t = now;
+                    }
+                }
                 if (context_ops[op]) {
                     vctx_dirty = true;
                     if (pending_vertices) {
