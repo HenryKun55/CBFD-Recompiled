@@ -149,10 +149,17 @@ target_link_libraries(ConkerVita PRIVATE
 target_link_options(ConkerVita PRIVATE -Wl,--gc-sections)
 
 vita_create_self(eboot.bin ConkerVita UNSAFE)
+# Every language's translation (vita/translation/<language>.txt and <language>_ui.txt).
+file(GLOB TRANSLATION_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/translation
+     ${CMAKE_CURRENT_SOURCE_DIR}/translation/*.txt)
+list(FILTER TRANSLATION_SOURCES EXCLUDE REGEX "^en_reference")
+set(TRANSLATION_FILES "")
+foreach(f ${TRANSLATION_SOURCES})
+    list(APPEND TRANSLATION_FILES FILE ${CMAKE_CURRENT_SOURCE_DIR}/translation/${f} translation/${f})
+endforeach()
 vita_create_vpk(ConkerVita.vpk ${VITA_TITLEID} eboot.bin
     VERSION ${VITA_VERSION}
     NAME ${VITA_APP_NAME}
     FILE sce_sys sce_sys
-    FILE ${CMAKE_CURRENT_SOURCE_DIR}/translation/pt_br.txt translation/pt_br.txt
-    FILE ${CMAKE_CURRENT_SOURCE_DIR}/translation/pt_br_ui.txt translation/pt_br_ui.txt
+    ${TRANSLATION_FILES}
 )

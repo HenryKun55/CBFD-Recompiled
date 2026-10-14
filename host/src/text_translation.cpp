@@ -36,6 +36,9 @@ namespace {
     constexpr uint32_t text_area_start = 0x80A00000;
     constexpr uint32_t text_area_end = 0x80C00000;
     constexpr size_t max_page = 1024;
+    // Bubble lines wider than this (the font's pixels) are wrapped: the English's widest
+    // lines are a little over it; the translations' measured up to ~240.
+    constexpr int bubble_wrap_px = 250;
 
     // Control codes: 0xA1 resets the colour, 0xA2..0xA5 red, green, blue, yellow, 0xA6 makes
     // what follows pulse; 0xB2..0xB5 are the swearing symbols.
@@ -55,25 +58,45 @@ namespace {
         return c ^ 0xFFFFFFFFu;
     }
 
-    // The font's letters (D_80085930) for Portuguese (the ones it lacks: conker_font_patch).
+    // The language whose text is being encoded (its font: conker_font_patch).
+    int encoding_language = 1;
+
+    // The font's letters (D_80085930): the original's accented capitals, less the ones a
+    // language's own letters were drawn over (conker_font_patch), plus those.
+    bool font_has(int language, uint32_t code) {
+        switch (code) {
+            case 0xC0: case 0xC2: case 0xC7: case 0xC9: case 0xC8: case 0xCA: case 0xCB:
+            case 0xCE: case 0xD4: case 0xDB: case 0xD9: case 0xDC:
+                return true;
+            case 0xC4: case 0xD6: case 0xDF: case 0xCF: // Ä Ö ß Ï: drawn over by some
+                return language != 1 && language != 2 && !(language == 5 && (code == 0xDF || code == 0xCF));
+            case 0xC1: case 0xCD: case 0xD3: case 0xDA: return language == 1 || language == 2; // Á Í Ó Ú
+            case 0xC3: case 0xD5: return language == 1;                                        // Ã Õ
+            case 0xD1: case 0x81: case 0x82: return language == 2;                             // Ñ ¡ ¿
+            case 0xCC: case 0xD2: return language == 5;                                        // Ì Ò
+        }
+        return false;
+    }
+
     void put_char(std::string& out, uint32_t cp) {
-        switch (cp) {
-            case 0xE1: case 0xC1: out += '\xC1'; return; // á (conker_font_patch's glyph)
-            case 0xE0: case 0xC0: out += '\xC0'; return; // à
-            case 0xE2: case 0xC2: out += '\xC2'; return; // â
-            case 0xE3: case 0xC3: out += '\xC3'; return; // ã (conker_font_patch's)
-            case 0xE7: case 0xC7: out += '\xC7'; return; // ç
-            case 0xE9: case 0xC9: out += '\xC9'; return; // é
-            case 0xEA: case 0xCA: out += '\xCA'; return; // ê
-            case 0xED: case 0xCD: out += '\xCD'; return; // í (conker_font_patch's)
-            case 0xF3: case 0xD3: out += '\xD3'; return; // ó (conker_font_patch's)
-            case 0xF4: case 0xD4: out += '\xD4'; return; // ô
-            case 0xF5: case 0xD5: out += '\xD5'; return; // õ (conker_font_patch's)
-            case 0xFA: case 0xDA: out += '\xDA'; return; // ú (conker_font_patch's)
-            case 0xFC: case 0xDC: out += '\xDC'; return; // ü
+        // Lowercase accented letters to their capitals (the font draws capitals).
+        if ((cp >= 0xE0 && cp <= 0xFE && cp != 0xF7) && cp != 0xDF) cp -= 0x20;
+        if (cp == 0xA1) cp = 0x81; // ¡ (0xA1 is the game's colour reset)
+        if (cp == 0xBF) cp = 0x82; // ¿
+        if (cp == 0x152 || cp == 0x153) { out += "oe"; return; } // œ
+        if (cp == 0xC6) { out += "ae"; return; }                  // æ
+        if (cp >= 0x80) {
+            if (font_has(encoding_language, cp)) { out += (char)cp; return; }
+            // Not in this language's font: the letter without its accent.
+            static const char* const base = "AAAAAAACEEEEIIIIDNOOOOOxOUUUUYTs";
+            if (cp >= 0xC0 && cp <= 0xDF) { out += (char)(base[cp - 0xC0] + ('a' - 'A') * (base[cp - 0xC0] >= 'A' && base[cp - 0xC0] <= 'Z')); return; }
+            if (cp == 0x81) { out += '!'; return; }
+            if (cp == 0x82) { out += '?'; return; }
+            out += '?';
+            return;
         }
         if (cp >= 'A' && cp <= 'Z') cp += 'a' - 'A'; // the dialogue is written in lowercase
-        out += cp < 0x80 ? (char)cp : '?';
+        out += (char)cp;
     }
 
     // A swear word in the game's symbols: one per letter, in one colour, pulsing.
@@ -128,7 +151,11 @@ namespace {
         bool loaded = false;
         std::unordered_map<uint32_t, std::string> pages; // key -> the line's text
     };
-    Language languages[2]; // by conker::text_language(): 0 English (none), 1 Portuguese
+    // By conker::text_language(): 0 English (the game's), 1 Portuguese, 2 Spanish, 3 French,
+    // 4 German, 5 Italian; files vita/translation/<name>.txt and <name>_ui.txt.
+    constexpr int language_count = 6;
+    const char* const language_files[language_count] = { "", "pt_br", "es", "fr", "de", "it" };
+    Language languages[language_count];
 
     void load(Language& lang, const char* name) {
         lang.loaded = true;
@@ -166,16 +193,20 @@ namespace {
 
 // True when it answered ($v0 = the translated page) and func_1516C878 returns at once.
 namespace {
-    void load_all(Language& lang) {
-        load(lang, "pt_br.txt");
+    void load_all(Language& lang, int language) {
+        const std::string name = language_files[language];
+        load(lang, (name + ".txt").c_str());
         lang.loaded = false;
-        load(lang, "pt_br_ui.txt"); // menus and hints
+        load(lang, (name + "_ui.txt").c_str()); // menus and hints
     }
 
     // A translation's game bytes in RDRAM past the game's 8 MB (kept while there's room).
-    uint32_t place(uint8_t* rdram, uint32_t key, const std::string& line, bool censored) {
-        const std::string text = encode(line.c_str(), censored, key);
-        const uint64_t slot = ((uint64_t)key << 1) | (censored ? 1 : 0);
+    std::string wrap_to_width(uint8_t* rdram, const std::string& text, int max_px);
+
+    uint32_t place(uint8_t* rdram, uint32_t key, const std::string& line, bool censored, int wrap_px = 0) {
+        std::string text = encode(line.c_str(), censored, key);
+        if (wrap_px > 0) text = wrap_to_width(rdram, text, wrap_px);
+        const uint64_t slot = ((uint64_t)key << 4) | ((uint64_t)encoding_language << 1) | (censored ? 1 : 0);
         auto at = placed.find(slot);
         uint32_t dest;
         if (at != placed.end()) {
@@ -207,12 +238,13 @@ extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
     const int language = 0;
     const bool censored = true;
 #endif
-    if (language <= 0 || language > 1) {
+    if (language <= 0 || language >= language_count) {
         return 0;
     }
+    encoding_language = language;
     Language& lang = languages[language];
     if (!lang.loaded) {
-        load_all(lang);
+        load_all(lang, language);
     }
     if (lang.pages.empty()) {
         return 0;
@@ -246,7 +278,7 @@ extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
         return 0;
     }
 
-    ctx->r2 = addr(place(rdram, key, found->second, censored));
+    ctx->r2 = addr(place(rdram, key, found->second, censored, bubble_wrap_px));
     return 1;
 }
 
@@ -279,9 +311,10 @@ extern "C" void conker_translate_ui(uint8_t* rdram, recomp_context* ctx) {
     const int language = 0;
     const bool censored = true;
 #endif
-    if (language <= 0 || language > 1) return;
+    if (language <= 0 || language >= language_count) return;
+    encoding_language = language;
     Language& lang = languages[language];
-    if (!lang.loaded) load_all(lang);
+    if (!lang.loaded) load_all(lang, language);
     if (lang.pages.empty()) return;
     const gpr fmt = ctx->r4;
     if ((uint32_t)fmt >> 24 != 0x80) return;
@@ -406,29 +439,109 @@ namespace {
     }
 
     // Glyph indices in the character table.
-    constexpr int g_a_grave = 70, g_a_circ = 72, g_e_acute = 76, g_i_circ = 84, g_o_circ = 88, g_u_circ = 90;
-    struct NewGlyph { int slot; uint8_t code; int base; bool tilde; };
-    constexpr NewGlyph new_glyphs[] = {
-        { 63, 0xC1, g_a_grave, false }, // Á (in Ä's place)
-        { 64, 0xC3, g_a_circ, true },   // Ã (ä)
-        { 65, 0xCD, g_i_circ, false },  // Í (Ö)
-        { 66, 0xD3, g_o_circ, false },  // Ó (ö)
-        { 69, 0xD5, g_o_circ, true },   // Õ (ß)
-        { 86, 0xDA, g_u_circ, false },  // Ú (Ï)
+    constexpr int g_n = 23, g_bang = 44, g_question = 55, g_a_grave = 70, g_a_circ = 72, g_e_acute = 76,
+                  g_i_circ = 84, g_o_circ = 88, g_u_circ = 90;
+
+    // A plain capital squashed into the accented ones' lines 4-11 (12 high), lines 1-3 left for
+    // an accent, as the font's own accented capitals are.
+    Glyph squashed(Glyph G) {
+        int r0 = -1, r1 = -1;
+        for (int r = 0; r < G.h && r < 14; r++) {
+            for (int x = 0; x < G.w; x++) if (G.px[r][x]) { if (r0 < 0) r0 = r; r1 = r; break; }
+        }
+        Glyph out = G;
+        out.h = 12;
+        out.yoff = 0;
+        for (auto& row : out.px) for (uint8_t& p : row) p = 0;
+        if (r0 < 0) return out;
+        const int n = r1 - r0 + 1;
+        for (int t = 0; t < 8; t++) {
+            const int a = r0 + t * n / 8, b = r0 + ((t + 1) * n - 1) / 8;
+            for (int x = 0; x < G.w; x++) out.px[4 + t][x] = std::max(G.px[a][x], G.px[b][x]);
+        }
+        return out;
+    }
+
+    // Upside down (¿ from ?, ¡ from !).
+    Glyph rotated(const Glyph& G) {
+        Glyph out = G;
+        for (int y = 0; y < G.h && y < 14; y++) {
+            for (int x = 0; x < G.w; x++) out.px[y][x] = G.px[G.h - 1 - y][G.w - 1 - x];
+        }
+        return out;
+    }
+
+    enum class Make { Accent, Squash, Rotate };
+    enum class Acc { Acute, Grave, Tilde, None };
+    struct NewGlyph { int slot; uint8_t code; int base; Make make; Acc acc; };
+    // Each language's letters, drawn over glyphs it never uses (Ä ä Ö ö ß Ï ï).
+    constexpr NewGlyph portuguese[] = {
+        { 63, 0xC1, g_a_grave, Make::Accent, Acc::Acute }, // Á
+        { 64, 0xC3, g_a_circ, Make::Accent, Acc::Tilde },  // Ã
+        { 65, 0xCD, g_i_circ, Make::Accent, Acc::Acute },  // Í
+        { 66, 0xD3, g_o_circ, Make::Accent, Acc::Acute },  // Ó
+        { 69, 0xD5, g_o_circ, Make::Accent, Acc::Tilde },  // Õ
+        { 86, 0xDA, g_u_circ, Make::Accent, Acc::Acute },  // Ú
     };
+    constexpr NewGlyph spanish[] = {
+        { 63, 0xC1, g_a_grave, Make::Accent, Acc::Acute }, // Á
+        { 64, 0xD1, g_n, Make::Squash, Acc::Tilde },       // Ñ
+        { 65, 0xCD, g_i_circ, Make::Accent, Acc::Acute },  // Í
+        { 66, 0xD3, g_o_circ, Make::Accent, Acc::Acute },  // Ó
+        { 69, 0x82, g_question, Make::Rotate, Acc::None }, // ¿
+        { 86, 0xDA, g_u_circ, Make::Accent, Acc::Acute },  // Ú
+        { 87, 0x81, g_bang, Make::Rotate, Acc::None },     // ¡
+    };
+    constexpr NewGlyph italian[] = {
+        { 69, 0xCC, g_i_circ, Make::Accent, Acc::Grave },  // Ì
+        { 86, 0xD2, g_o_circ, Make::Accent, Acc::Grave },  // Ò
+    };
+    constexpr int touched_slots[] = { 63, 64, 65, 66, 69, 86, 87 };
+
+    // The font as loaded, kept to put back when the language changes.
+    struct FontBackup { bool taken = false; uint8_t chars[95]; Glyph glyphs[95]; };
+    FontBackup original_font;
+    int font_language = -1;      // whose letters the font has now (-1: as loaded)
+    uint8_t font_marker = 0;     // the character table's slot 63 then (a reload changes it back)
 }
 
 extern "C" void conker_font_patch(uint8_t* rdram, recomp_context* ctx) {
     (void)ctx;
-    // Done already (and the font not loaded again): the table points at the new glyphs.
-    if ((uint8_t)MEM_B(new_glyphs[0].slot, addr(font_chars)) == new_glyphs[0].code) return;
+#if defined(__vita__)
+    const int language = conker::text_language();
+#else
+    const int language = 0;
+#endif
+    const uint8_t marker = (uint8_t)MEM_B(63, addr(font_chars));
+    if (font_language >= 0 && marker != font_marker) font_language = -1; // loaded again: as the game has it
+    if (language == font_language || (language == 0 && font_language < 0)) return;
     const uint32_t tex = (uint32_t)MEM_W(0, addr(font_textures));
     const uint32_t met = (uint32_t)MEM_W(0, addr(font_metrics));
     if ((tex >> 24) != 0x80 || (met >> 24) != 0x80) return;
-    const Accent acute = cut_accent(read_glyph(rdram, tex, met, g_e_acute));
-    // The ~ glyph squashed to the accent's three lines was a flat bar: a wave of our own.
-    Accent tilde;
-    {
+    if (font_language < 0) {
+        // As loaded: kept (again, if it was loaded anew).
+        for (int i = 0; i < 95; i++) {
+            original_font.chars[i] = (uint8_t)MEM_B(i, addr(font_chars));
+            original_font.glyphs[i] = read_glyph(rdram, tex, met, i);
+        }
+        original_font.taken = true;
+    }
+    else {
+        for (int slot : touched_slots) {
+            write_glyph(rdram, tex, met, slot, original_font.glyphs[slot]);
+            MEM_B(slot, addr(font_chars)) = (int8_t)original_font.chars[slot];
+        }
+    }
+    const NewGlyph* set = nullptr;
+    size_t count = 0;
+    if (language == 1) { set = portuguese; count = std::size(portuguese); }
+    else if (language == 2) { set = spanish; count = std::size(spanish); }
+    else if (language == 5) { set = italian; count = std::size(italian); }
+    if (count) {
+        const Accent acute = cut_accent(original_font.glyphs[g_e_acute]);
+        const Accent grave = cut_accent(original_font.glyphs[g_a_grave]);
+        // The ~ glyph squashed to the accent's three lines was a flat bar: a wave of our own.
+        Accent tilde;
         static const uint8_t wave[3][6] = {
             { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
             { 0x30, 0xD0, 0xF0, 0x70, 0x30, 0xE0 },
@@ -436,11 +549,88 @@ extern "C" void conker_font_patch(uint8_t* rdram, recomp_context* ctx) {
         };
         tilde.w = 6;
         for (int r = 0; r < 3; r++) for (int x = 0; x < 6; x++) tilde.px[r][x] = wave[r][x];
+        for (size_t i = 0; i < count; i++) {
+            const NewGlyph& n = set[i];
+            const Glyph& base = original_font.glyphs[n.base];
+            const Accent& acc = n.acc == Acc::Acute ? acute : n.acc == Acc::Grave ? grave : tilde;
+            Glyph G;
+            switch (n.make) {
+                case Make::Accent: G = with_accent(base, acc); break;
+                case Make::Squash: G = with_accent(squashed(base), acc); break;
+                case Make::Rotate: G = rotated(base); break;
+            }
+            write_glyph(rdram, tex, met, n.slot, G);
+            MEM_B(n.slot, addr(font_chars)) = (int8_t)n.code;
+        }
     }
-    if (acute.w == 0 || tilde.w == 0) return;
-    for (const NewGlyph& n : new_glyphs) {
-        const Glyph G = with_accent(read_glyph(rdram, tex, met, n.base), n.tilde ? tilde : acute);
-        write_glyph(rdram, tex, met, n.slot, G);
-        MEM_B(n.slot, addr(font_chars)) = (int8_t)n.code;
+    font_language = language;
+    font_marker = (uint8_t)MEM_B(63, addr(font_chars));
+}
+
+namespace {
+    // A character's width in the font's pixels, as func_15042C40 picks its glyph (a space is 4).
+    int char_width(uint8_t* rdram, uint8_t c) {
+        if (c == ' ') return 4;
+        if (c >= 0xA1 && c <= 0xA7) return 0;  // colours, pulsing
+        if (c >= 0xA8 && c < 0xC0) return 14;  // button icons, swearing symbols
+        if (c >= 'a' && c <= 'z') c -= 'a' - 'A';
+        const uint32_t met = (uint32_t)MEM_W(0, addr(font_metrics));
+        for (int i = 0; i < 95; i++) {
+            if ((uint8_t)MEM_B(i, addr(font_chars)) == c) {
+                return ((met >> 24) == 0x80 ? (uint8_t)MEM_B(i * 4, addr(met)) : 8) + 1;
+            }
+        }
+        return 8;
+    }
+
+    // A page's lines wrapped at spaces to fit max_px (the translations are longer than the
+    // English, and some lines were too wide for their bubbles): a line too wide is broken
+    // before the word that crosses the width, its leading spaces kept.
+    std::string wrap_to_width(uint8_t* rdram, const std::string& text, int max_px) {
+        std::string out;
+        size_t start = 0;
+        while (start <= text.size()) {
+            size_t end = text.find('\n', start);
+            if (end == std::string::npos) end = text.size();
+            const std::string line = text.substr(start, end - start);
+            int px = 0;
+            for (char c : line) px += char_width(rdram, (uint8_t)c);
+            if (px <= max_px) {
+                out += line;
+            }
+            else {
+                size_t lead = 0;
+                while (lead < line.size() && line[lead] == ' ') lead++;
+                std::string cur = line.substr(0, lead);
+                int cur_px = (int)lead * 4;
+                size_t i = lead;
+                bool first = true;
+                while (i < line.size()) {
+                    size_t j = line.find(' ', i);
+                    if (j == std::string::npos) j = line.size();
+                    const std::string word = line.substr(i, j - i);
+                    int word_px = 0;
+                    for (char c : word) word_px += char_width(rdram, (uint8_t)c);
+                    if (!first && cur_px + 4 + word_px > max_px) {
+                        out += cur;
+                        out += '\n';
+                        cur.clear();
+                        cur_px = 0;
+                        first = true;
+                    }
+                    if (!first) { cur += ' '; cur_px += 4; }
+                    cur += word;
+                    cur_px += word_px;
+                    first = false;
+                    i = j + 1;
+                }
+                out += cur;
+            }
+            if (end == text.size()) break;
+            out += '\n';
+            start = end + 1;
+        }
+        return out;
     }
 }
+

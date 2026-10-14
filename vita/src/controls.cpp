@@ -220,7 +220,7 @@ namespace conker::vita::controls {
             else if (!std::strcmp(key, "StickThreshold")) config.stick_threshold = std::clamp(std::atoi(a), 20, 90);
             else if (!std::strcmp(key, "Widescreen")) config.widescreen = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Cutscene4x3")) config.cutscene_4x3 = std::atoi(a) != 0;
-            else if (!std::strcmp(key, "Language")) config.language = std::clamp(std::atoi(a), 0, 1);
+            else if (!std::strcmp(key, "Language")) config.language = std::clamp(std::atoi(a), 0, 5);
             else if (!std::strcmp(key, "Censored")) config.censored = std::atoi(a) != 0;
             else if (!std::strcmp(key, "CutsceneSkip")) config.cutscene_skip = std::clamp(std::atoi(a), 0, 2);
         }

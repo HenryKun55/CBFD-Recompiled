@@ -100,6 +100,7 @@ namespace conker::vita::menu {
             return b;
         }
 
+        static const char* const language_names[] = { "English", "Portugues (Brasil)", "Espanol", "Francais", "Deutsch", "Italiano" };
         const char* main_items[] = { "Resume", "Controls", "Analog stick", "Widescreen", "Cutscenes", "Skip cutscenes (L)", "Language (text)", "Censorship", "Reset controls to defaults", "Debug", "Quit game" };
         constexpr int main_count = 11;
         const char* skip_names[] = { "Watched ones (original)", "Any", "Any, even unskippable" };
@@ -144,7 +145,7 @@ namespace conker::vita::menu {
             else if (page == Page::Main && cursor >= 4 && cursor <= 7 && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) {
                 if (cursor == 4) current().cutscene_4x3 = !current().cutscene_4x3;
                 else if (cursor == 5) current().cutscene_skip = (current().cutscene_skip + (button == SCE_CTRL_LEFT ? 2 : 1)) % 3;
-                else if (cursor == 6) current().language ^= 1;
+                else if (cursor == 6) current().language = (current().language + (button == SCE_CTRL_LEFT ? 5 : 1)) % 6;
                 else current().censored = !current().censored;
                 save();
             }
@@ -165,7 +166,7 @@ namespace conker::vita::menu {
                         case 3: current().widescreen = !current().widescreen; save(); break;
                         case 4: current().cutscene_4x3 = !current().cutscene_4x3; save(); break;
                         case 5: current().cutscene_skip = (current().cutscene_skip + 1) % 3; save(); break;
-                        case 6: current().language ^= 1; save(); break;
+                        case 6: current().language = (current().language + 1) % 6; save(); break;
                         case 7: current().censored = !current().censored; save(); break;
                         case 8: {
                             const Config kept = current();
@@ -313,7 +314,7 @@ namespace conker::vita::menu {
                 }
                 const char* value = i == 4 ? (!current().widescreen ? "4:3 (as the game)" : current().cutscene_4x3 ? "4:3 (original)" : "16:9")
                                   : i == 5 ? skip_names[current().cutscene_skip]
-                                  : i == 6 ? (current().language ? "Portugues (Brasil)" : "English")
+                                  : i == 6 ? language_names[std::clamp(current().language, 0, 5)]
                                   : i == 7 ? (current().censored ? "On (symbols)" : "Off (swear words)") : nullptr;
                 if (value) {
                     text(x0 + 360, list_y + i * row_h, value, i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
