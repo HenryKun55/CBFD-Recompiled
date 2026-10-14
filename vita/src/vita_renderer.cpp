@@ -914,6 +914,9 @@ namespace {
         uint16_t xform;         // the list's transform
         uint16_t done;          // modified (G_MODIFYVTX): r, g, b, a and fs, ft are final
         float fs, ft;
+        // Left as it is: load_deferred sets every field, and the list's src grown for each load
+        // (resize) was zeroed first, every frame (a good part of the reader's memset time).
+        SrcVertex() {}
     };
     // A load's transform: the matrix's rows and the viewport (into the framebuffer's
     // normalised coordinates, x of the 4:3 view in a wider image included).

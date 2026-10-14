@@ -301,6 +301,7 @@ static bool run_rsp_native() {
 }
 
 extern "C" volatile bool ultramodern_vita_double_draw;
+extern "C" volatile bool ultramodern_vita_late_signal;
 
 int main(int argc, char** argv) {
     std::set_terminate(on_terminate);
@@ -345,6 +346,11 @@ int main(int argc, char** argv) {
             ultramodern_vita_double_draw = true;
             std::fprintf(stderr, "[vita] every display list drawn twice (debug: the load of 60 fps)\n");
         }
+    }
+    if (FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_late_signal", "r")) {
+        std::fclose(f);
+        ultramodern_vita_late_signal = true;
+        std::fprintf(stderr, "[vita] the game hears a list is done when it's read (debug)\n");
     }
     conker::vita::bench::init();
     // The boot picture with the port's version, and the check for a newer release
