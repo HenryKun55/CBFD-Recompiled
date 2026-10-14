@@ -1,3 +1,9 @@
+diff --git a/N64Recomp b/N64Recomp
+--- a/N64Recomp
++++ b/N64Recomp
+@@ -1 +1 @@
+-Subproject commit 81213c1831fab2521a6a5459c67b63437d67e253
++Subproject commit 81213c1831fab2521a6a5459c67b63437d67e253-dirty
 diff --git a/librecomp/CMakeLists.txt b/librecomp/CMakeLists.txt
 index 716d48b..fed5660 100644
 --- a/librecomp/CMakeLists.txt
@@ -1171,7 +1177,7 @@ index 8ca779e..1e250b8 100644
  #else
      std::quick_exit(exit_status);
 diff --git a/ultramodern/src/events.cpp b/ultramodern/src/events.cpp
-index 17d7a47..3969eeb 100644
+index 17d7a47..c94de59 100644
 --- a/ultramodern/src/events.cpp
 +++ b/ultramodern/src/events.cpp
 @@ -6,6 +6,7 @@
@@ -1191,7 +1197,7 @@ index 17d7a47..3969eeb 100644
  };
  
  struct ScreenUpdateAction {
-@@ -142,6 +145,19 @@ static struct {
+@@ -142,6 +145,20 @@ static struct {
      moodycamel::ConcurrentQueue<OSThread*> deleted_threads{};
  } events_context{};
  
@@ -1203,6 +1209,7 @@ index 17d7a47..3969eeb 100644
 +// Debug: true reads lists on the game's thread (the renderer sets it from its flags); otherwise
 +// the renderer reads them on the gfx thread from a capture of the pages they read.
 +extern "C" { volatile bool ultramodern_vita_sync_dl = false; }
++extern "C" int ultramodern_vita_capture_early_dp(int index);
 +extern "C" int ultramodern_vita_capture(uint8_t* rdram, const OSTask* task);
 +extern "C" void ultramodern_vita_release_capture(int index);
 +extern "C" volatile int ultramodern_vita_current_capture;
@@ -1211,7 +1218,7 @@ index 17d7a47..3969eeb 100644
  ultramodern::renderer::ViRegs* ultramodern::renderer::get_vi_regs() {
      return &events_context.vi.update_screen_regs;
  }
-@@ -184,6 +200,31 @@ extern moodycamel::LightweightSemaphore graphics_shutdown_ready;
+@@ -184,6 +201,42 @@ extern moodycamel::LightweightSemaphore graphics_shutdown_ready;
  
  void set_dummy_vi(bool odd);
  
@@ -1228,6 +1235,17 @@ index 17d7a47..3969eeb 100644
 +    const uint32_t i = trace_pos.fetch_add(1) & 65535;
 +    trace_ring[i] = { sceKernelGetProcessTimeWide(), what, arg };
 +}
++// The events of the last us microseconds.
++void ultramodern_trace_dump_recent(uint64_t us) {
++    const uint32_t end = trace_pos.load();
++    const uint64_t now = sceKernelGetProcessTimeWide();
++    fprintf(stderr, "[trace] dump of the last %llu us (now %llu)\n", (unsigned long long)us, (unsigned long long)now);
++    for (uint32_t k = end > 65536 ? end - 65536 : 0; k < end; k++) {
++        const TraceEvent& e = trace_ring[k & 65535];
++        if (e.what == nullptr || e.t + us < now) continue;
++        fprintf(stderr, "[trace] %10llu %s %08X\n", (unsigned long long)e.t, e.what, e.arg);
++    }
++}
 +void ultramodern_trace_dump() {
 +    const uint32_t end = trace_pos.load();
 +    for (uint32_t k = end > 65536 ? end - 65536 : 0; k < end; k++) {
@@ -1243,7 +1261,7 @@ index 17d7a47..3969eeb 100644
  void vi_thread_func() {
      ultramodern::set_native_thread_name("VI Thread");
      // This thread should be prioritized over every other thread in the application, as it's what allows
-@@ -247,6 +288,7 @@ void vi_thread_func() {
+@@ -247,6 +300,7 @@ void vi_thread_func() {
                      ultramodern::enqueue_external_message_src(cur_state->mq, cur_state->msg, false, ultramodern::EventMessageSource::Vi);
                  }
                  remaining_retraces = cur_state->retrace_count;
@@ -1251,7 +1269,7 @@ index 17d7a47..3969eeb 100644
              }
              if (events_context.ai.mq != NULLPTR) {
                  // Send a message to the VI queue, and do not set it to be requeued if the queue was full for the same reason as the VI message above.
-@@ -260,18 +302,42 @@ void vi_thread_func() {
+@@ -260,18 +314,42 @@ void vi_thread_func() {
      }
  }
  
@@ -1294,7 +1312,7 @@ index 17d7a47..3969eeb 100644
  void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_ready) {
      ultramodern::set_native_thread_name("SP Task Thread");
      ultramodern::set_native_thread_priority(ultramodern::ThreadPriority::Normal);
-@@ -288,6 +354,28 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
+@@ -288,6 +366,28 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
              return;
          }
  
@@ -1323,7 +1341,7 @@ index 17d7a47..3969eeb 100644
          if (!ultramodern::rsp::run_task(PASS_RDRAM task)) {
              fprintf(stderr, "Failed to execute task type: %" PRIu32 "\n", task->t.type);
              ULTRAMODERN_QUICK_EXIT();
-@@ -295,6 +383,7 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
+@@ -295,6 +395,7 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
  
          // Tell the game that the RSP has completed
          sp_complete();
@@ -1331,7 +1349,7 @@ index 17d7a47..3969eeb 100644
      }
  }
  
-@@ -355,6 +444,10 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -355,6 +456,10 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
  
      ultramodern::rsp::init();
  
@@ -1342,7 +1360,7 @@ index 17d7a47..3969eeb 100644
      // Notify the caller thread that this thread is ready.
      thread_ready->signal();
  
-@@ -362,8 +455,23 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -362,8 +467,23 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
          // Try to pull an action from the queue
          Action action;
          if (events_context.action_queue.wait_dequeue_timed(action, 1ms)) {
@@ -1366,7 +1384,7 @@ index 17d7a47..3969eeb 100644
                  // Tell the game that the RSP completed instantly. This will allow it to queue other task types, but it won't
                  // start another graphics task until the RDP is also complete. Games usually preserve the RSP inputs until the RDP
                  // is finished as well, so sending this early shouldn't be an issue in most cases.
-@@ -371,11 +479,20 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -371,13 +491,35 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
                  sp_complete();
                  ultramodern::measure_input_latency();
  
@@ -1375,6 +1393,15 @@ index 17d7a47..3969eeb 100644
  
                  [[maybe_unused]] auto renderer_start = std::chrono::high_resolution_clock::now();
 +#if defined(__vita__)
++                // As on the N64, where the RDP draws while the CPU goes on: the list was captured
++                // as it was submitted (the renderer reads that copy), so the game hears the RDP is
++                // done now and makes its next frame while this one is read and drawn. Waiting for
++                // the read made a frame the game's time plus the read's (~48 ms in the rain: 15 fps).
++                const bool early_dp = ultramodern_vita_capture_early_dp(task_action->capture) != 0;
++                if (early_dp) {
++                    dp_complete();
++                }
++                TRACE("read start", 0);
 +                {
 +                    std::lock_guard renderer_lock{ vita_renderer_mutex };
 +                    ultramodern_vita_current_capture = task_action->capture;
@@ -1387,8 +1414,14 @@ index 17d7a47..3969eeb 100644
 +#endif
                  [[maybe_unused]] auto renderer_end = std::chrono::high_resolution_clock::now();
  
++#if defined(__vita__)
++                TRACE("read end", 0);
++                if (!early_dp)
++#endif
                  dp_complete();
-@@ -385,6 +502,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+                 // TODO hook the parsed event up to the actual parsing point when a callback is added to RT64.
+                 ultramodern::extensions::on_displaylist_parsed(displaylist);
+@@ -385,6 +527,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
                  // printf("Renderer ProcessDList time: %d us\n", static_cast<u32>(std::chrono::duration_cast<std::chrono::microseconds>(renderer_end - renderer_start).count()));
              }
              else if (const auto* screen_update_action = std::get_if<ScreenUpdateAction>(&action)) {
@@ -1398,7 +1431,7 @@ index 17d7a47..3969eeb 100644
                  events_context.vi.update_screen_regs = screen_update_action->regs;
                  renderer_context->update_screen();
                  display_refresh_rate = renderer_context->get_display_framerate();
-@@ -393,6 +513,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -393,6 +538,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
              else if (const auto* config_action = std::get_if<UpdateConfigAction>(&action)) {
                  (void)config_action;
                  auto new_config = ultramodern::renderer::get_graphics_config();
@@ -1408,7 +1441,7 @@ index 17d7a47..3969eeb 100644
                  if (renderer_context->update_config(old_config, new_config)) {
                      old_config = new_config;
                  }
-@@ -404,6 +527,12 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -404,6 +552,12 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
      }
  
      graphics_shutdown_ready.wait();
@@ -1421,7 +1454,7 @@ index 17d7a47..3969eeb 100644
      renderer_context->shutdown();
  }
  
-@@ -567,10 +696,33 @@ void ultramodern::submit_rsp_task(RDRAM_ARG PTR(OSTask) task_) {
+@@ -567,10 +721,33 @@ void ultramodern::submit_rsp_task(RDRAM_ARG PTR(OSTask) task_) {
  
      // Send gfx tasks to the graphics action queue
      if (task->t.type == M_GFXTASK) {
@@ -1457,10 +1490,10 @@ index 17d7a47..3969eeb 100644
      }
  }
 diff --git a/ultramodern/src/mesgqueue.cpp b/ultramodern/src/mesgqueue.cpp
-index 9944a02..1feb369 100644
+index 9944a02..7afbd85 100644
 --- a/ultramodern/src/mesgqueue.cpp
 +++ b/ultramodern/src/mesgqueue.cpp
-@@ -28,6 +28,7 @@ void ultramodern::set_message_queue_control(const ultramodern::MessageQueueContr
+@@ -28,10 +28,18 @@ void ultramodern::set_message_queue_control(const ultramodern::MessageQueueContr
  }
  
  void ultramodern::enqueue_external_message_src(PTR(OSMesgQueue) mq, OSMesg msg, bool jam, EventMessageSource src) {
@@ -1468,7 +1501,18 @@ index 9944a02..1feb369 100644
      external_messages.enqueue({mq, msg, jam, requeue_enabled[static_cast<int>(src)]});
  }
  
-@@ -41,8 +42,9 @@ void dequeue_external_messages(RDRAM_ARG1) {
++#if defined(__vita__)
++void ultramodern_trace(const char* what, uint32_t arg);
++#endif
++
+ void ultramodern::enqueue_external_message(PTR(OSMesgQueue) mq, OSMesg msg, bool jam, bool requeue_if_blocked) {
++#if defined(__vita__)
++    ultramodern_trace("ext msg", (uint32_t)mq & 0xFFFFFF);
++#endif
+     external_messages.enqueue({mq, msg, jam, requeue_if_blocked});
+ }
+ 
+@@ -41,8 +49,9 @@ void dequeue_external_messages(RDRAM_ARG1) {
      QueuedMessage to_send;
      std::vector<QueuedMessage> requeued_messages{};
      while (external_messages.try_dequeue(to_send)) {
@@ -1480,11 +1524,27 @@ index 9944a02..1feb369 100644
          }
      }
      for (QueuedMessage& cur_mesg : requeued_messages) {
+@@ -139,8 +148,15 @@ bool do_recv(RDRAM_ARG PTR(OSMesgQueue) mq_, PTR(OSMesg) msg_, bool block) {
+         // Otherwise, yield this thread in a loop until the queue is no longer full
+         while (MQ_IS_EMPTY(mq)) {
+             debug_printf("[Message Queue] Thread %d is blocked on receive\n", TO_PTR(OSThread, ultramodern::this_thread())->id);
++#if defined(__vita__)
++            const uint32_t who = ((uint32_t)TO_PTR(OSThread, ultramodern::this_thread())->id << 24) | ((uint32_t)mq_ & 0xFFFFFF);
++            ultramodern_trace("recv wait", who);
++#endif
+             ultramodern::thread_queue_insert(PASS_RDRAM GET_MEMBER(OSMesgQueue, mq_, blocked_on_recv), ultramodern::this_thread());
+             ultramodern::run_next_thread_and_wait(PASS_RDRAM1);
++#if defined(__vita__)
++            ultramodern_trace("recv woke", who);
++#endif
+         }
+     }
+ 
 diff --git a/ultramodern/src/threads.cpp b/ultramodern/src/threads.cpp
-index 6e3ed18..26a29b8 100644
+index 6e3ed18..882896c 100644
 --- a/ultramodern/src/threads.cpp
 +++ b/ultramodern/src/threads.cpp
-@@ -137,6 +137,22 @@ void ultramodern::set_native_thread_priority(ThreadPriority pri) {
+@@ -137,6 +137,24 @@ void ultramodern::set_native_thread_priority(ThreadPriority pri) {
      //         break;
      // }
  }
@@ -1495,7 +1555,9 @@ index 6e3ed18..26a29b8 100644
 +// The Vita's scheduler keeps a thread on the cores its mask allows: the renderer gets a
 +// core of its own, the RSP's audio tasks another, and the game's threads (one runs at a
 +// time) the first.
++extern "C" void conker_vita_register_thread(const char* name);
 +void ultramodern::set_native_thread_name(const std::string& name) {
++    conker_vita_register_thread(name.c_str());
 +    int mask = SCE_KERNEL_CPU_MASK_USER_0;
 +    if (name == "Gfx Thread") mask = SCE_KERNEL_CPU_MASK_USER_1;
 +    else if (name == "SP Task Thread") mask = SCE_KERNEL_CPU_MASK_USER_2;
@@ -1507,7 +1569,7 @@ index 6e3ed18..26a29b8 100644
  #elif defined(__APPLE__)
  void ultramodern::set_native_thread_name(const std::string& name) {
      if (name.length() > 15) {
-@@ -150,8 +166,18 @@ void ultramodern::set_native_thread_name(const std::string& name) {
+@@ -150,8 +168,18 @@ void ultramodern::set_native_thread_name(const std::string& name) {
  void ultramodern::set_native_thread_priority(ThreadPriority pri) {}
  #endif
  

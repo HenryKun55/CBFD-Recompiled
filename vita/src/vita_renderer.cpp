@@ -69,6 +69,7 @@ using namespace n64gfx;
 
 void ultramodern_trace(const char* what, uint32_t arg);
 extern "C" volatile bool ultramodern_vita_sync_dl;
+extern "C" void conker_vita_register_thread(const char* name);
 
 // ---------------------------------------------------------------- list capture
 // The game rewrites the next frame's vertices, matrices and lights as soon as it submitted a
@@ -84,6 +85,7 @@ namespace capture {
         const uint8_t* pt[pages] = {};        // page -> copy, biased so that pt[p] + addr reads it
         std::vector<uint16_t> used;
         uint64_t bits[pages / 64] = {};
+        bool reads_back = false; // draws into the depth buffer's memory (read back for the CPU)
     };
     Slot slots[2];
     std::atomic<uint32_t> busy{0}; // bit per slot
@@ -132,6 +134,8 @@ namespace capture {
         int depth = 0;
         uint32_t pc = start & 0x00FFFFFF;
         uint32_t half1 = 0;
+        uint32_t cimg = ~0u, zimg = ~1u;
+        bool cimg_16b = false;
         for (uint32_t guard = 0; guard < 2000000; guard++) {
             walked++;
             mark(s, pc, 8);
@@ -149,6 +153,20 @@ namespace capture {
                     }
                     break;
                 case 0xE1: half1 = w1; break;                                                  // G_RDPHALF_1
+                // Drawing (not filling: every frame clears its depth buffer so, the color image
+                // set to its memory) into the depth buffer's memory: the CPU reads that back.
+                case 0xFF:                                                                     // G_SETCIMG
+                    cimg = seg(w1);
+                    cimg_16b = ((w0 >> 19) & 3) == 2;
+                    break;
+                case 0xFE:                                                                     // G_SETZIMG
+                    zimg = seg(w1);
+                    break;
+                case 0x05: case 0x06: case 0x07:                                               // triangles
+                case 0x10: case 0x11: case 0x12: case 0x13: case 0x14: case 0x15: case 0x16: case 0x17:
+                case 0x18: case 0x19: case 0x1A: case 0x1B: case 0x1C: case 0x1D: case 0x1E: case 0x1F:
+                    if (cimg == zimg && cimg_16b) s.reads_back = true;
+                    break;
                 case 0x04: {                                                                   // G_BRANCH_Z: both ways
                     const uint32_t target = seg(half1) & 0x00FFFFFF;
                     branches++;
@@ -177,10 +195,16 @@ namespace capture {
                     if (depth == 0) return;
                     pc = stack[--depth];
                     break;
-                case 0xE4: case 0xE5: mark(s, pc, 16); pc += 16; break;                        // G_TEXRECT(FLIP)
+                case 0xE4: case 0xE5:                                                          // G_TEXRECT(FLIP)
+                    if (cimg == zimg && cimg_16b) s.reads_back = true;
+                    mark(s, pc, 16); pc += 16;
+                    break;
                 case 0x64:                                                                     // RT64's extended
                     switch (w0 & 0x00FFFFFF) {
-                        case 0x000002: mark(s, pc, 16); pc += 16; break;                       // G_EX_TEXRECT_V1
+                        case 0x000002:                                                         // G_EX_TEXRECT_V1
+                            if (cimg == zimg && cimg_16b) s.reads_back = true;
+                            mark(s, pc, 16); pc += 16;
+                            break;
                         case 0x000003: mark(s, pc, 8); pc += 8; break;                         // G_EX_FILLRECT_V1
                         case 0x00000C: pc += 8; break;                                         // G_EX_MATRIXGROUP_V1
                         default: break;
@@ -205,6 +229,7 @@ extern "C" int ultramodern_vita_capture(uint8_t* rdram, const OSTask* task) {
     std::memset(visited, 0, sizeof(visited));
     visited_count = 0;
     walked = dl_calls = branches = seg_changes = 0;
+    s.reads_back = false;
     const uint64_t tw = sceKernelGetProcessTimeWide();
     walk(rdram, s, (uint32_t)task->t.data_ptr);
     const uint64_t tw2 = sceKernelGetProcessTimeWide();
@@ -225,6 +250,16 @@ extern "C" int ultramodern_vita_capture(uint8_t* rdram, const OSTask* task) {
     copy_us += t2 - t1;
     copied_pages += n;
     return index;
+}
+
+// Whether the game can be told the RDP is done as soon as its list was captured (it reads the
+// copy; see the gfx thread in ultramodern's events.cpp), not once the list was read: not when the
+// list draws into the depth buffer's memory, which the CPU reads back after it (the pause menu's
+// blur), nor with debug flag 4194304.
+extern "C" volatile bool ultramodern_vita_late_dp = false;
+extern "C" int ultramodern_vita_capture_early_dp(int index) {
+    if (index < 0 || ultramodern_vita_late_dp) return 0;
+    return capture::slots[index].reads_back ? 0 : 1;
 }
 
 extern "C" void ultramodern_vita_release_capture(int index) {
@@ -1279,6 +1314,7 @@ namespace {
             // Debug (flag 32768): lists read on the game's thread, as before (ultramodern events.cpp);
             // otherwise from the capture taken as the game submitted it.
             ultramodern_vita_sync_dl = (debug_flags & 32768) != 0;
+            ultramodern_vita_late_dp = (debug_flags & 4194304) != 0;
             const int cap = ultramodern_vita_current_capture;
             cap_pt = cap >= 0 ? capture::slots[cap].pt : nullptr;
             struct CapEnd { const uint8_t* const*& p; ~CapEnd() { p = nullptr; } } cap_end{ cap_pt };

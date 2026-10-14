@@ -24,6 +24,8 @@
 //
 // The Vita's state goes through the remapping (controls.cpp); START + SELECT opens the
 // menu (menu.cpp), and while it's open the game sees a released controller.
+extern "C" void conker_vita_register_thread(const char* name);
+
 namespace controls = conker::vita::controls;
 namespace menu = conker::vita::menu;
 
@@ -120,6 +122,7 @@ namespace {
     std::atomic<bool> audio_running{false};
 
     int audio_thread(SceSize, void*) {
+        conker_vita_register_thread("audio_out");
         static int16_t block[out_block * 2];
         while (audio_running.load()) {
             {

@@ -10,6 +10,7 @@
 
 #include <psp2/ctrl.h>
 #include <psp2/kernel/processmgr.h>
+#include <psp2/kernel/threadmgr.h>
 
 #include "ultramodern/ultramodern.hpp"
 
@@ -205,6 +206,43 @@ void conker::vita::bench::on_audio_task(uint32_t us) {
     s.audio_us += us;
 }
 
+// Every thread's CPU time (the kernel's run clocks, nothing timed in the code): the [cpu] line
+// each second, ms used in that second, to see which one keeps the frames from 30 a second.
+void ultramodern_trace_dump_recent(uint64_t us);
+
+namespace {
+    struct ThreadEntry { SceUID uid; char name[28]; uint64_t last; };
+    std::mutex threads_mutex;
+    std::vector<ThreadEntry> threads_seen;
+
+    void log_threads() {
+        std::lock_guard lock{threads_mutex};
+        std::string line;
+        for (ThreadEntry& t : threads_seen) {
+            SceKernelThreadInfo info{};
+            info.size = sizeof(info);
+            if (sceKernelGetThreadInfo(t.uid, &info) < 0) continue;
+            const uint64_t clocks = (uint64_t)info.runClocks;
+            const uint64_t d = clocks - t.last;
+            t.last = clocks;
+            if (d < 500) continue;
+            char b[64];
+            std::snprintf(b, sizeof(b), " %s %.0f", t.name, d / 1000.0);
+            line += b;
+        }
+        std::fprintf(stderr, "[cpu] ms this second:%s\n", line.c_str());
+    }
+}
+
+extern "C" void conker_vita_register_thread(const char* name) {
+    std::lock_guard lock{threads_mutex};
+    ThreadEntry t{};
+    t.uid = sceKernelGetThreadId();
+    std::snprintf(t.name, sizeof(t.name), "%s", name);
+    for (char& c : t.name) if (c == ' ') c = '_';
+    threads_seen.push_back(t);
+}
+
 void conker::vita::bench::update() {
     const uint64_t now = now_us();
     if (live_next_us == 0) live_next_us = now + 1000000;
@@ -220,6 +258,16 @@ void conker::vita::bench::update() {
             f ? conker::vita::renderer_snapshot_us() / 1000.0 / f : 0.0,
             f ? conker::vita::renderer_capture_wait_us() / 1000.0 / f : 0.0,
             (unsigned long long)(f ? conker::vita::renderer_capture_pages() / f : 0));
+        log_threads();
+        // Debug: a timeline of the game's waits and the RCP's events, once, after three heavy
+        // seconds (the rain outside the bar).
+        static int heavy_seconds = 0;
+        static bool dumped = false;
+        heavy_seconds = (f && tr / f > 9000) ? heavy_seconds + 1 : 0;
+        if (heavy_seconds == 3 && !dumped) {
+            dumped = true;
+            ultramodern_trace_dump_recent(1500000);
+        }
         live_next_us += 1000000;
         if (now > live_next_us + 5000000) live_next_us = now + 1000000;
     }

@@ -1137,7 +1137,12 @@ private:
     std::atomic<uint32_t> expand_us{0}, expand_lists{0};
 
     void run_expander() {
+        conker_vita_register_thread("expander");
         sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), SCE_KERNEL_CPU_MASK_USER_0 | SCE_KERNEL_CPU_MASK_USER_2);
+        // Below the game's threads (they share cores 0 and 2): at the same priority the Vita doesn't
+        // share a core between them by turns, and the game's main thread waited for the expander's
+        // ~27 ms of each frame (it took ~50 ms a frame for ~11 ms of work: 15 fps in the rain).
+        sceKernelChangeThreadPriority(0, sceKernelGetThreadCurrentPriority() + 16);
         for (;;) {
             sceKernelWaitSema(expand_sema, 1, nullptr);
             std::unique_ptr<CommandList> list;
@@ -1171,6 +1176,7 @@ private:
 
     // ------------------------------------------------ the thread
     void run() {
+        conker_vita_register_thread("gpu");
         // On the reader's core: with the triangles made into vertices by the expander this thread
         // is light (~6 ms a frame in the rain), and cores 0 and 2 have the game, the audio and the
         // expander (the game got too little of them and ran at 15 fps).
