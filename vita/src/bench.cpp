@@ -259,10 +259,16 @@ void conker::vita::bench::update() {
             f ? conker::vita::renderer_capture_wait_us() / 1000.0 / f : 0.0,
             (unsigned long long)(f ? conker::vita::renderer_capture_pages() / f : 0));
         log_threads();
-        // Debug: a timeline of the game's waits and the RCP's events, once, after three heavy
-        // seconds (the rain outside the bar).
+        // Debug (ux0:data/conker/debug_timeline): a timeline of the game's waits and the RCP's
+        // events, once, after three heavy seconds (the rain outside the bar). Writing it holds
+        // the log for seconds.
+        static const bool timeline = [] {
+            FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_timeline", "r");
+            if (f) std::fclose(f);
+            return f != nullptr;
+        }();
         static int heavy_seconds = 0;
-        static bool dumped = false;
+        static bool dumped = !timeline;
         heavy_seconds = (f && tr / f > 9000) ? heavy_seconds + 1 : 0;
         if (heavy_seconds == 3 && !dumped) {
             dumped = true;
