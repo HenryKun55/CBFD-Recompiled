@@ -300,6 +300,8 @@ static bool run_rsp_native() {
     return true;
 }
 
+extern "C" volatile bool ultramodern_vita_double_draw;
+
 int main(int argc, char** argv) {
     std::set_terminate(on_terminate);
     sceClibPrintf("[vita] main\n");
@@ -335,6 +337,13 @@ int main(int argc, char** argv) {
             std::fclose(f);
             ultramodern_early_rsp_completion = false;
             std::fprintf(stderr, "[vita] RSP tasks complete when they end (debug)\n");
+        }
+    }
+    {
+        if (FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_double_draw", "r")) {
+            std::fclose(f);
+            ultramodern_vita_double_draw = true;
+            std::fprintf(stderr, "[vita] every display list drawn twice (debug: the load of 60 fps)\n");
         }
     }
     conker::vita::bench::init();
