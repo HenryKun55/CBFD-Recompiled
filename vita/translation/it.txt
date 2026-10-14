@@ -2680,4 +2680,149 @@ a7b1c18c = oh ! ciao,\n{cazzetto}.
 c46092c2 =  proprio così, \nmammina, {cazzo}.
 0addf058 = dai, seguimi,\n{culetto}.
 
-
+# Pages found later (Birdy, the Queen Bee, the Professor, Berri's answerphone, the Great Mighty Poo...)
+# assets06/0004
+ec728776 =  c'è qualche {coglione}\nche mi ha chiamato?
+7997cb2f = oh, quelle vespe\n{stronze}, {stronze}.
+2610ffb1 = e adesso che\n   {cazzo} facciamo ?
+1775d120 = il mio bell'alveare\nè sparito, {cazzo},
+2d7b9d68 = e non lo rivedrò\nmai più, {porca troia}.
+d9beb812 = ti prego,\nriportacelo, {cazzo},
+5a4e8b49 = o non so proprio\nche {minchia}\n   faremo.
+562a6207 = ok, ok, calma, {porca puttana} !\nvado io a\n riprendervelo.
+adb59879 = e ora dove\n{minchia} sarà ?
+1261ef6d = <BE>Basta un {cazzo} di\ncandelotto di tnt . . .
+b3f3d250 = <BE>Bum ! Tutto\na {puttane} !
+310ed7b1 = <BE>Che puzza\n{di merda} !
+622cee55 = qui ci vuole la mia\n{fottuta} maschera antigas !
+55877e2e = ciao, sono di\nnuovo io, {vecchio stronzo}. . .
+59bf260a = signor spaventapasseri\n     birdy {del cazzo} !
+b13132b0 = allora, che {cazzo}\ndi problema c'è ?
+a287cef3 = oh sì, tu servire\n{cazzo} di manuale !
+2660651c = altrimenti\nniente. . .
+fa8119b2 = non funziona\n{un cazzo}.
+2a090fbf = ecco\n   qua, {stronzo}.
+# assets06/0007
+d5c35ac0 =  devo scendere\nda 'sto {affare del cazzo} !
+# assets06/0008
+08cf329f = a quanto pare, \n   quel {cazzo} di alveare\nglielo fregano sempre.
+5b04cfe1 = me ne {sbatto il cazzo}.
+b37244c9 = tanto non ci\nentravo in quel <A2><B5> <A2><B3> <A2><B2> <A2><B4><A1> \ndi buco, {cazzo}.
+1bd39cf7 = hai visto\n   che {culone} ha ?
+14566ca6 = {stronza} !
+4d81cca6 = e ora mi sono\n ridotto a fare\n   il {barbone del cazzo}.
+d7223ea3 = {Minchia}, sì !
+a05ec03f = è là dietro,\n{coglione} . . .
+# assets06/0014
+7ff65016 = Fai una pella \n  entrata, {kazzo}.
+c8875102 = Kvesto potrebbe \n essere importante,\n{kazzo} . . . !
+ae4c6004 = AAH ! {Cazzo}, Professore,
+ef983fde = Benvenuto, {stronzo} !
+c6d91ef7 = Ho un lavoro \n {di merda} per te,
+f4f640e0 = Come vedi, {porca troia} . . .
+7d97677c = Il {fottuto} Tavolo !
+0408ab2e = IL Tafolo,\nAh ja, {kazzo} !
+9ce0b137 = Kosì ha rofesciato\n ancora il latte, {porko kane} ?
+42f6dc94 = Kvesto non va pene, \n  non va pene, {kazzo} !
+2722123d = Lasci ke ci dia\n  un'okkiata, {porka puttana}.
+52e24d14 =  Aha, farò più\nfeloce ke posso, sire,\n{porka troia} !
+5c937fad = Perché lo sai che {cazzo}\nè successo l'ultima volta !
+a53c1d8b = Oh ja ! Lo so pene, {merta} !\n  fin troppo pene !
+e15778b6 = ora fado, {kazzo}.
+d4cc49b1 = Non voglio essere\ncostretto, {porca puttana} . . .
+8df1d604 =  a tirare fuori\nil {cazzo} di nastro adesivo !
+f666ef7d = ja, cioè nein, {kazzo} !
+c03d07cc = non foglio ke lei\ntiri fuori di nuofo\nil {kazzo} di nastro !
+64ed6e84 = Arrifederci, {kazzo},\narrifederci.
+65e7b781 = ja io . . . io kredo di federe\n   il {kazzo} di problema !
+28acaa69 = federò kosa \n  posso fare, {porka troia}.
+6c173a89 = però mi deve dare\nun momento, {porka vakka}.
+998775bf = tornerò \npiù tardi, {merta}.
+ea7b3eef = Eureka, {kazzo} ! \nEureka !
+# assets06/0019
+e3bdc7d4 = <BF>Ciao, hai chiamato,\ntipo, casa di Berri.
+a07260dd =    ora non posso \nrispondere al telefono. . .\n         {ovvio, cazzo} !
+3f4cd2e7 =           però,\n  se lasci, tipo,\nnome e {cazzo} di numero,
+06de7017 = e hai una voce {figa},
+c5201ac6 = magari ti\nrichiamo.\n  ciao, {stronzo} !
+# assets06/0022
+c0fe93d6 = vabbè, ormai sono\nin ballo e ballo,\n   {porca troia}.
+71fc0b69 = mammaaa, {cazzo},
+9f51829f = voglio la mamma ,\n  la mia {cazzo} di mamma,\n     buuuh .
+a7cbc793 =  oh, ciao, uno \n scoiattolino {del cazzo} .
+b5d137ff =  ehm, ciao ,
+9c70217b = aiutami .\nti prego, {cazzo} .
+028ad3d0 = Ja, non zono\n  più una\nbambina
+0a0b7fcf = da un {kazzo} \ndi pezzo.
+# assets06/0028
+b3341f84 = uh, e tu chi\n{cazzo} sei ?
+be9789bf = mi puoi\naiutare, {porca troia} ?
+5e1d8bf2 =  devo tornare\na casa e andare\n a letto,
+8e0a5641 = perché sto\n  {di merda},\n davvero.
+a74a6c2a = ehm. . .
+5052261c = a casa ?\n  {col cazzo} !
+96eae088 = quindi non mi\naiuti {un cazzo}.
+fc2408b0 = eh, veramente,\n sì che posso,\n  forse, {stronzo} !
+d3fe73bb =  ok, come {cazzo}\nti chiami ?
+cc1fde55 = birdy, {coglione}.
+3fe3e711 = barby,
+b366ba9e = ma, ma tu non\nhai mica\nla barba, {cazzone} !
+2c828bf5 = no, {coglione}, birdy ,
+1cf7082a = spavento gli\nuccelli, {pirla} !
+d56f44ab = vedi quei {cazzo}\n   di pulsanti. . .
+86a18c5f = in realtà, scoprirai\n che ehm, {minchia},
+7c2fee38 = eh, si chiamano, {cazzo},\nsensibili al contesto.
+8bcf31f9 =    e ehm,\nbeh, in realtà,\n  loro ehm, {porca troia},
+5467bd60 = ah, beh, se proprio\n      insisti, {cazzone} .
+9d4f23b7 = grazie\n{un casino} .
+e6aa25ca = <BE>Ci si vede, {stronzo}.
+# assets06/0036
+e136f04d = pronti a mostrargli\nil {culo}.
+6149baf8 = Dietrofront, {coglioni} !
+393e3b6f =  Ahh ! questo mi\nfa venire un'altra\n{fottuta} idea . . .
+14b61e63 = Ah ! ah ! simon, quel\n{coglione}, \nè caduto !
+07c5bd19 = sì, quel {bastardo} \n{del cazzo} si è \nbruciato !
+6352441d = ora, se quello {stronzo}\ndi scoiattolo rivuole\ni suoi soldi . . .
+02c56e91 = può usare la tavola \ndi simon e farsi {fottere} !
+# assets06/0038
+5976a5f5 = Sono il Grande {Stronzo} Potente
+55623102 = E la mia {merda} la tiro addosso
+666b7816 = a te
+73bccb37 = una scorta immensa di {merdaccia}
+80de5d2d = esce dal mio {buco} al cioccolato
+9439486c = Vuoi la {cacca}, {testa di cazzo}?
+f3937d6e = Pensi di uscirne vivo, {coglione}?
+a0c7955c = Mi sa che non hai capito
+17de3558 = in che {merda} sei finito
+2fb837c9 = Il mais è l'unica cosa
+77d2bce1 = che mi esce intera dal {culo}
+eb76793e = 'Sto sorriso da dove {cazzo} viene?
+ea72cdb9 = Ora mi sto proprio {incazzando}
+36f2cb9b = Sei come un piccolo, pruriginoso
+3f05d05b = grumo di {merda} sul {pelo del culo}
+56bd3ec6 = E quando ti avrò steso
+0292c045 = con tutta la mia {sbobba}
+d1797e1e = ti prenderò la testa
+e9fc7f44 = e me la ficco su per il {culo}
+55973391 = il tuo {culo}
+45cf1db2 = il mio {culo}
+9b671a77 = proprio così, il mio {culo}
+d9cb6f77 = ehmmm
+4e493c3b = il mio {cuuuuuuulo}
+df31c599 = Là dentro c'è una roba\n   brutta {da cagarsi addosso}.
+b3f3d49a =    là dentro non\nci vuoi entrare, {cazzo}.
+568837b9 = calma, {cazzo} ! ora\ncalmati e basta
+65563a1d =      e dimmi che \n{cazzo} succede.
+a2911ad3 = allora, {porca troia}, è  \n  iniziato due giorni fa.
+# assets06/0039
+20b7e579 = Si prega di mettere\ngli oggetti metallici\nnel {cazzo} di vassoio . . .
+# assets06/0042
+d3471788 =  mi sa che sta\nper . . . {merda} . . .
+# assets06/0046
+95f2ca1c =  ah, ah, {che coglione} !
+5b23777a = guarda, Fred si è\n{cagato addosso}.
+# assets06/0047
+3ab4bc2f = Un {cazzo} di tempo dopo .  .  .
+0f141058 = Ah, che {figata} . . .
+e0c8541f =   Milionario, {porca troia} !
+ccf5903e =    ehi, occhio\na dove {cazzo}\n    sssh . . .

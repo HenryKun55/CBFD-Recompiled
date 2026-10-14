@@ -2680,3 +2680,149 @@ a7b1c18c = oh ! hallöchen,\n{kleiner scheißer}.
 c46092c2 =  genau, \nich bin deine\n{verfickte} mami.
 0addf058 = komm, folg mir,\n{kackbratze}.
 
+# Pages found later (Birdy, the Queen Bee, the Professor, Berri's answerphone, the Great Mighty Poo...)
+# assets06/0004
+ec728776 = hat wer {verdammt}\nnach mir gerufen ?
+7997cb2f = oh, diese fiesen,\n{verdammten} wespen.
+2610ffb1 = was sollen wir\n   bloß tun, {verdammt} ?
+1775d120 = mein wunderschöner\n{scheiß}stock ist weg,
+2d7b9d68 = und ich seh ihn\nnie {verdammt} wieder.
+d9beb812 = bitte hol ihn\nuns zurück, {verdammt},
+5a4e8b49 = sonst weiß ich\n{verdammt} nicht,\n   was wir tun sollen.
+562a6207 = okay, okay, ruhig !\nich hol dir den\n{scheiß} zurück.
+adb59879 = und wo ist das\n{scheiß}ding jetzt ?
+1261ef6d = <BE>noch eine stange\n{scheiß}-tnt dazu . . .
+b3f3d250 = <BE>das hat's\n{verdammt} zerlegt !
+310ed7b1 = <BE>was für ein\n{scheiß}gestank !
+622cee55 = ich glaub, jetzt\nbrauch ich meine\n{scheiß}-gasmaske !
+55877e2e = hallo, ich bin's\nwieder, {verdammt}. . .
+59bf260a = herr vogelscheuche\n  birdy, {verdammt} !
+b13132b0 = gut, wo liegt denn\ndas {scheiß}problem ?
+a287cef3 = oh ja, du \nbrauchen manual,\n{sack} !
+2660651c = sonst nix. . .\n{scheiße}. . .
+fa8119b2 = funktionieren\nnix, {verdammt}.
+2a090fbf = da hast\n   du's, {sack}.
+# assets06/0007
+d5c35ac0 =  ich muss von \ndem {scheiß}ding runter !
+# assets06/0008
+08cf329f = angeblich wird \n   der {scheiß}stock \nständig geklaut.
+5b04cfe1 = ist mir {scheißegal}.
+b37244c9 = hätt eh nicht in das\n<A2><B5> <A2><B3> <A2><B2> <A2><B4><A1> \nding gepasst.
+1bd39cf7 = hast du gesehen,\n   wie fett die {sau} ist ?
+14566ca6 = {schlampe} !
+4d81cca6 = jetzt bin ich\n nur noch ein\n   {scheiß}penner.
+d7223ea3 = jo, {verdammt} !
+a05ec03f = da drüben,\nhinter uns, {alter} . . .
+# assets06/0014
+7ff65016 = {verdammt} guten \n  auftritt hinlegen.
+c8875102 = das könnte {verdammt}\n vichtig sein . . . !
+ae4c6004 = aah ! professor,\n{verdammt},
+ef983fde = willkommen,\n{sack} !
+c6d91ef7 = ich hab 'nen \n {scheiß}job für dich,
+f4f640e0 = wie du siehst,\n{verdammt} . . .
+7d97677c = der {scheiß}-tisch ! 
+0408ab2e = der {scheiß}-tisch,\nah ja !
+9ce0b137 = sie haben vieder\n die {scheiß}-milch\nverschüttet ?
+42f6dc94 = das ist nix gut, \n  {verdammt} nix gut !
+2722123d = lassen sie mich\n  den {scheiß} mal\nanschauen.
+52e24d14 =  aha, ich vill mich\n{verdammt} beeilen, sire !
+5c937fad = denn du weißt ja,\nwas letztes mal\n{verdammt} passiert ist !
+a53c1d8b = oh ja ! nur zu gut !\n  nur zu {verdammt} gut !
+e15778b6 = ich gehe jetzt,\n{verdammt}.
+d4cc49b1 = ich will nicht \nnochmal {verdammt} . . . 
+8df1d604 =  das {scheiß}-\nklebeband holen !
+f666ef7d = ja, ich meine nein,\n{verdammt} !
+c03d07cc = ich vill nicht, dass\nsie das {scheiß}-\nklebeband holen !
+64ed6e84 = auf viedersehen,\nviedersehen, {verdammt}.
+65e7b781 = ja, ich . . . ich glaub,\n   ich sehe das\n{scheiß}problem !
+28acaa69 = ich schaue, vas \n  ich {verdammt} tun kann.
+6c173a89 = geben sie mir\naber 'nen {verdammten}\nmoment.
+998775bf = ich komme \nspäter vieder, {verdammt}.
+ea7b3eef = heureka ! \n{verdammt}, heureka ! 
+# assets06/0019
+e3bdc7d4 = <BF>hi, das ist, so,\nberris {geile} bude.
+a07260dd =    ich bin grad nicht \nzu erreichen. . .\n         {verdammt} logisch !
+3f4cd2e7 =           aber,\n  wenn du, so, namen\nund {scheiß}nummer
+06de7017 = hinterlässt und\n{verdammt} süß klingst,
+c5201ac6 = ruf ich dich\nvielleicht zurück,\n  {verdammt}. ciao !
+# assets06/0022
+c0fe93d6 = wer a sagt,\nmuss auch {scheiß}-b\n   sagen, schätz ich.
+71fc0b69 = mami, {verdammt},
+9f51829f = ich will zu meiner mami,\n      mami,\n     {scheiße}, buhuu .
+a7cbc793 =  hallo, ein kleines \n {scheiß}hörnchen .
+b5d137ff =  hallo, {verdammt} ,
+9c70217b = hilf mir,\n{verdammt}. bitte .
+028ad3d0 = isch bin schon\n  {verdammt} lange\nkein kleines mädchen
+0a0b7fcf = mehr, seit 'ner\n{scheiß}weile.
+# assets06/0028
+b3341f84 = äh, wer bist\ndu {sack} ?
+be9789bf = kannst du mir\n{verdammt} helfen ?
+5e1d8bf2 =  ich muss\nnach hause und\n in mein {scheiß}bett,
+8e0a5641 = weil ich mich\n  echt {beschissen}\n fühle.
+a74a6c2a = äh. . . {scheiße}.
+5052261c = nach hause ?\n  nein, {verdammt} !
+96eae088 = du kannst mir also\n{verdammt} nicht helfen.
+fc2408b0 = äh, eigentlich,\n doch, kann ich,\n  vielleicht, {sack} !
+d3fe73bb =  okay, wie heißt\ndu, {verdammt} ?
+cc1fde55 = birdy, {verdammt}.
+3fe3e711 = bärdy, {alter},
+b366ba9e = aber, aber du\nhast doch gar\nkeinen {scheiß}bart !
+2c828bf5 = nein, birdy, {depp} ,
+1cf7082a = ich erschreck\ndie {scheiß}vögel !
+d56f44ab = siehst du die\n   {scheiß}knöpfe. . .
+86a18c5f = eigentlich wirst du\n {verdammt} merken, äh,
+7c2fee38 = äh, die heißen\n{scheiß}kontextsensitiv.
+8bcf31f9 =    und äh,\nna ja, eigentlich,\n  {verdammt}, äh,
+5467bd60 = ah, da sag ich\n {verdammt} nicht nein .
+9d4f23b7 = danke {verdammt}\nschön .
+e6aa25ca = <BE>man sieht sich,\n{sack}.
+# assets06/0036
+e136f04d = macht euch bereit,\nihm den {arsch}\nzu zeigen.
+6149baf8 = kehrt, {ihr säcke} !
+393e3b6f =  ahh ! das bringt\nmich auf 'ne andere\n{geile} idee . . .
+14b61e63 = ha ! ha ! simon, der\nblöde {bastard}, \nist runtergefallen !
+07c5bd19 = jo, der blöde \n{bastard} ist \nverbrannt !
+6352441d = wenn das blöde\n{scheiß}hörnchen sein\ngeld zurück will . . . 
+02c56e91 = kann er mit simons \n{scheiß}brett gegen\nuns fahren !
+# assets06/0038
+5976a5f5 = ich bin der große, mächtige {kot}
+55623102 = und ich werf meine {scheiße}
+666b7816 = auf dich, {du sack}
+73bccb37 = ein riesenvorrat an {dreck} und fett
+80de5d2d = kommt aus meiner {schokorosette}
+9439486c = lust auf {kot}, du {vollidiot} ?
+f3937d6e = glaubst du {verdammt} echt,\ndu überlebst hier drin ?
+a0c7955c = du weißt wohl {verdammt} nicht,
+17de3558 = in welcher {scheiße} du steckst
+2fb837c9 = nur {scheiß}-zuckermais schafft es
+77d2bce1 = heil durch meinen {arsch}
+eb76793e = was meinst du, woher mein\n{geiles} grinsen kommt ?
+ea72cdb9 = jetzt werd ich {verdammt} sauer
+36f2cb9b = du bist wie 'ne juckende,\n{verdammt} zwickende
+3f05d05b = {beschissene} kleine klabusterbeere
+56bd3ec6 = hab ich dich {verdammt} umgehauen
+0292c045 = mit all meiner {kackpampe}
+d1797e1e = nehm ich deinen {scheiß}kopf
+e9fc7f44 = und ramm ihn mir in den {arsch}
+55973391 = deinen {arsch}
+45cf1db2 = meinen {arsch}
+9b671a77 = genau, meinen {arsch}
+d9cb6f77 = ähhh, {scheiße}
+4e493c3b = meinen {aaaaaaarsch}
+df31c599 = da drin is' was\n   {verdammt} übles.
+b3f3d49a =    da willst du\n{verdammt} nich' rein.
+568837b9 = ruhig ! jetzt mal\n{verdammt} ruhig
+65563a1d =      und sag mir, \nwas {zum teufel} los ist.
+a2911ad3 = gut, okay, der {scheiß} \n  fing vor zwei tagen an.
+# assets06/0039
+20b7e579 = bitte legen sie\nalle metallgegenstände \nin die {scheiß}schale . . .
+# assets06/0042
+d3471788 =  ich glaub, der\n{scheiß} wird gleich . . .
+# assets06/0046
+95f2ca1c =  ha, ha, {geil} !
+5b23777a = schau, fred hat\nsich {vollgeschissen}.
+# assets06/0047
+3ab4bc2f = 'ne {scheiß}weile später .  .  .
+0f141058 = oh, {geil} . . .
+e0c8541f =   {scheiß}millionär !  
+ccf5903e =    hey, pass auf,\nwo du {verdammt}\n    sssh . . .

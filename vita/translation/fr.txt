@@ -2680,3 +2680,149 @@ a7b1c18c = oh ! salut, {merdeux}.
 c46092c2 =  eh oui, \nc'est moi ta maman.
 0addf058 = suis-moi, {morveux}.
 
+# Pages found later (Birdy, the Queen Bee, the Professor, Berri's answerphone, the Great Mighty Poo...)
+# assets06/0004
+ec728776 =  quelqu'un\nm'a appelé, {putain} ?
+7997cb2f = oh, ces {saletés},\nces {putains} de guêpes.
+2610ffb1 = qu'allons-nous\n   {foutre} ?
+1775d120 = ma belle {putain} \nde ruche a disparu,
+2d7b9d68 = et je la reverrai\njamais, {bordel}.
+d9beb812 = ramenez-la-nous,\npar pitié, {merde},
+5a4e8b49 = sinon je sais pas\nce qu'on va {foutre}\n   de nos vies.
+562a6207 = ok, ok, calmos, {merde} !\nje vais te la \n ramener, ta ruche.
+adb59879 = bon, elle est où,\nce {bordel} ?
+1261ef6d = <BE>J'ajoute un\nbâton de tnt, {putain} . . .
+b3f3d250 = <BE>Ça l'a {niqué} !
+310ed7b1 = <BE>Ça pue la {merde} !
+622cee55 = je crois que\nc'est l'heure de mon\n{putain} de masque à gaz !
+55877e2e = salut, c'est encore\nmoi, {merde}. . .
+59bf260a = m. l'épouvantail\n     birdy, {con} !
+b13132b0 = bon, c'est quoi\nton {putain} de problème ?
+a287cef3 = ah oui, toi besoin\nmanual, {cochon} !
+2660651c = sinon, que {dalle}. . .
+fa8119b2 = marche pas, {merde}.
+2a090fbf = tiens,\n   {salaud}.
+# assets06/0007
+d5c35ac0 =  faut que je descende \nde ce {putain} de truc !
+# assets06/0008
+08cf329f = apparemment, on \n   pique tout le temps\nleur {putain} de ruche.
+5b04cfe1 = j'en ai rien\nà {foutre}.
+b37244c9 = elle rentrait pas\ndans ce <A2><B5> <A2><B3> <A2><B2> <A2><B4><A1> \ntruc, de toute façon.
+1bd39cf7 = t'as vu comme elle\n   est {grosse}.
+14566ca6 = {salope} !
+4d81cca6 = me voilà réduit\n au rang de\n   {clodo}, {putain}.
+d7223ea3 = {Putain}, ouais !
+a05ec03f = là-bas,\nderrière nous, {bordel} . . .
+# assets06/0014
+7ff65016 = Faisons une\n  {putain} d'entrée.
+c8875102 = Za pourrait être \n {putain} d'important . . . !
+ae4c6004 = AAH ! Professeur,\n{bordel},
+ef983fde = Bienvenue, {merde} !
+c6d91ef7 = J'ai un {putain}\n de boulot pour vous,
+f4f640e0 = Comme vous voyez,\n{bordel} . . .
+7d97677c = La {putain} de table ! 
+0408ab2e = LA table,\nAh ja, {putain} !
+9ce0b137 = Fous afez encore\n renverzé le lait,\n{merde} ?
+42f6dc94 = Z'est pas pon, \n  pas pon du {tout} !
+2722123d = Laissez-moi chéter\n  un {putain} d'oeil.
+52e24d14 =  Aha, che ferai\nfite, {bordel}, sire !
+5c937fad = Parce que vous savez\nce qui s'est passé\nla dernière fois, {merde} !
+a53c1d8b = Oh, ja ! Che ne le zais\nque trop, {putain} !
+e15778b6 = che {me casse}.
+d4cc49b1 = Je ne veux pas\navoir à, {putain} . . . 
+8df1d604 =  ressortir le\n{putain} de scotch !
+f666ef7d = oui, euh non,\n{merde} !
+c03d07cc = che ne feux pas\nque fous ressortiez\nle {putain} de scotch !
+64ed6e84 = Au refoir,\nau refoir, {merde}.
+65e7b781 = oui che . . . che crois\n   foir le {merdier} !
+28acaa69 = che fais foir \n  ze que che peux,\n{putain}.
+6c173a89 = mais il me faut\nun {putain} de moment.
+998775bf = che refiendrai \nplus tard, {bordel}.
+ea7b3eef = Eurêka ! \nEurêka, {putain} ! 
+# assets06/0019
+e3bdc7d4 = <BF>Salut, t'es, genre,\nchez Berri, {merde}.
+a07260dd =  je peux pas répondre \nau {putain} de téléphone. . .\n         évidemment !
+3f4cd2e7 =           mais,\n  si tu laisses, genre,\nton {putain} de nom\net numéro,
+06de7017 = et que t'as une\nvoix trop {bonne},
+c5201ac6 = je te rappellerai\npeut-être.\n  ciao, {mon chou} !
+# assets06/0022
+c0fe93d6 = au point où\nj'en suis, {merde},\n   allons-y.
+71fc0b69 = maman, {putain},
+9f51829f = je veux ma maman,\n      maman, {merde},\n     ouin ouin .
+a7cbc793 =  salut, c'est un \n petit écureuil, {putain} .
+b5d137ff =  salut, {ducon} ,
+9c70217b = aide-moi, {merde} .\ns'il te plaît .
+028ad3d0 = Za fait un bail\n  que che suis\nplus une {putain}
+0a0b7fcf = de petite \nfille, {bordel}.
+# assets06/0028
+b3341f84 = euh, t'es qui,\n{toi} ?
+be9789bf = tu peux m'aider,\n{putain} ?
+5e1d8bf2 =  faut que je\nrentre me pieuter,\n {bordel},
+8e0a5641 = parce que je me\n  sens vraiment\n comme une {merde}.
+a74a6c2a = euh. . . {merde}. . .
+5052261c = rentrer ?\n  non, {putain} !
+96eae088 = alors tu peux\n{que dalle} pour moi.
+fc2408b0 = euh, en fait,\n si, je peux,\n  peut-être, {merde} !
+d3fe73bb =  ok, {bordel}, c'est\nquoi ton nom ?
+cc1fde55 = birdy, {merde}.
+3fe3e711 = barbu, {putain},
+b366ba9e = mais, mais t'as\npas de {putain}\nde barbe !
+2c828bf5 = non, birdy, {ducon},
+1cf7082a = je fais peur\naux {putains} d'oiseaux !
+d56f44ab = tu vois ces {putains}\n   de boutons. . .
+86a18c5f = en fait, tu vas\n voir que euh, {merde},
+7c2fee38 = euh, on les dit\nsensibles au {putain}\nde contexte.
+8bcf31f9 =    et euh,\nbon, en fait,\n  ils euh, {merde},
+5467bd60 = ah, je vais pas\n      me gêner, {putain} .
+9d4f23b7 = merci bien,\n{connard} .
+e6aa25ca = <BE>Salut, {ducon}.
+# assets06/0036
+e136f04d = préparez-vous à lui\nmontrer vos {culs}.
+6149baf8 = Demi-tour, {bordel} !
+393e3b6f =  Ahh ! {putain}, ça\nme donne une autre\nidée . . .
+14b61e63 = Ha ! ha ! simon, ce\n{connard} de {débile},\nest tombé !
+07c5bd19 = ouais, ce {connard}\nde {débile} a\ncramé !
+6352441d = si ce {con}\nd'écureuil veut\nrécupérer son fric . . . 
+02c56e91 = il a qu'à prendre\nla planche de simon\npour nous {niquer} !
+# assets06/0038
+5976a5f5 = Je suis le Grand Caca, {putain}
+55623102 = Et je vais te jeter ma {merde}
+666b7816 = à la {gueule}
+73bccb37 = Des tonnes de {dreum} en tas
+80de5d2d = de mon {trou de balle} chocolat
+9439486c = Un peu de {crotte}, {p'tit con} ?
+f3937d6e = Tu crois survivre ici, {ducon} ?
+a0c7955c = T'as pas l'air de savoir, {con},
+17de3558 = dans quelle {merde} tu nages
+2fb837c9 = Le maïs doux, seul {putain} de truc
+77d2bce1 = qui ressort intact de mon {cul}
+eb76793e = D'où vient mon sourire, {connard} ?
+ea72cdb9 = Là, je deviens vraiment {vénère}
+36f2cb9b = T'es comme une {crotte} qui gratte
+3f05d05b = collée aux poils de mon {fion}
+56bd3ec6 = Quand je t'aurai {défoncé}
+0292c045 = avec toute ma {chiasse}
+d1797e1e = je prendrai ta {putain} de tête
+e9fc7f44 = pour me la fourrer dans le {cul}
+55973391 = ton {cul}
+45cf1db2 = mon {cul}
+9b671a77 = c'est ça, mon {cul}
+d9cb6f77 = euuh, {putain}
+4e493c3b = mon {cuuuuuuul}
+df31c599 = Y a un truc de {merde}\n   là-dedans.
+b3f3d49a =    t'as pas envie\nd'aller là, {putain}.
+568837b9 = du calme, {merde} !\ndu calme, là
+65563a1d =      et dis-moi \nc'qui va pas, {bordel}.
+a2911ad3 = bon, ok, tout a commencé  \n  y a deux {putains} de jours.
+# assets06/0039
+20b7e579 = Déposez tout objet\nmétallique dans le \n{putain} de bac . . .
+# assets06/0042
+d3471788 =  je crois que ça\nva . . . {merde} . . .
+# assets06/0046
+95f2ca1c =  ha, ha, {putain} !
+5b23777a = regardez, Fred\ns'est {chié} dessus.
+# assets06/0047
+3ab4bc2f = Un peu plus tard, {bordel} .  .  .
+0f141058 = Ah, {putain}, cool . . .
+e0c8541f =   Millionnaire, {bordel} !  
+ccf5903e =    hé, regarde\noù tu {fous} tes\n    chut . . .

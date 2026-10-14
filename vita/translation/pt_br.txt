@@ -2681,3 +2681,149 @@ a7b1c18c = ah ! oizinho.
 c46092c2 =  isso mesmo, \neu sou tua mamãe.
 0addf058 = vem, segue a\nmamãe, {porra}.
 
+# Pages found later (Birdy, the Queen Bee, the Professor, Berri's answerphone, the Great Mighty Poo...)
+# assets06/0004
+ec728776 =  alguém\nchamou, {caralho}?
+7997cb2f = ah, essas vespas\n{escrotas do caralho}.
+2610ffb1 = que {porra} a gente\n   vai fazer ?
+1775d120 = minha linda \ncolmeia {sumiu, porra},
+2d7b9d68 = e eu nunca mais\nvou ver ela, {caralho}.
+d9beb812 = por favor, traz\nela de volta, {porra},
+5a4e8b49 = senão eu não sei\nque {caralhos} a gente\n   vai fazer.
+562a6207 = tá, tá, calma, {porra} !\nvou lá buscar \n {essa merda}.
+adb59879 = e agora, cadê {a porra} ?
+1261ef6d = <BE>é só meter uma\n{puta} banana de tnt . . .
+b3f3d250 = <BE>{explodiu a porra} !
+310ed7b1 = <BE>que {fedor do caralho} !
+622cee55 = isso pede minha\nmáscara de gás, {porra} !
+55877e2e = oi, sou eu\nde novo, {porra}. . .
+59bf260a = sr. espantalho\n  birdy, {caralho} !
+b13132b0 = certo, qual é a\n{porra} do problema ?
+a287cef3 = ah sim, você \nprecisa manual, {porra} !
+2660651c = senão, {caralho}. . .
+fa8119b2 = não funciona\n{porra} nenhuma.
+2a090fbf = toma\n   {aqui, porra}.
+# assets06/0007
+d5c35ac0 =  tenho que sair \ndessa {porra} !
+# assets06/0008
+08cf329f = parece que a \n   colmeia vive \nsendo roubada, {porra}.
+5b04cfe1 = tô {cagando}.
+b37244c9 = nem cabia nessa\n<A2><B5> <A2><B3> <A2><B2> <A2><B4><A1> \nde colmeia, {porra}.
+1bd39cf7 = já viu como ela\n   é {gorda pra caralho} ?
+14566ca6 = {jararaca} !
+4d81cca6 = agora fui rebaixado\n a {mendigo}\n   {de merda}.
+d7223ea3 = {é, porra} !
+a05ec03f = ali atrás\nda gente, {caralho} . . .
+# assets06/0014
+7ff65016 = fazer uma entrada \n  {fodona}, ja.
+c8875102 = {caralho}, isso pode \n zer importante . . . !
+ae4c6004 = aah ! {porra}, professor,
+ef983fde = bem-vindo, {cacete} !
+c6d91ef7 = tenho um {puto} \n serviço pra você,
+f4f640e0 = como vê, {porra} . . .
+7d97677c = a {puta} mesa !
+0408ab2e = a mesa, {caralho},\nah, ja !
+9ce0b137 = então focê derramou\n o {puto} leite de nofo ?
+42f6dc94 = isso não ser bom, \n  não ser bom, {porra} !
+2722123d = deixa eu dar uma\n  olhada {nessa merda}.
+52e24d14 =  aha, eu fou zer rápido\n{pra caralho}, senhor !
+5c937fad = porque cê sabe que\n{merda} deu da última vez !
+a53c1d8b = ah, ja ! {sei, caralho} !\n  sei até demais !
+e15778b6 = eu fou agora, {porra}.
+d4cc49b1 = eu não quero \nter que, {porra} . . .
+8df1d604 =  pegar a {porra} da\nfita adesiva de novo !
+f666ef7d = ja, digo, não, {porra} !
+c03d07cc = eu não quero que focê\npegue a {porra} da \nfita de nofo !
+64ed6e84 = tchau, tchau, {porra}.
+65e7b781 = ja, eu . . . eu acho que fejo\n   a {porra} do problema !
+28acaa69 = fou fer o que \n  dá pra fazer, {porra}.
+6c173a89 = mas focê me dá\num {puto} momento.
+998775bf = eu folto \nmais tarde, {porra}.
+ea7b3eef = eureca ! \neureca, {caralho} !
+# assets06/0019
+e3bdc7d4 = <BF>oi, cê ligou pra,\ntipo, a {porra} da\ncasa da berri.
+a07260dd =    não posso atender \na {porra} do telefone. . .\n         óbvio !
+3f4cd2e7 =           mas, {porra},\n  se cê deixar seu,\ntipo, nome e número,
+06de7017 = e tiver uma\nvoz {gostosa},
+c5201ac6 = talvez eu\nte ligue.\n  ciao, {tesão} !
+# assets06/0022
+c0fe93d6 = já que tô na {merda},\nvou até o pescoço,\n   eu acho.
+71fc0b69 = mamãe, {porra},
+9f51829f = quero minha mamãe ,\n      mamãe,\n     {buááá, caralho} .
+a7cbc793 =  oi, é um \n esquilinho {do caralho} .
+b5d137ff =  oi, {porra} ,
+9c70217b = me ajuda, {porra} .\npor favor .
+028ad3d0 = eu não sou\n  mais uma\nmenininha, {porra}
+0a0b7fcf = faz um {puta} \ntempo já.
+# assets06/0028
+b3341f84 = ué, quem\né você, {porra} ?
+be9789bf = cê pode me\najudar, {caralho} ?
+5e1d8bf2 =  preciso ir\npra casa e\n {capotar} na cama,
+8e0a5641 = porque eu tô\n  me sentindo\n {um lixo do caralho}.
+a74a6c2a = hã, {porra}. . .
+5052261c = casa ?\n  não, {porra} !
+96eae088 = então cê não\najuda {porra} nenhuma.
+fc2408b0 = hã, na verdade,\n posso sim,\n  {caralho}, talvez !
+d3fe73bb =  tá, qual é a\n{porra} do seu nome ?
+cc1fde55 = birdy, {porra}.
+3fe3e711 = barbudy,
+b366ba9e = mas, mas cê\nnão tem\nbarba {porra} nenhuma !
+2c828bf5 = não, {caralho}, birdy ,
+1cf7082a = eu espanto\n{pintinho}, {porra} !
+d56f44ab = tá vendo essas\n   {porras} de botão. . .
+86a18c5f = na verdade, cê vai\n ver que, hã, {porra},
+7c2fee38 = hã, eles são {porra}\nsensíveis ao contexto.
+8bcf31f9 =    e, hã,\nbom, {caralho},\n  eles, hã,
+5467bd60 = ah, não vou\n      {recusar, porra} .
+9d4f23b7 = valeu\n{pra caralho} .
+e6aa25ca = <BE>{falou, otário}.
+# assets06/0036
+e136f04d = preparar pra mostrar\na {bunda} pra ele.
+6149baf8 = meia-volta, {porra} !
+393e3b6f =  aah ! isso me\ndá outra {puta}\nideia . . .
+14b61e63 = rá ! rá ! o simon, \no {otário do caralho}, \ncaiu !
+07c5bd19 = é, o {arrombado} \ndo simon \ntorrou todo !
+6352441d = agora, se o {otário}\ndo esquilo quiser a\ngrana de volta . . .
+02c56e91 = pode usar a {porra} \nda prancha do simon \npra apostar corrida !
+# assets06/0038
+5976a5f5 = eu sou o grande cocô poderoso
+55623102 = e vou jogar minha {merda} em
+666b7816 = você, {seu bosta}
+73bccb37 = um baita estoque de {bosta}
+80de5d2d = sai do meu {fiofó} de chocolate
+9439486c = que tal um {cocô}, {cuzão} bocó ?
+f3937d6e = acha que sobrevive aqui, {porra} ?
+a0c7955c = parece que você não sabe, {porra}
+17de3558 = em que {merda} você se meteu
+2fb837c9 = milho doce é a única {porra}
+77d2bce1 = que passa inteira pelo meu {cu}
+eb76793e = como {caralhos} sorrio tão lindo ?
+ea72cdb9 = agora tô ficando {puto} de verdade
+36f2cb9b = você é um {chato} coceguento
+3f05d05b = {bostinha} grudada no {pentelho}
+56bd3ec6 = quando eu te nocautear, {porra}
+0292c045 = com toda a minha {bosta}
+d1797e1e = vou pegar a {porra} da sua cabeça
+e9fc7f44 = e enfiar ela no meu {cu}
+55973391 = no seu {cu}
+45cf1db2 = no meu {cu}
+9b671a77 = isso mesmo, no meu {cu}
+d9cb6f77 = hããã
+4e493c3b = no meu {cuuuuuuu}
+df31c599 = tem uma {merda} muito\n   ruim lá dentro.
+b3f3d49a =    cê não vai querer\nentrar lá, {porra}.
+568837b9 = calma, {porra} ! agora\nsó fica calmo
+65563a1d =      e me conta \nque {merda} aconteceu.
+a2911ad3 = certo, então, essa {porra}  \n  começou faz dois dias.
+# assets06/0039
+20b7e579 = favor colocar qualquer\nobjeto metálico \nna {porra} da bandeja . . .
+# assets06/0042
+d3471788 =  acho que essa\n{porra} vai . . .
+# assets06/0046
+95f2ca1c =  rá, rá, {caralho} !
+5b23777a = olha, o fred\n{se cagou todo}.
+# assets06/0047
+3ab4bc2f = um {puta} tempo depois .  .  .
+0f141058 = ah, {do caralho} . . .
+e0c8541f =   {milionário, porra} !
+ccf5903e =    ei, olha por\nonde {caralhos} cê\n    sssh . . .

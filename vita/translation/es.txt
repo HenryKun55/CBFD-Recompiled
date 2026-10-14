@@ -2680,3 +2680,150 @@ a7b1c18c = ¡ah ! holita,\n{cabroncito}.
 c46092c2 =  así es, \nyo soy tu {pinche} mami.
 0addf058 = ven, sígueme,\n{cagoncito}.
 
+# Pages found later (Birdy, the Queen Bee, the Professor, Berri's answerphone, the Great Mighty Poo...)
+# Conker: páginas de diálogo que faltaban, en español.
+# assets06/0004
+ec728776 =  ¿me llamaste,\n{carajo}?
+7997cb2f = ay, esas {pinches},\n{pinches} avispas.
+2610ffb1 = ¿qué {chingados}\n   vamos a hacer ?
+1775d120 = mi hermosa \ncolmena {valió verga},
+2d7b9d68 = y nunca la voy a\nvolver a ver, {carajo}.
+d9beb812 = por favor, tráenosla\nde vuelta, {güey},
+5a4e8b49 = o no sé qué\n{chingados} vamos\n   a hacer.
+562a6207 = ¡ok, ok, cálmate, {güey} !\nya voy y te la \n traigo.
+adb59879 = ¿y dónde {carajo} está ?
+1261ef6d = <BE>Nomás un cartucho\nde {pinche} tnt . . .
+b3f3d250 = <BE>¡Ya valió {verga} !
+310ed7b1 = <BE>¡Qué {pinche} peste !
+622cee55 = ¡Esto pide mi\n{puta} máscara de gas !
+55877e2e = hola, soy yo\notra vez, {güey}. . .
+59bf260a = ¡don espantapájaros\n  pajarín, {cabrón} !
+b13132b0 = a ver, ¿cuál es\nel {pinche} problema ?
+a287cef3 = ¡ah, sí, tú \nnecesitar manual, {güey} !
+2660651c = si no, {pinche}. . .
+fa8119b2 = no funcionar,\n{carajo}.
+2a090fbf = ahí\n   tienes, {cabrón}.
+# assets06/0007
+d5c35ac0 =  ¡tengo que bajarme\nde esta {chingadera} !
+# assets06/0008
+08cf329f = parece que la \n {pinche} colmena \nse la roban a cada rato.
+5b04cfe1 = me vale {madres}.
+b37244c9 = ni cabía en la\n<A2><B5> <A2><B3> <A2><B2> <A2><B4><A1> \ncosa esa, {carajo}.
+1bd39cf7 = ¿ya viste lo gorda\n que está la {cabrona} ?
+14566ca6 = ¡{perra} !
+4d81cca6 = y ahora me rebajaron\n a {pinche}\n   vagabundo.
+d7223ea3 = ¡Sí, {carajo} !
+a05ec03f = allá, detrás de\nnosotros, {güey} . . .
+# assets06/0014
+7ff65016 = Hay que entrar \n {bien chingón}.
+c8875102 = ¡Esto puete ser \n {pinche} importante . . . !
+ae4c6004 = ¡AAH ! Profesor {cabrón},
+ef983fde = ¡Bienvenido, {carajo} !
+c6d91ef7 = Tengo un {pinche} \n trabajo para ti,
+f4f640e0 = Como puedes ver,\n{güey} . . .
+7d97677c = ¡La {pinche} Mesa !
+0408ab2e = ¡LA Mesa,\nAh, ja, {carajo} !
+9ce0b137 = ¿Así que otra fez\n tiró la {pinche} leche ?
+42f6dc94 = ¡Eso no está bien, \n nata bien, {carajo} !
+2722123d = Téjeme echarle\n  un {pinche} ojo.
+52e24d14 =  ¡Aja, iré lo más\nrápito que pueta,\nmajestad {cabrona} !
+5c937fad = ¡Porque ya sabes\nqué {chingados}\npasó la última vez !
+a53c1d8b = ¡Ay, ja ! ¡Temasiado bien !\n  ¡{pinche} temasiado bien !
+e15778b6 = ya me foy, {carajo}.
+d4cc49b1 = No quiero, {carajo},\ntener que . . .
+8df1d604 =  ¡sacar la {pinche}\ncinta adhesiva otra vez !
+f666ef7d = ¡sí, tigo, no,\n{carajo} !
+c03d07cc = ¡no quiero que saque\nla {pinche} cinta \nadhesiva otra fez !
+64ed6e84 = Atiós, {carajo}, atiós.
+65e7b781 = sí, yo . . . creo que feo\n   ¡el {pinche} problema !
+28acaa69 = feré qué {chingados} \n  pueto hacer.
+6c173a89 = pero teme un\n{pinche} momento.
+998775bf = folferé más \ntarte, {carajo}.
+ea7b3eef = ¡Eureka, {carajo} ! \n¡Eureka !
+# assets06/0019
+e3bdc7d4 = <BF>Hola, llamaste a la casa\nde Berri, o sea, {güey}.
+a07260dd =    no puedo contestar \nel {pinche} teléfono. . .\n         ¡obvio !
+3f4cd2e7 =           pero,\n  si dejas tu, o sea,\n{pinche} nombre y número,
+06de7017 = y suenas {papacito},
+c5201ac6 = a lo mejor\nte llamo.\n  ¡chao, {güey} !
+# assets06/0022
+c0fe93d6 = de perdidos al río,\n{carajo},\n   supongo.
+71fc0b69 = ¡mami, {carajo} !
+9f51829f = quiero a mi mami ,\n      mami,\n  {chingao}, buaa .
+a7cbc793 =  hola, es una \n {pinche} ardillita .
+b5d137ff =  hola, {güey} ,
+9c70217b = ayúdame .\nporfa, {carajo} .
+028ad3d0 = Zí, ya no\n  soy una\n{pinche} niñita
+0a0b7fcf = desde hace un \n{chingo}.
+# assets06/0028
+b3341f84 = eh, ¿quién\n{chingados} eres ?
+be9789bf = ¿me puedes\nayudar, {güey} ?
+5e1d8bf2 =  necesito llegar\na casa y meterme\n a la {pinche} cama,
+8e0a5641 = porque me siento\n  bien de la\n {verga}.
+a74a6c2a = eh. . . {chale}. . .
+5052261c = ¿a casa ?\n  ¡ni {madres} !
+96eae088 = o sea que no me\nayudas ni {madres}.
+fc2408b0 = eh, la neta,\n sí puedo,\n  ¡a lo mejor, {güey} !
+d3fe73bb =  ok, ¿cómo te\nllamas, {cabrón} ?
+cc1fde55 = pajarín, {güey}.
+3fe3e711 = ¿{pinche} barbarín ?
+b366ba9e = ¡pero, pero si\nno tienes\nni {madres} de barba !
+2c828bf5 = no, pajarín, {güey},
+1cf7082a = ¡espanto a los\n{pinches} pajaritos !
+d56f44ab = ¿ves esos {pinches}\n   botones. . .
+86a18c5f = la neta, vas a\n ver que eh, {güey},
+7c2fee38 = eh, se llaman sensibles\nal {pinche} contexto.
+8bcf31f9 =    y eh,\nbueno, la neta,\n  {chingao}, eh,
+5467bd60 = ah, pues ni modo,\n  me lo empino, {cabrón} .
+9d4f23b7 = muchas {pinches}\ngracias .
+e6aa25ca = <BE>Nos vidrios, {güey}.
+# assets06/0036
+e136f04d = prepárense pa' enseñarle\nel {pinche} {culo}.
+6149baf8 = ¡Media vuelta, {cabrones} !
+393e3b6f =  ¡Ahh ! eso me\nda otra {pinche}\nidea . . .
+14b61e63 = ¡Ja ! ¡ja ! simon, el\n{pendejo} {cabrón}, \n¡se cayó !
+07c5bd19 = ¡sí, el {pendejo} \n{culero} quedó \nbien rostizado !
+6352441d = y si la {pendeja}\nardilla quiere su\nlana de vuelta . . .
+02c56e91 = ¡que use la {pinche}\ntabla de simon pa' \ncorrer contra nosotros !
+# assets06/0038
+5976a5f5 = Soy la gran y poderosa {caca}
+55623102 = Y te voy a aventar mi {mierda}
+666b7816 = a ti, {cabrón}
+73bccb37 = Un surtido enorme de {adreim}
+80de5d2d = sale de mi {culo} de chocolate
+9439486c = ¿Un poco de {caca}, {pendejete}?
+f3937d6e = ¿Crees que aquí sobrevives, {güey}?
+a0c7955c = Parece que no sabes, {pendejo},
+17de3558 = en qué {mierda} te metiste
+2fb837c9 = El {pinche} elote es lo único
+77d2bce1 = que sale entero por mi {culo}
+eb76793e = ¿Por qué crees que sonrío, {güey}?
+ea72cdb9 = Ahora sí me estás {encabronando}
+36f2cb9b = Eres como una molesta, {pinche}
+3f05d05b = bolita de {mierda} en el pelo
+56bd3ec6 = Cuando te haya noqueado, {güey}
+0292c045 = con toda mi {cagarruta}
+d1797e1e = voy a agarrar tu {pinche} cabeza
+e9fc7f44 = y metérmela por el {culo}
+55973391 = tu {culo}
+45cf1db2 = mi {culo}
+9b671a77 = así es, mi {culo}
+d9cb6f77 = eeeh, {carajo}
+4e493c3b = mi {cuuuuuuulo}
+df31c599 = Hay algo bien {culero}\n   ahí adentro.
+b3f3d49a =    nomás no te\nmetas ahí, {güey}.
+568837b9 = ¡cálmate ! ya,\nnomás cálmate, {güey}
+65563a1d =      y dime qué\n{chingados} pasa.
+a2911ad3 = bueno, ok, todo empezó  \n  hace como dos {pinches} días.
+# assets06/0039
+20b7e579 = Por favor, ponga cualquier\nobjeto metálico \nen la {pinche} bandeja . . .
+# assets06/0042
+d3471788 =  creo que está\na punto de . . . {carajo}
+# assets06/0046
+95f2ca1c =  ¡ja, ja, {cabrón} !
+5b23777a = mira, Fred se\n{cagó} en los calzones.
+# assets06/0047
+3ab4bc2f = Un {pinche} rato después .  .  .
+0f141058 = Ah, {chingón} . . .
+e0c8541f =   ¡Millonario, {cabrón} !
+ccf5903e =    oye, fíjate\npor dónde vas, {pende}\n    sssh . . .
