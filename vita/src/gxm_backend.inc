@@ -201,6 +201,10 @@ namespace gxm {
         fb.width = screen_width;
         fb.height = screen_height;
         sceDisplaySetFrameBuf(&fb, SCE_DISPLAY_SETBUF_NEXTFRAME);
+        // Each frame stays a VI at least: without the wait the next one queued replaced it
+        // before it was shown (an in-between frame and the game's, presented a few ms apart,
+        // showed as one: 60 presents a second looked like 30).
+        sceDisplayWaitVblankStart();
     }
 
     void* patcher_host_alloc(void*, SceSize size) { return std::malloc(size); }
