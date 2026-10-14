@@ -13,7 +13,9 @@
 // word: written out, or with the Censorship setting as the game's own coloured symbols (the
 // US text has only those).
 
+#include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -53,19 +55,22 @@ namespace {
         return c ^ 0xFFFFFFFFu;
     }
 
-    // The font's letters (D_80085930) for Portuguese: the accents it lacks become the
-    // nearest it has.
+    // The font's letters (D_80085930) for Portuguese (the ones it lacks: conker_font_patch).
     void put_char(std::string& out, uint32_t cp) {
         switch (cp) {
-            case 0xE1: case 0xE0: case 0xC1: case 0xC0: out += '\xC0'; return; // á à -> À
-            case 0xE2: case 0xE3: case 0xC2: case 0xC3: out += '\xC2'; return; // â ã -> Â
-            case 0xE7: case 0xC7: out += '\xC7'; return;                        // ç
-            case 0xE9: case 0xC9: out += '\xC9'; return;                        // é
-            case 0xEA: case 0xCA: out += '\xCA'; return;                        // ê
-            case 0xED: case 0xCD: out += '\xCE'; return;                        // í -> Î
-            case 0xF3: case 0xF4: case 0xF5: case 0xD3: case 0xD4: case 0xD5: out += '\xD4'; return; // ó ô õ -> Ô
-            case 0xFA: case 0xDA: out += '\xDB'; return;                        // ú -> Û
-            case 0xFC: case 0xDC: out += '\xDC'; return;                        // ü
+            case 0xE1: case 0xC1: out += '\xC1'; return; // á (conker_font_patch's glyph)
+            case 0xE0: case 0xC0: out += '\xC0'; return; // à
+            case 0xE2: case 0xC2: out += '\xC2'; return; // â
+            case 0xE3: case 0xC3: out += '\xC3'; return; // ã (conker_font_patch's)
+            case 0xE7: case 0xC7: out += '\xC7'; return; // ç
+            case 0xE9: case 0xC9: out += '\xC9'; return; // é
+            case 0xEA: case 0xCA: out += '\xCA'; return; // ê
+            case 0xED: case 0xCD: out += '\xCD'; return; // í (conker_font_patch's)
+            case 0xF3: case 0xD3: out += '\xD3'; return; // ó (conker_font_patch's)
+            case 0xF4: case 0xD4: out += '\xD4'; return; // ô
+            case 0xF5: case 0xD5: out += '\xD5'; return; // õ (conker_font_patch's)
+            case 0xFA: case 0xDA: out += '\xDA'; return; // ú (conker_font_patch's)
+            case 0xFC: case 0xDC: out += '\xDC'; return; // ü
         }
         if (cp >= 'A' && cp <= 'Z') cp += 'a' - 'A'; // the dialogue is written in lowercase
         out += cp < 0x80 ? (char)cp : '?';
@@ -230,4 +235,133 @@ extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
     MEM_B(text.size(), addr(dest)) = 0;
     ctx->r2 = addr(dest);
     return 1;
+}
+
+// The font's Portuguese capitals (Á Ã Í Ó Õ Ú, which it lacks): drawn into the glyphs of the
+// German ones Portuguese never uses (Ä ä Ö ö ß Ï) in the font's own style, from its accented
+// capitals (À Â Î Ô Û: their letters are squashed under the accent, lines 1-3 of 12) with the
+// accent changed for É's acute or the ~ glyph's tilde, and the character table pointed at
+// them (the codes put_char writes). Done when a glyph is first looked up (func_15042C40), and
+// again if the font was loaded anew.
+namespace {
+    constexpr uint32_t font_chars = 0x80085930;     // D_80085930: a character per glyph (95)
+    constexpr uint32_t font_textures = 0x80085990;  // per font: its glyphs, 224 bytes each (I8)
+    constexpr uint32_t font_metrics = 0x80085994;   // per font: width, height, x and y offsets
+    constexpr uint32_t glyph_bytes = 224;
+
+    struct Glyph {
+        uint8_t w = 0, h = 0, xoff = 0, yoff = 0;
+        uint8_t px[14][16] = {};
+    };
+
+    // I8 rows of (w + 7) & ~7 bytes, odd rows with their 32-bit halves swapped (TMEM's order).
+    Glyph read_glyph(uint8_t* rdram, uint32_t tex, uint32_t met, int g) {
+        Glyph G;
+        G.w = (uint8_t)MEM_B(g * 4 + 0, addr(met));
+        G.h = (uint8_t)MEM_B(g * 4 + 1, addr(met));
+        G.xoff = (uint8_t)MEM_B(g * 4 + 2, addr(met));
+        G.yoff = (uint8_t)MEM_B(g * 4 + 3, addr(met));
+        const uint32_t row = (G.w + 7u) & ~7u;
+        for (int y = 0; y < G.h && y < 14; y++) {
+            for (int x = 0; x < G.w && x < 16; x++) {
+                const uint32_t i = ((uint32_t)y * row + (uint32_t)x) ^ ((y & 1) ? 4u : 0u);
+                if (i < glyph_bytes) G.px[y][x] = (uint8_t)MEM_B(g * glyph_bytes + i, addr(tex));
+            }
+        }
+        return G;
+    }
+
+    void write_glyph(uint8_t* rdram, uint32_t tex, uint32_t met, int g, const Glyph& G) {
+        MEM_B(g * 4 + 0, addr(met)) = (int8_t)G.w;
+        MEM_B(g * 4 + 1, addr(met)) = (int8_t)G.h;
+        MEM_B(g * 4 + 2, addr(met)) = (int8_t)G.xoff;
+        MEM_B(g * 4 + 3, addr(met)) = (int8_t)G.yoff;
+        const uint32_t row = (G.w + 7u) & ~7u;
+        for (uint32_t i = 0; i < glyph_bytes; i++) MEM_B(g * glyph_bytes + i, addr(tex)) = 0;
+        for (int y = 0; y < G.h && y < 14; y++) {
+            for (int x = 0; x < G.w && x < 16; x++) {
+                const uint32_t i = ((uint32_t)y * row + (uint32_t)x) ^ ((y & 1) ? 4u : 0u);
+                if (i < glyph_bytes) MEM_B(g * glyph_bytes + i, addr(tex)) = (int8_t)G.px[y][x];
+            }
+        }
+    }
+
+    // An accent: lines 1-3 of a glyph, cut to the columns it uses.
+    struct Accent { int w = 0; uint8_t px[3][16] = {}; };
+    Accent cut_accent(const Glyph& G) {
+        Accent A;
+        int lo = 16, hi = -1;
+        for (int r = 1; r <= 3; r++) {
+            for (int x = 0; x < G.w; x++) {
+                if (G.px[r][x]) { lo = std::min(lo, x); hi = std::max(hi, x); }
+            }
+        }
+        if (hi < lo) return A;
+        A.w = hi - lo + 1;
+        for (int r = 0; r < 3; r++) {
+            for (int x = 0; x < A.w; x++) A.px[r][x] = G.px[r + 1][lo + x];
+        }
+        return A;
+    }
+
+    // An accented capital: lines 1-3 cleared and the accent put there, over the letter's middle.
+    Glyph with_accent(Glyph G, const Accent& A) {
+        int lo = 16, hi = -1;
+        for (int r = 1; r <= 3; r++) for (int x = 0; x < 16; x++) G.px[r][x] = 0;
+        for (int r = 4; r < G.h && r < 14; r++) {
+            for (int x = 0; x < G.w; x++) {
+                if (G.px[r][x]) { lo = std::min(lo, x); hi = std::max(hi, x); }
+            }
+        }
+        if (hi < lo || A.w == 0) return G;
+        const float centre = (lo + hi) * 0.5f;
+        int left = (int)std::lround(centre - (A.w - 1) * 0.5f);
+        left = std::max(0, std::min((int)G.w - A.w, left));
+        for (int r = 0; r < 3; r++) {
+            for (int x = 0; x < A.w; x++) {
+                uint8_t& p = G.px[r + 1][left + x];
+                p = std::max(p, A.px[r][x]);
+            }
+        }
+        return G;
+    }
+
+    // Glyph indices in the character table.
+    constexpr int g_a_grave = 70, g_a_circ = 72, g_e_acute = 76, g_i_circ = 84, g_o_circ = 88, g_u_circ = 90;
+    struct NewGlyph { int slot; uint8_t code; int base; bool tilde; };
+    constexpr NewGlyph new_glyphs[] = {
+        { 63, 0xC1, g_a_grave, false }, // Á (in Ä's place)
+        { 64, 0xC3, g_a_circ, true },   // Ã (ä)
+        { 65, 0xCD, g_i_circ, false },  // Í (Ö)
+        { 66, 0xD3, g_o_circ, false },  // Ó (ö)
+        { 69, 0xD5, g_o_circ, true },   // Õ (ß)
+        { 86, 0xDA, g_u_circ, false },  // Ú (Ï)
+    };
+}
+
+extern "C" void conker_font_patch(uint8_t* rdram, recomp_context* ctx) {
+    (void)ctx;
+    // Done already (and the font not loaded again): the table points at the new glyphs.
+    if ((uint8_t)MEM_B(new_glyphs[0].slot, addr(font_chars)) == new_glyphs[0].code) return;
+    const uint32_t tex = (uint32_t)MEM_W(0, addr(font_textures));
+    const uint32_t met = (uint32_t)MEM_W(0, addr(font_metrics));
+    if ((tex >> 24) != 0x80 || (met >> 24) != 0x80) return;
+    const Accent acute = cut_accent(read_glyph(rdram, tex, met, g_e_acute));
+    // The ~ glyph squashed to the accent's three lines was a flat bar: a wave of our own.
+    Accent tilde;
+    {
+        static const uint8_t wave[3][6] = {
+            { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+            { 0x30, 0xD0, 0xF0, 0x70, 0x30, 0xE0 },
+            { 0xD0, 0x50, 0x30, 0xE0, 0xF0, 0x40 },
+        };
+        tilde.w = 6;
+        for (int r = 0; r < 3; r++) for (int x = 0; x < 6; x++) tilde.px[r][x] = wave[r][x];
+    }
+    if (acute.w == 0 || tilde.w == 0) return;
+    for (const NewGlyph& n : new_glyphs) {
+        const Glyph G = with_accent(read_glyph(rdram, tex, met, n.base), n.tilde ? tilde : acute);
+        write_glyph(rdram, tex, met, n.slot, G);
+        MEM_B(n.slot, addr(font_chars)) = (int8_t)n.code;
+    }
 }

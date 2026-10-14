@@ -675,3 +675,10 @@ text = "{ extern void conker_bubble_begin(uint8_t*, recomp_context*); conker_bub
 func = "func_15095D34"
 before_vram = 0x15096294
 text = "{ extern void conker_bubble_end(uint8_t*, recomp_context*); conker_bubble_end(rdram, ctx); }"
+
+# The font's Portuguese capitals (host/src/text_translation.cpp), made when a glyph is first
+# looked up.
+[[patches.hook]]
+func = "func_15042C40"
+before_vram = 0x15042C40
+text = "{ extern void conker_font_patch(uint8_t*, recomp_context*); conker_font_patch(rdram, ctx); }"
