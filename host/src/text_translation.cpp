@@ -104,8 +104,11 @@ namespace {
         const uint8_t colour = 0xA2 + seed % 4;
         out += (char)code_pulse;
         int n = 0;
-        for (char c : word) {
+        for (size_t i = 0; i < word.size(); i++) {
+            const char c = word[i];
             if (c == ' ') { out += ' '; continue; }
+            // A swear across a line break keeps the break.
+            if (c == '\\' && i + 1 < word.size() && word[i + 1] == 'n') { out += '\n'; i++; continue; }
             if ((uint8_t)c >= 0x80 && ((uint8_t)c & 0xC0) == 0x80) continue; // UTF-8 continuation
             out += (char)colour;
             out += (char)(0xB2 + (seed + n * 3) % 4);
