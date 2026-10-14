@@ -165,6 +165,40 @@ namespace {
 }
 
 // True when it answered ($v0 = the translated page) and func_1516C878 returns at once.
+namespace {
+    void load_all(Language& lang) {
+        load(lang, "pt_br.txt");
+        lang.loaded = false;
+        load(lang, "pt_br_ui.txt"); // menus and hints
+    }
+
+    // A translation's game bytes in RDRAM past the game's 8 MB (kept while there's room).
+    uint32_t place(uint8_t* rdram, uint32_t key, const std::string& line, bool censored) {
+        const std::string text = encode(line.c_str(), censored, key);
+        const uint64_t slot = ((uint64_t)key << 1) | (censored ? 1 : 0);
+        auto at = placed.find(slot);
+        uint32_t dest;
+        if (at != placed.end()) {
+            dest = at->second;
+        }
+        else {
+            if (text_area_next + text.size() + 1 > text_area_end) {
+                // Full: start over (pages shown long ago are rewritten when shown again).
+                placed.clear();
+                text_area_next = text_area_start;
+            }
+            dest = text_area_next;
+            text_area_next = (text_area_next + (uint32_t)text.size() + 1 + 3) & ~3u;
+            placed[slot] = dest;
+        }
+        for (size_t i = 0; i < text.size(); i++) {
+            MEM_B(i, addr(dest)) = (int8_t)text[i];
+        }
+        MEM_B(text.size(), addr(dest)) = 0;
+        return dest;
+    }
+}
+
 extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
 #if defined(__vita__)
     const int language = conker::text_language();
@@ -178,7 +212,7 @@ extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
     }
     Language& lang = languages[language];
     if (!lang.loaded) {
-        load(lang, "pt_br.txt");
+        load_all(lang);
     }
     if (lang.pages.empty()) {
         return 0;
@@ -212,29 +246,74 @@ extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
         return 0;
     }
 
-    const std::string text = encode(found->second.c_str(), censored, key);
-    const uint64_t slot = ((uint64_t)key << 1) | (censored ? 1 : 0);
-    auto at = placed.find(slot);
-    uint32_t dest;
-    if (at != placed.end()) {
-        dest = at->second;
-    }
-    else {
-        if (text_area_next + text.size() + 1 > text_area_end) {
-            // Full: start over (pages shown long ago are rewritten when shown again).
-            placed.clear();
-            text_area_next = text_area_start;
-        }
-        dest = text_area_next;
-        text_area_next = (text_area_next + (uint32_t)text.size() + 1 + 3) & ~3u;
-        placed[slot] = dest;
-    }
-    for (size_t i = 0; i < text.size(); i++) {
-        MEM_B(i, addr(dest)) = (int8_t)text[i];
-    }
-    MEM_B(text.size(), addr(dest)) = 0;
-    ctx->r2 = addr(dest);
+    ctx->r2 = addr(place(rdram, key, found->second, censored));
     return 1;
+}
+
+// Menus, the start screens and the multiplayer's texts (vita/translation/pt_br_ui.txt, keyed by
+// the CRC32 of the whole string as vita/tools/text_dump_ui.py lists them): func_15042D94 and its
+// sibling format them (printf-like) through func_15042ECC, its format ($a0) and its arguments
+// ($a1, a word each). This runs at its start: a translated format is put in its place, and so is
+// each %s argument with a translation. The game's own strings are left as they are (cheat entry
+// compares with them).
+namespace {
+    bool translate_string(uint8_t* rdram, Language& lang, bool censored, gpr s, uint32_t& out) {
+        if ((uint32_t)s >> 24 != 0x80) return false;
+        uint8_t bytes[max_page];
+        size_t n = 0;
+        while (n < max_page && (bytes[n] = (uint8_t)MEM_B(n, s)) != 0) n++;
+        if (n == 0 || n == max_page) return false;
+        const uint32_t key = crc32(bytes, n);
+        auto found = lang.pages.find(key);
+        if (found == lang.pages.end()) return false;
+        out = place(rdram, key, found->second, censored);
+        return true;
+    }
+}
+
+extern "C" void conker_translate_ui(uint8_t* rdram, recomp_context* ctx) {
+#if defined(__vita__)
+    const int language = conker::text_language();
+    const bool censored = conker::text_censored();
+#else
+    const int language = 0;
+    const bool censored = true;
+#endif
+    if (language <= 0 || language > 1) return;
+    Language& lang = languages[language];
+    if (!lang.loaded) load_all(lang);
+    if (lang.pages.empty()) return;
+    const gpr fmt = ctx->r4;
+    if ((uint32_t)fmt >> 24 != 0x80) return;
+    // The %s arguments first (from the game's format, which says where they are).
+    int arg = 0;
+    for (size_t i = 0; i < max_page; i++) {
+        const uint8_t c = (uint8_t)MEM_B(i, fmt);
+        if (c == 0) break;
+        if (c != '%') continue;
+        size_t j = i + 1;
+        while (j < max_page) {
+            const uint8_t d = (uint8_t)MEM_B(j, fmt);
+            if (d == 0 || std::strchr("diouxXcspfeEgG%", d)) break;
+            j++;
+        }
+        const uint8_t conv = (uint8_t)MEM_B(j, fmt);
+        if (conv == 0) break;
+        i = j;
+        if (conv == '%') continue;
+        if (conv == 'f' || conv == 'e' || conv == 'E' || conv == 'g' || conv == 'G') return; // doubles: not handled
+        if (conv == 's' && arg < 16) {
+            uint32_t to;
+            if (translate_string(rdram, lang, censored, (gpr)MEM_W(arg * 4, ctx->r5), to)) {
+                MEM_W(arg * 4, ctx->r5) = (int32_t)to;
+            }
+        }
+        arg++;
+    }
+    uint32_t to;
+    if (translate_string(rdram, lang, censored, fmt, to)) {
+        ctx->r4 = addr(to);
+    }
 }
 
 // The font's Portuguese capitals (Á Ã Í Ó Õ Ú, which it lacks): drawn into the glyphs of the

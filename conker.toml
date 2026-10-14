@@ -682,3 +682,10 @@ text = "{ extern void conker_bubble_end(uint8_t*, recomp_context*); conker_bubbl
 func = "func_15042C40"
 before_vram = 0x15042C40
 text = "{ extern void conker_font_patch(uint8_t*, recomp_context*); conker_font_patch(rdram, ctx); }"
+
+# Translated menus and start screens (host/src/text_translation.cpp): func_15042ECC formats the
+# texts func_15042D94 and its sibling draw ($a0 the format, $a1 its arguments).
+[[patches.hook]]
+func = "func_15042ECC"
+before_vram = 0x15042ECC
+text = "{ extern void conker_translate_ui(uint8_t*, recomp_context*); conker_translate_ui(rdram, ctx); }"

@@ -154,4 +154,5 @@ vita_create_vpk(ConkerVita.vpk ${VITA_TITLEID} eboot.bin
     NAME ${VITA_APP_NAME}
     FILE sce_sys sce_sys
     FILE ${CMAKE_CURRENT_SOURCE_DIR}/translation/pt_br.txt translation/pt_br.txt
+    FILE ${CMAKE_CURRENT_SOURCE_DIR}/translation/pt_br_ui.txt translation/pt_br_ui.txt
 )
