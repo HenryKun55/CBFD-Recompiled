@@ -857,12 +857,47 @@ namespace {
         uint32_t vbase = 0, ibase = 0, icount = 0; // in the list's vertex and index arrays
         uint32_t vcount = 0;
         bool raw = false; // its vertices are VertexIns to finish (triangles), not GLVertexes (rectangles)
+        bool deferred = false; // its triangles are the list's tris[tbase, tbase + tcount)
+        uint32_t tbase = 0, tcount = 0;
         bool debug = false; // debug: log its finished vertices
         bool strong_decal = false; // debug (flag 262144): a larger depth bias for decals
     };
 
     class GxmBackend;
     using Backend = GxmBackend;
+
+    // Deferred geometry: the list reader records the vertices as loaded and the triangles as
+    // the vertices they join; the back (on another core) transforms, culls, cuts, lights and
+    // batches them (expand_triangles). The reader was the frame's bottleneck on the Vita.
+    struct SrcVertex {
+        int16_t x, y, z, flag;  // as loaded (model space)
+        int16_t s, t;           // texture coordinates as loaded
+        uint8_t r, g, b, a;     // colour (or normal)
+        int8_t n0, n1;          // the advanced lighting's normal x, y
+        uint16_t ctx;           // the list's context
+        uint16_t xform;         // the list's transform
+        uint16_t done;          // modified (G_MODIFYVTX): r, g, b, a and fs, ft are final
+        float fs, ft;
+    };
+    // A load's transform: the matrix's rows and the viewport (into the framebuffer's
+    // normalised coordinates, x of the 4:3 view in a wider image included).
+    struct Xform {
+        float row[4][4];
+        float vscale[4], vtrans[4];
+    };
+    // The list's geometry stream, in order: loads into the 64 vertex slots (as the RSP's) and
+    // triangles joining slots. The back keeps the slots as the reader did (they stay in its
+    // cache: indexing every loaded vertex of the frame didn't, and the Vita's back took twice
+    // as long as the reader had).
+    struct TriRec {
+        uint8_t v[3];           // a triangle's slots; a load: v[0] its first slot
+        uint8_t flags;          // TRI_*, or REC_LOAD
+        uint16_t uv;            // the list's texture mapping
+        uint16_t count;         // a load: how many vertices
+        uint32_t src;           // a load: its first vertex in the list's src
+        float prim_z;           // with TRI_ZPRIM: the primitive depth (normalised)
+    };
+    constexpr uint8_t TRI_CULL_FRONT = 1, TRI_CULL_BACK = 2, TRI_FLAT = 4, TRI_ZPRIM = 8, TRI_SKIP = 16, REC_LOAD = 128;
 
     struct CommandList {
         std::vector<std::function<void(Backend&, CommandList&)>> cmds;
@@ -874,6 +909,13 @@ namespace {
         std::vector<VertexContext> ctxs;
         std::vector<PointLight> lights; // the contexts' point lights
         std::vector<UvMap> uvmaps;
+        std::vector<SrcVertex> src;  // deferred geometry
+        std::vector<Xform> xforms;
+        std::vector<TriRec> tris;
+        std::vector<GLVertex> dverts; // the deferred draws' vertices and indices (the expander's)
+        std::vector<uint16_t> didx;
+        uint32_t debug_flags = 0;
+        uint32_t serial = 0; // which submission (lists are reused)
         size_t verts_used = 0, idx_used = 0;
         void reset() {
             cmds.clear();
@@ -881,9 +923,274 @@ namespace {
             ctxs.clear();
             lights.clear();
             uvmaps.clear();
+            src.clear();
+            xforms.clear();
+            tris.clear();
             verts_used = idx_used = 0;
         }
     };
+
+    // A raw or done vertex lit, coloured and mapped onto its textures (not its flat colour).
+    inline void finish_one(const CommandList& list, const VertexIn& v, GLVertex& g) {
+        g.x = v.x; g.y = v.y; g.z = v.z; g.w = v.w;
+        if (g.w > 0.0f) {
+            const float lim = g.w * 0.99999f;
+            g.z = g.z > lim ? lim : (g.z < -lim ? -lim : g.z);
+        }
+        float s, t;
+        if (v.done) {
+            g.color[0] = v.r; g.color[1] = v.g; g.color[2] = v.b; g.color[3] = v.a;
+            s = v.s;
+            t = v.t;
+        }
+        else {
+            const VertexContext& c = list.ctxs[v.ctx];
+            light_vertex(c, list.lights.data() + c.light_base, v, g.color, s, t);
+        }
+        const UvMap& m = list.uvmaps[v.uv];
+        g.u0 = (s * m.shift_s[0] - m.uls[0] + m.offset[0]) * m.inv_w[0];
+        g.v0 = (t * m.shift_t[0] - m.ult[0] + m.offset[0]) * m.inv_h[0];
+        g.u1 = (s * m.shift_s[1] - m.uls[1] + m.offset[1]) * m.inv_w[1];
+        g.v1 = (t * m.shift_t[1] - m.ult[1] + m.offset[1]) * m.inv_h[1];
+    }
+
+    // A loaded vertex through its transform: clip space, the framebuffer's, its outcodes.
+    struct XfVertex {
+        float x, y, z, w;       // through the viewport
+        float cx, cy, cz;       // clip space (lighting, fog)
+        float ndc_x, ndc_y;     // for culling
+        uint32_t clip;
+    };
+
+    inline void transform_vertex(const Xform& xf, const SrcVertex& sv, XfVertex& o) {
+        const float px = sv.x, py = sv.y, pz = sv.z;
+#if defined(__ARM_NEON)
+        const float32x4_t clip4 = vmlaq_n_f32(vmlaq_n_f32(vmlaq_n_f32(vld1q_f32(xf.row[3]), vld1q_f32(xf.row[0]), px),
+                                                          vld1q_f32(xf.row[1]), py), vld1q_f32(xf.row[2]), pz);
+        const float cw = vgetq_lane_f32(clip4, 3);
+        vst1_f32(&o.cx, vget_low_f32(clip4));
+        o.cz = vgetq_lane_f32(clip4, 2);
+        const float32x2_t tiny_w = vdup_n_f32(1e-6f);
+        const float32x2_t w2 = vdup_lane_f32(vget_high_f32(clip4), 1);
+        const float32x2_t wd = vbsl_f32(vcalt_f32(w2, tiny_w), tiny_w, w2);
+        float32x2_t est = vrecpe_f32(wd);
+        est = vmul_f32(est, vrecps_f32(wd, est));
+        est = vmul_f32(est, vrecps_f32(wd, est));
+        vst1_f32(&o.ndc_x, vmul_f32(vget_low_f32(clip4), est));
+        const float32x4_t pos = vmlaq_n_f32(vmulq_f32(clip4, vld1q_f32(xf.vscale)), vld1q_f32(xf.vtrans), cw);
+        vst1q_f32(&o.x, pos);
+        static const uint32_t below_bits[4] = { 1, 4, 16, 0 }, above_bits[4] = { 2, 8, 32, 0 };
+        const float32x4_t w4 = vdupq_lane_f32(vget_high_f32(pos), 1);
+        const uint32x4_t out = vorrq_u32(vandq_u32(vcltq_f32(pos, vnegq_f32(w4)), vld1q_u32(below_bits)),
+                                         vandq_u32(vcgtq_f32(pos, w4), vld1q_u32(above_bits)));
+        const uint32x2_t out2 = vorr_u32(vget_low_u32(out), vget_high_u32(out));
+        o.clip = vget_lane_u32(vpadd_u32(out2, out2), 0);
+#else
+        const float cx = px * xf.row[0][0] + py * xf.row[1][0] + pz * xf.row[2][0] + xf.row[3][0];
+        const float cy = px * xf.row[0][1] + py * xf.row[1][1] + pz * xf.row[2][1] + xf.row[3][1];
+        const float cz = px * xf.row[0][2] + py * xf.row[1][2] + pz * xf.row[2][2] + xf.row[3][2];
+        const float cw = px * xf.row[0][3] + py * xf.row[1][3] + pz * xf.row[2][3] + xf.row[3][3];
+        o.cx = cx; o.cy = cy; o.cz = cz;
+        const float rw = 1.0f / (std::fabs(cw) < 1e-6f ? 1e-6f : cw);
+        o.ndc_x = cx * rw; o.ndc_y = cy * rw;
+        o.x = cx * xf.vscale[0] + cw * xf.vtrans[0];
+        o.y = cy * xf.vscale[1] + cw * xf.vtrans[1];
+        o.z = cz * xf.vscale[2] + cw * xf.vtrans[2];
+        o.w = cw;
+        o.clip = negative(o.x + o.w) | (negative(o.w - o.x) << 1) | (negative(o.y + o.w) << 2) |
+                 (negative(o.w - o.y) << 3) | (negative(o.z + o.w) << 4) | (negative(o.w - o.z) << 5);
+#endif
+    }
+
+    // The vertex a triangle hands the lighting (as the reader made them before).
+    inline void deferred_vertex_in(const SrcVertex& sv, const XfVertex& xv, uint16_t uv, bool zprim, float prim_z, VertexIn& in) {
+        in.x = xv.x; in.y = xv.y; in.z = zprim ? prim_z * xv.w : xv.z; in.w = xv.w;
+        in.cx = xv.cx; in.cy = xv.cy; in.cz = xv.cz;
+        in.rs = sv.s; in.rt = sv.t; in.flag = sv.flag;
+        in.r = sv.r; in.g = sv.g; in.b = sv.b; in.a = sv.a;
+        in.n0 = sv.n0; in.n1 = sv.n1;
+        in.done = (uint8_t)sv.done;
+        in.s = sv.fs; in.t = sv.ft;
+        in.ctx = sv.ctx;
+        in.uv = uv;
+        in.color_from = ~0u;
+    }
+
+    constexpr float deferred_w_cut = 1e-3f; // as the reader's w_cut
+
+    inline VertexIn lerp_in(const VertexIn& a, const VertexIn& b, float t, bool normals) {
+        auto lf = [t](float x, float y) { return x + (y - x) * t; };
+        auto li = [t](int x, int y) { return (int)std::lround(x + (y - x) * t); };
+        VertexIn o = a;
+        o.x = lf(a.x, b.x); o.y = lf(a.y, b.y); o.z = lf(a.z, b.z); o.w = lf(a.w, b.w);
+        o.cx = lf(a.cx, b.cx); o.cy = lf(a.cy, b.cy); o.cz = lf(a.cz, b.cz);
+        o.s = lf(a.s, b.s); o.t = lf(a.t, b.t);
+        o.rs = (int16_t)li(a.rs, b.rs); o.rt = (int16_t)li(a.rt, b.rt);
+        auto lb = [&](uint8_t x, uint8_t y) {
+            return normals ? (uint8_t)(int8_t)li((int8_t)x, (int8_t)y) : (uint8_t)li(x, y);
+        };
+        o.r = lb(a.r, b.r); o.g = lb(a.g, b.g); o.b = lb(a.b, b.b);
+        o.a = (uint8_t)li(a.a, b.a);
+        o.n0 = (int8_t)li(a.n0, b.n0); o.n1 = (int8_t)li(a.n1, b.n1);
+        o.flag = (int16_t)((a.flag & 0xFF00) | ((uint8_t)(int8_t)li((int8_t)(a.flag & 0xFF), (int8_t)(b.flag & 0xFF))));
+        return o;
+    }
+
+    // The back's working state for a list's deferred geometry (one back thread): the vertex
+    // slots, worked out at each load, and the batch's vertices made from them.
+    struct ExpandScratch {
+        XfVertex xf[max_vertices];
+        uint32_t src[max_vertices];
+        uint32_t emit_serial[max_vertices] = {};
+        uint16_t emit_index[max_vertices] = {};
+        uint32_t serial = 1;
+        std::vector<GLVertex> verts;
+        std::vector<uint16_t> idx;
+        uint32_t list_serial = ~0u;
+        size_t nv = 0, ni = 0;
+        GLVertex* grow_v(size_t k) {
+            if (nv + k > verts.size()) verts.resize(std::max(verts.size() * 2, nv + k + 1024));
+            GLVertex* p = &verts[nv];
+            nv += k;
+            return p;
+        }
+        uint16_t* grow_i(size_t k) {
+            if (ni + k > idx.size()) idx.resize(std::max(idx.size() * 2, ni + k + 3072));
+            uint16_t* p = &idx[ni];
+            ni += k;
+            return p;
+        }
+    };
+
+    // A draw's stretch of the geometry stream made into its vertices and indices (scratch.verts/
+    // idx from 0): the loads worked out into the slots; for each triangle what the reader did
+    // before (outcodes, culling, the cut at the camera's plane), then the lighting.
+    inline void expand_triangles(const CommandList& list, DrawCmd& d, ExpandScratch& x) {
+        if (x.list_serial != list.serial) {
+            x.list_serial = list.serial;
+            for (uint32_t& v : x.src) v = ~0u;
+        }
+        // The draw's vertices and indices after the list's earlier ones; indices from its first.
+        const size_t vb = x.nv, ib = x.ni;
+        struct Done {
+            DrawCmd& d; ExpandScratch& x; size_t vb, ib;
+            ~Done() {
+                d.vbase = (uint32_t)vb; d.vcount = (uint32_t)(x.nv - vb);
+                d.ibase = (uint32_t)ib; d.icount = (uint32_t)(x.ni - ib);
+            }
+        } done{ d, x, vb, ib };
+        x.serial++;
+        const uint32_t dbg = list.debug_flags;
+        const TriRec* recs = list.tris.data() + d.tbase;
+        uint32_t last_key = ~0u;
+        float last_prim_z = 0.0f;
+        for (uint32_t k = 0; k < d.tcount; k++) {
+            const TriRec& t = recs[k];
+            if (t.flags & REC_LOAD) {
+                const uint32_t first = t.v[0];
+                for (uint32_t i = 0; i < t.count && first + i < (uint32_t)max_vertices; i++) {
+                    const SrcVertex& sv = list.src[t.src + i];
+                    transform_vertex(list.xforms[sv.xform], sv, x.xf[first + i]);
+                    x.src[first + i] = t.src + i;
+                    x.emit_serial[first + i] = 0;
+                }
+                continue;
+            }
+            if (t.flags & TRI_SKIP) continue;
+            const uint32_t sa = x.src[t.v[0]], sb = x.src[t.v[1]], sc = x.src[t.v[2]];
+            if (sa == ~0u || sb == ~0u || sc == ~0u) continue;
+            // Vertices are shared by triangles with the same mapping and depth source (the
+            // reader's vertex cache started again when they changed).
+            const uint32_t key = t.uv | ((uint32_t)(t.flags & TRI_ZPRIM) << 16);
+            if (key != last_key || ((t.flags & TRI_ZPRIM) && t.prim_z != last_prim_z)) {
+                last_key = key;
+                last_prim_z = t.prim_z;
+                x.serial++;
+            }
+            const XfVertex* v[3] = { &x.xf[t.v[0]], &x.xf[t.v[1]], &x.xf[t.v[2]] };
+            const uint32_t si[3] = { sa, sb, sc };
+            if ((v[0]->clip & v[1]->clip & v[2]->clip) && !(dbg & 1)) {
+                continue;
+            }
+            const uint32_t cull = (dbg & 2) ? 0 : (t.flags & (TRI_CULL_FRONT | TRI_CULL_BACK));
+            if (cull) {
+                if (cull == (TRI_CULL_FRONT | TRI_CULL_BACK)) continue;
+                const float dx1 = v[1]->ndc_x - v[0]->ndc_x, dy1 = v[1]->ndc_y - v[0]->ndc_y;
+                const float dx2 = v[2]->ndc_x - v[0]->ndc_x, dy2 = v[2]->ndc_y - v[0]->ndc_y;
+                const float cross = dx1 * dy2 - dy1 * dx2;
+                uint32_t bits;
+                std::memcpy(&bits, &cross, 4);
+                const bool zero = (bits << 1) == 0;
+                const bool below = ((bits >> 31) ^ negative(v[0]->w) ^ negative(v[1]->w) ^ negative(v[2]->w)) != 0;
+                if (zero || (cull == TRI_CULL_FRONT ? !below : below)) continue;
+            }
+            const bool flat = (t.flags & TRI_FLAT) != 0, zprim = (t.flags & TRI_ZPRIM) != 0;
+            const bool cut = (v[0]->w <= deferred_w_cut || v[1]->w <= deferred_w_cut || v[2]->w <= deferred_w_cut) && !(dbg & 16384);
+            if (cut) {
+                // Cut at the camera's plane to its part in front (a fan of up to four vertices).
+                VertexIn tri[3];
+                for (int i = 0; i < 3; i++) {
+                    deferred_vertex_in(list.src[si[i]], *v[i], t.uv, zprim, t.prim_z, tri[i]);
+                }
+                bool normals = false;
+                if (!tri[0].done) {
+                    const VertexContext& c = list.ctxs[tri[0].ctx];
+                    normals = (c.lighting || c.texgen) && !c.advanced;
+                }
+                VertexIn poly[4];
+                int n = 0;
+                for (int i = 0; i < 3; i++) {
+                    const VertexIn& a = tri[i];
+                    const VertexIn& b = tri[(i + 1) % 3];
+                    const float da = a.w - deferred_w_cut, db = b.w - deferred_w_cut;
+                    if (da >= 0.0f) poly[n++] = a;
+                    if ((da >= 0.0f) != (db >= 0.0f) && n < 4) poly[n++] = lerp_in(a, b, da / (da - db), normals);
+                }
+                if (n < 3) continue;
+                const uint16_t first = (uint16_t)(x.nv - vb);
+                GLVertex* out = x.grow_v(n);
+                for (int i = 0; i < n; i++) {
+                    if (flat && i == 0) {
+                        poly[0].r = tri[0].r; poly[0].g = tri[0].g; poly[0].b = tri[0].b; poly[0].a = tri[0].a;
+                    }
+                    finish_one(list, poly[i], out[i]);
+                    if (flat && i > 0) {
+                        out[i].color[0] = out[0].color[0]; out[i].color[1] = out[0].color[1]; out[i].color[2] = out[0].color[2];
+                    }
+                }
+                uint16_t* ix = x.grow_i((uint32_t)(n - 2) * 3);
+                for (int i = 1; i + 1 < n; i++) {
+                    *ix++ = first;
+                    *ix++ = (uint16_t)(first + i);
+                    *ix++ = (uint16_t)(first + i + 1);
+                }
+                continue;
+            }
+            uint16_t* ix = x.grow_i(3);
+            for (int i = 0; i < 3; i++) {
+                const uint32_t slot = t.v[i];
+                // Flat shading colours a vertex by the triangle: not shared then.
+                if (!flat && x.emit_serial[slot] == x.serial) {
+                    ix[i] = x.emit_index[slot];
+                    continue;
+                }
+                const uint16_t at = (uint16_t)(x.nv - vb);
+                GLVertex& g = *x.grow_v(1);
+                VertexIn in;
+                deferred_vertex_in(list.src[si[i]], *v[i], t.uv, zprim, t.prim_z, in);
+                finish_one(list, in, g);
+                if (flat && i > 0) {
+                    const GLVertex& f = x.verts[vb + ix[0]];
+                    g.color[0] = f.color[0]; g.color[1] = f.color[1]; g.color[2] = f.color[2];
+                }
+                ix[i] = at;
+                if (!flat) {
+                    x.emit_serial[slot] = x.serial;
+                    x.emit_index[slot] = at;
+                }
+            }
+        }
+    }
 
     // The triangles' vertices: lit, coloured and mapped onto their textures.
     inline void finish_vertices(CommandList& list, const DrawCmd& d) {
@@ -1048,6 +1355,9 @@ namespace {
                 std::fprintf(stderr, "[renderer] dumping display list #%u\n", dl_count);
             }
             update_debug_flags();
+            // Debug (flag 2097152): triangles made into vertices here, as before, not on the back.
+            deferred_geometry = (debug_flags & 2097152) == 0;
+            list->debug_flags = debug_flags;
             // Debug (ux0:data/conker/debug_ab): the triangles' parts' cost without the clock's, the
             // lists going in turn with triangles only culled, prepared up to their draw state, or
             // none (a list each: a short scene gets them all).
@@ -1271,7 +1581,15 @@ namespace {
             list->idx_used = batch.ni;
             backend->submit(std::move(list));
             list = backend->take_list();
+            list->debug_flags = debug_flags;
+            list->serial = ++list_serial;
             batch.attach(list.get());
+            // The loaded vertices were the old list's.
+            std::fill(std::begin(slot_src), std::end(slot_src), ~0u);
+            slot_xformed = 0;
+            xform_index = -1;
+            tri_base = 0;
+            batch_deferred = false;
         }
 
         uint32_t new_tex_id() {
@@ -1432,7 +1750,10 @@ namespace {
                         load_vertices(segmented(w1), count, dst);
                         break;
                     }
-                    case G_MODIFYVTX: modify_vertex(w0, w1); break;
+                    case G_MODIFYVTX:
+                        if (deferred_geometry) modify_deferred(w0, w1);
+                        else modify_vertex(w0, w1);
+                        break;
                     case G_CULLDL:
                         if (dumping()) std::fprintf(stderr, "[culldl] pc 0x%06X v%u-%u cull=%d\n", (pc - 8) & rdram_mask, (w0 & 0xFFFF) / 2, (w1 & 0xFFFF) / 2, (int)cull_dl((w0 & 0xFFFF) / 2, (w1 & 0xFFFF) / 2));
                         if (cull_dl((w0 & 0xFFFF) / 2, (w1 & 0xFFFF) / 2)) {
@@ -1444,6 +1765,7 @@ namespace {
                         // Branches when the vertex is nearer than the value (in screen depth,
                         // 0-1023, as 16.16) or behind the camera (as RT64 does).
                         const uint32_t vtx = ((w0 >> 1) & 0x7FF) % max_vertices;
+                        if (deferred_geometry) xform_slot(vtx);
                         const RspVertex& v = vertices[vtx];
                         bool take = v.w <= 0.0f;
                         if (!take) {
@@ -1727,10 +2049,12 @@ namespace {
             mvp_dirty = true;
         }
 
+        uint32_t mvp_serial = 0; // bumped when mvp is worked out again
         const Mat4& current_mvp() {
             if (mvp_dirty) {
                 mvp = mul(modelview[modelview_depth], projection);
                 mvp_dirty = false;
+                mvp_serial++;
             }
             return mvp;
         }
@@ -2028,6 +2352,10 @@ namespace {
             const float vp_scale[4] = { sx, sy, sz, 1.0f }, vp_trans[4] = { tx, ty, tz, 0.0f };
             const float32x4_t vscale4 = vld1q_f32(vp_scale), vtrans4 = vld1q_f32(vp_trans);
 #endif
+            if (deferred_geometry) {
+                load_deferred(addr, count, dst, m, sx, tx, sy, ty, sz, tz, c);
+                return;
+            }
 
             if (count > 0) {
                 const uint64_t loaded = (count >= 64 ? ~0ull : ((1ull << count) - 1)) << dst;
@@ -2133,6 +2461,193 @@ namespace {
             }
         }
 
+        // ======================================================== deferred geometry
+        bool deferred_geometry = true;
+        uint32_t list_serial = 0;
+        uint32_t slot_src[max_vertices] = { // each vertex slot's vertex in the list's src (~0: none)
+            ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
+            ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
+            ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
+            ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u };
+        uint64_t slot_xformed = 0;         // the slots whose vertices[] were worked out (lazily)
+        int32_t xform_index = -1;          // the list's transform loads use, while the same
+        uint32_t xform_mvp_serial = 0;
+        float last_vp[6] = {};
+        size_t tri_base = 0;               // where the batch's triangles start in the list's tris
+        bool batch_deferred = false;
+
+        // The vertices as loaded, with the transform and context they're drawn with.
+        void load_deferred(uint32_t addr, uint32_t count, int32_t dst, const Mat4& m, float sx, float tx,
+                           float sy, float ty, float sz, float tz, const VertexContext& c) {
+            // A new transform when the matrix was worked out again or the viewport changed.
+            if (xform_index < 0 || xform_mvp_serial != mvp_serial || last_vp[0] != sx || last_vp[1] != tx ||
+                last_vp[2] != sy || last_vp[3] != ty || last_vp[4] != sz || last_vp[5] != tz) {
+                Xform& xf = list->xforms.emplace_back();
+                std::memcpy(xf.row, m.m, sizeof(xf.row));
+                xf.vscale[0] = sx; xf.vscale[1] = sy; xf.vscale[2] = sz; xf.vscale[3] = 1.0f;
+                xf.vtrans[0] = tx; xf.vtrans[1] = ty; xf.vtrans[2] = tz; xf.vtrans[3] = 0.0f;
+                xform_index = (int32_t)list->xforms.size() - 1;
+                xform_mvp_serial = mvp_serial;
+                last_vp[0] = sx; last_vp[1] = tx; last_vp[2] = sy; last_vp[3] = ty; last_vp[4] = sz; last_vp[5] = tz;
+            }
+            const uint16_t ctx = current_ctx_index();
+            const bool normals = c.advanced && (c.lighting || c.texgen);
+            // The game has just written them: asked for at once (each line read in turn waited for
+            // the memory on the Vita), the normals too.
+            for (uint32_t a = addr & ~31u; a < addr + count * 16; a += 32) {
+                __builtin_prefetch(mem(a) + (a & rdram_mask));
+            }
+            const uint32_t n0 = normal_base_at_load + ((uint32_t)dst << 1);
+            if (normals) {
+                for (uint32_t a = n0 & ~31u; a < n0 + count * 2; a += 32) {
+                    __builtin_prefetch(mem(a) + (a & rdram_mask));
+                }
+            }
+            const size_t base = list->src.size();
+            list->src.resize(base + count);
+            SrcVertex* out = list->src.data() + base;
+            uint32_t vtx_page = ~0u, nrm_page = ~0u;
+            const uint8_t* vtx_mem = nullptr;
+            const uint8_t* nrm_mem = nullptr;
+            for (uint32_t i = 0; i < count; i++) {
+                const uint32_t va = addr + i * 16;
+                if ((va >> capture::page_shift) != vtx_page) {
+                    vtx_page = va >> capture::page_shift;
+                    vtx_mem = mem(va);
+                }
+                const uint8_t* const vb = (va & 0xFFF) <= 0xFF0 ? vtx_mem : nullptr;
+                const uint32_t w_xy = vb ? read32(vb, va) : m32(va);
+                const uint32_t w_zf = vb ? read32(vb, va + 4) : m32(va + 4);
+                const uint32_t w_st = vb ? read32(vb, va + 8) : m32(va + 8);
+                const uint32_t w_c = vb ? read32(vb, va + 12) : m32(va + 12);
+                SrcVertex& sv = out[i];
+                sv.x = (int16_t)(w_xy >> 16);
+                sv.y = (int16_t)(w_xy & 0xFFFF);
+                sv.z = (int16_t)(w_zf >> 16);
+                sv.flag = (int16_t)(w_zf & 0xFFFF);
+                sv.s = (int16_t)(w_st >> 16);
+                sv.t = (int16_t)(w_st & 0xFFFF);
+                sv.r = w_c >> 24; sv.g = (w_c >> 16) & 0xFF; sv.b = (w_c >> 8) & 0xFF; sv.a = w_c & 0xFF;
+                const uint32_t vindex = (uint32_t)dst + i;
+                if (normals) {
+                    const uint32_t na = n0 + i * 2;
+                    if ((na >> capture::page_shift) != nrm_page) {
+                        nrm_page = na >> capture::page_shift;
+                        nrm_mem = mem(na);
+                    }
+                    sv.n0 = (int8_t)read8(nrm_mem, na);
+                    sv.n1 = (int8_t)read8(nrm_mem, na + 1);
+                }
+                else {
+                    sv.n0 = sv.n1 = 0;
+                }
+                sv.ctx = ctx;
+                sv.xform = (uint16_t)xform_index;
+                sv.done = 0;
+                sv.fs = sv.ft = 0.0f;
+                slot_src[vindex] = (uint32_t)(base + i);
+            }
+            if (count > 0) {
+                slot_xformed &= ~((count >= 64 ? ~0ull : ((1ull << count) - 1)) << dst);
+                record_load((uint32_t)dst, count, (uint32_t)base);
+            }
+        }
+
+        void record_load(uint32_t first, uint32_t count, uint32_t src_base) {
+            TriRec& r = list->tris.emplace_back();
+            r.v[0] = (uint8_t)first; r.v[1] = r.v[2] = 0;
+            r.flags = REC_LOAD;
+            r.uv = 0;
+            r.count = (uint16_t)count;
+            r.src = src_base;
+            r.prim_z = 0.0f;
+        }
+
+        // A slot's vertex worked out here (G_CULLDL, G_BRANCH_Z read them).
+        void xform_slot(uint32_t slot) {
+            if (slot >= max_vertices || (slot_xformed >> slot & 1) || slot_src[slot] == ~0u) return;
+            slot_xformed |= 1ull << slot;
+            const SrcVertex& sv = list->src[slot_src[slot]];
+            XfVertex xv;
+            transform_vertex(list->xforms[sv.xform], sv, xv);
+            RspVertex& v = vertices[slot];
+            v.x = xv.x; v.y = xv.y; v.z = xv.z; v.w = xv.w;
+            v.ndc_x = xv.ndc_x; v.ndc_y = xv.ndc_y;
+            v.clip = (uint8_t)xv.clip;
+        }
+
+        // G_MODIFYVTX: the vertex lit here, changed, and recorded again as final.
+        void modify_deferred(uint32_t w0, uint32_t w1) {
+            const uint32_t where = (w0 >> 16) & 0xFF;
+            const uint32_t index = (w0 & 0xFFFF) / 2;
+            if (index >= max_vertices || slot_src[index] == ~0u || (where != 0x10 && where != 0x14)) {
+                return;
+            }
+            SrcVertex sv = list->src[slot_src[index]];
+            if (!sv.done) {
+                XfVertex xv;
+                transform_vertex(list->xforms[sv.xform], sv, xv);
+                VertexIn in;
+                deferred_vertex_in(sv, xv, 0, false, 0.0f, in);
+                const VertexContext& vc = list->ctxs[sv.ctx];
+                uint8_t rgba[4];
+                float s_out, t_out;
+                light_vertex(vc, list->lights.data() + vc.light_base, in, rgba, s_out, t_out);
+                sv.r = rgba[0]; sv.g = rgba[1]; sv.b = rgba[2]; sv.a = rgba[3];
+                sv.fs = s_out; sv.ft = t_out;
+                sv.done = 1;
+            }
+            if (where == 0x10) {
+                sv.r = w1 >> 24; sv.g = (w1 >> 16) & 0xFF; sv.b = (w1 >> 8) & 0xFF; sv.a = w1 & 0xFF;
+            }
+            else {
+                sv.fs = (float)(int16_t)(w1 >> 16) / 32.0f;
+                sv.ft = (float)(int16_t)(w1 & 0xFFFF) / 32.0f;
+            }
+            list->src.push_back(sv);
+            slot_src[index] = (uint32_t)list->src.size() - 1;
+            record_load(index, 1, slot_src[index]);
+        }
+
+        // A triangle as the vertices it joins; the back culls and draws it.
+        void triangle_deferred(uint32_t ia, uint32_t ib, uint32_t ic) {
+            const uint32_t a = slot_src[ia], b = slot_src[ib], c = slot_src[ic];
+            if (a == ~0u || b == ~0u || c == ~0u) {
+                return;
+            }
+            if (__builtin_expect((debug_flags & 524288) != 0 || ab_phase == 3 || ab_phase == 1, 0)) return;
+            if (!prepare_draw(false)) {
+                stats.tris_nofb++;
+                return;
+            }
+            if (__builtin_expect(ab_phase == 2, 0)) return;
+            if (!batch_deferred && !batch.empty()) {
+                flush(); // rectangles before
+            }
+            if (list->tris.size() - tri_base >= 16000) {
+                flush(); // at most 4 vertices a triangle: a draw's indices stay 16-bit
+            }
+            batch_deferred = true;
+            const TileTexture& tt0 = tile_textures[texture.tile & 7];
+            const TileTexture& tt1 = tile_textures[(texture.tile + 1) & 7];
+            TriRec& t = list->tris.emplace_back();
+            t.v[0] = (uint8_t)ia; t.v[1] = (uint8_t)ib; t.v[2] = (uint8_t)ic;
+            t.uv = current_uv_index(tt0, tt1);
+            t.count = 0;
+            t.src = 0;
+            uint8_t f = 0;
+            if (geometry_mode & G_CULL_FRONT) f |= TRI_CULL_FRONT;
+            if (geometry_mode & G_CULL_BACK) f |= TRI_CULL_BACK;
+            if ((geometry_mode & G_SHADING_SMOOTH) == 0) f |= TRI_FLAT;
+            t.prim_z = 0.0f;
+            if (other_mode_l & OML_ZS_PRIM) {
+                f |= TRI_ZPRIM;
+                t.prim_z = prim_depth_ndc();
+            }
+            t.flags = f;
+            stats.tris++;
+        }
+
         // A raw vertex as the GL thread would get it.
         VertexIn raw_vertex_in(uint32_t vindex) const {
             const RawVertex& rv = raw_vertices[vindex];
@@ -2199,6 +2714,9 @@ namespace {
             if (first >= max_vertices || last >= max_vertices || last < first) {
                 return false;
             }
+            if (deferred_geometry) {
+                for (uint32_t i = first; i <= last; i++) xform_slot(i);
+            }
             uint8_t common = 0x3F;
             for (uint32_t i = first; i <= last; i++) {
                 common &= vertices[i].clip;
@@ -2230,6 +2748,10 @@ namespace {
         // turned down here inline; the rest drawn by triangle_draw.
         inline __attribute__((always_inline)) void triangle(uint32_t ia, uint32_t ib, uint32_t ic) {
             if (__builtin_expect(ia >= max_vertices || ib >= max_vertices || ic >= max_vertices, 0)) {
+                return;
+            }
+            if (deferred_geometry) {
+                triangle_deferred(ia, ib, ic);
                 return;
             }
             if ((vertices[ia].clip & vertices[ib].clip & vertices[ic].clip) && !(debug_flags & 1)) {
@@ -2538,7 +3060,7 @@ namespace {
                 uv(*tt[0], ss[i], ts[i], g.u0, g.v0);
                 uv(*tt[1], ss[i], ts[i], g.u1, g.v1);
             }
-            if (batch.size() + 4 > 65535 || batch_raw) {
+            if (batch.size() + 4 > 65535 || batch_raw || batch_deferred) {
                 flush();
             }
             const uint16_t base = (uint16_t)batch.size();
@@ -3471,13 +3993,16 @@ namespace {
         bool last_was_rect = false;
 
         void flush() {
-            if (batch.empty()) {
+            const bool deferred_tris = batch_deferred && list->tris.size() > tri_base;
+            if (batch.empty() && !deferred_tris) {
+                batch_deferred = false;
                 return;
             }
             PartTimer part_timer(*this, P_FLUSH);
             const DrawState& s = batch_state;
             if (s.fb == nullptr || s.program == nullptr) {
                 batch.clear();
+                drop_deferred();
                 vertex_cache_serial++;
                 return;
             }
@@ -3490,6 +4015,7 @@ namespace {
             // Debug (flag 131072): no projected shadows (combiner FFE9FF), to tell them apart.
             if ((debug_flags & 131072) && s.dbg_cc0 == 0xFFE9FF) {
                 batch.clear();
+                drop_deferred();
                 vertex_cache_serial++;
                 return;
             }
@@ -3534,10 +4060,17 @@ namespace {
             d.vcount = (uint32_t)batch.size();
             d.raw = batch_raw;
             d.debug = dumping();
+            if (deferred_tris) {
+                d.deferred = true;
+                d.tbase = (uint32_t)tri_base;
+                d.tcount = (uint32_t)(list->tris.size() - tri_base);
+                d.vbase = d.ibase = d.icount = d.vcount = 0;
+                tri_base = list->tris.size();
+            }
             const uint32_t draw_index = (uint32_t)list->draws.size() - 1;
             enqueue([draw_index](Backend& b, CommandList& l) { b.draw(l, l.draws[draw_index]); });
 
-            if (dumping()) {
+            if (dumping() && !deferred_tris) {
                 GLVertex v{};
                 if (batch_raw) {
                     const VertexIn& in = list->vin[batch.base];
@@ -3570,7 +4103,16 @@ namespace {
             stats.verts += batch.size();
             batch.next();
             batch_raw = false;
+            batch_deferred = false;
             vertex_cache_serial++;
+        }
+
+        void drop_deferred() {
+            // Its triangles not drawn; its loads still go into the slots.
+            for (size_t i = tri_base; i < list->tris.size(); i++) {
+                if (!(list->tris[i].flags & REC_LOAD)) list->tris[i].flags |= TRI_SKIP;
+            }
+            batch_deferred = false;
         }
 
         // The pause menu copies the frame into the depth buffer's memory and then blurs that

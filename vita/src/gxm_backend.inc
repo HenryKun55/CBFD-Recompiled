@@ -212,8 +212,10 @@ public:
     // The hand-over uses the kernel's semaphores (a condition variable lost wake-ups).
     GxmBackend() {
         work_sema = sceKernelCreateSema("gxm_work", 0, 0, 64, nullptr);
-        slot_sema = sceKernelCreateSema("gxm_slot", 0, 1, 1, nullptr);
+        slot_sema = sceKernelCreateSema("gxm_slot", 0, 2, 2, nullptr); // lists ahead of the GPU's thread
+        expand_sema = sceKernelCreateSema("gxm_expand", 0, 0, 64, nullptr);
         thread = std::thread([this] { run(); });
+        expand_thread = std::thread([this] { run_expander(); });
         while (!ready.load()) {
             sceKernelDelayThread(1000);
         }
@@ -221,6 +223,9 @@ public:
 
     ~GxmBackend() {
         quit = true;
+        sceKernelSignalSema(expand_sema, 1);
+        if (expand_thread.joinable()) expand_thread.join();
+        sceKernelDeleteSema(expand_sema);
         sceKernelSignalSema(work_sema, 1);
         if (thread.joinable()) thread.join();
         sceKernelDeleteSema(work_sema);
@@ -236,10 +241,10 @@ public:
         g_front_stage = stage;
         {
             std::lock_guard lock{mutex};
-            pending.push_back(std::move(list));
+            to_expand.push_back(std::move(list));
         }
         submitted++;
-        sceKernelSignalSema(work_sema, 1);
+        sceKernelSignalSema(expand_sema, 1);
         wait_us += (uint32_t)(sceKernelGetProcessTimeWide() - start);
         ultramodern_trace("submit end", 0);
     }
@@ -253,9 +258,11 @@ public:
             return l;
         }
         auto l = std::make_unique<CommandList>();
-        l->verts.resize(16384);
-        l->vin.resize(16384);
-        l->idx.resize(32768);
+        // Small to start (they grow as needed): with the deferred triangles only rectangles and
+        // the old path's triangles go here, and up to five lists are about at once.
+        l->verts.resize(2048);
+        l->vin.resize(2048);
+        l->idx.resize(4096);
         l->ctxs.reserve(1024);
         l->uvmaps.reserve(512);
         l->cmds.reserve(2048);
@@ -290,7 +297,8 @@ public:
             n += std::snprintf(line + n, sizeof(line) - n, " %s %u/%llums", names[i], op_n[i], (unsigned long long)(op_us[i] / 1000));
             if (n >= (int)sizeof(line)) break;
         }
-        std::fprintf(stderr, "%s, %u fragment programs patched\n", line, fragment_patches);
+        const uint32_t el = expand_lists.exchange(0), eu = expand_us.exchange(0);
+        std::fprintf(stderr, "%s, %u fragment programs patched; expander %u lists/%ums\n", line, fragment_patches, el, eu / 1000);
         fragment_patches = 0;
         std::memset(op_n, 0, sizeof(op_n));
         std::memset(op_us, 0, sizeof(op_us));
@@ -521,21 +529,37 @@ public:
 
     void draw(CommandList& list, const DrawCmd& d) {
         OpTimer timer(*this, OP_DRAW);
-        if (d.raw) {
-            OpTimer verts_timer(*this, OP_VERTS);
-            finish_vertices(list, d);
+        const GLVertex* vsrc;
+        const uint16_t* isrc;
+        uint32_t vcount, icount;
+        if (d.deferred) {
+            // Made into vertices by the expander.
+            vsrc = list.dverts.data() + d.vbase;
+            isrc = list.didx.data() + d.ibase;
+            vcount = d.vcount;
+            icount = d.icount;
         }
-        if (d.debug) log_finished(list, d);
+        else {
+            if (d.raw) {
+                OpTimer verts_timer(*this, OP_VERTS);
+                finish_vertices(list, d);
+            }
+            if (d.debug) log_finished(list, d);
+            vsrc = &list.verts[d.vbase];
+            isrc = &list.idx[d.ibase];
+            vcount = d.vcount;
+            icount = d.icount;
+        }
         bind_framebuffer(d.fbo, d.fb_w, d.fb_h);
         if (!in_scene || cur_fbo != d.fbo || d.program >= programs.size()) { dropped[0]++; return; }
         Program& p = programs[d.program];
-        if (!p.valid || d.icount == 0) { dropped[p.valid ? 3 : 1]++; return; }
+        if (!p.valid || icount == 0) { dropped[p.valid ? 3 : 1]++; return; }
         // The data first: making room may wait for the GPU and start the scene again.
-        GLVertex* v = (GLVertex*)ring_alloc(d.vcount * sizeof(GLVertex), 16);
-        uint16_t* ix = (uint16_t*)ring_alloc(d.icount * 2, 16);
+        GLVertex* v = (GLVertex*)ring_alloc(vcount * sizeof(GLVertex), 16);
+        uint16_t* ix = (uint16_t*)ring_alloc(icount * 2, 16);
         if (v == nullptr || ix == nullptr || !in_scene) { dropped[2]++; return; }
-        std::memcpy(v, &list.verts[d.vbase], d.vcount * sizeof(GLVertex));
-        std::memcpy(ix, &list.idx[d.ibase], d.icount * 2);
+        std::memcpy(v, vsrc, vcount * sizeof(GLVertex));
+        std::memcpy(ix, isrc, icount * 2);
 
         set_scissor(d.scissor);
         apply_scissor();
@@ -546,7 +570,7 @@ public:
         set_texture(p.unit0, d.tex[0]);
         set_texture(p.unit1, d.tex[1]);
         sceGxmSetVertexStream(ctx, 0, v);
-        sceGxmDraw(ctx, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, ix, d.icount);
+        sceGxmDraw(ctx, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, ix, icount);
     }
 
     // The frame to the screen: a texture (0: none) at its aspect in the middle, the menu over it.
@@ -1101,9 +1125,56 @@ private:
         return true;
     }
 
+    // ------------------------------------------------ the expander
+    // The lists' deferred triangles made into vertices (expand_triangles) on a thread of their
+    // own, between the reader and the GPU's thread: it does one list while the GPU's thread
+    // draws the one before (on the Vita that was ~24 ms a frame in the rain, on the GPU's
+    // thread with its own ~8 ms, past a frame's 33).
+    ExpandScratch expand;
+    std::thread expand_thread;
+    SceUID expand_sema = -1;
+    std::deque<std::unique_ptr<CommandList>> to_expand;
+    std::atomic<uint32_t> expand_us{0}, expand_lists{0};
+
+    void run_expander() {
+        sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), SCE_KERNEL_CPU_MASK_USER_0 | SCE_KERNEL_CPU_MASK_USER_2);
+        for (;;) {
+            sceKernelWaitSema(expand_sema, 1, nullptr);
+            std::unique_ptr<CommandList> list;
+            {
+                std::lock_guard lock{mutex};
+                if (to_expand.empty()) {
+                    if (quit) return;
+                    continue;
+                }
+                list = std::move(to_expand.front());
+                to_expand.pop_front();
+            }
+            const uint64_t start = sceKernelGetProcessTimeWide();
+            expand.verts.swap(list->dverts);
+            expand.idx.swap(list->didx);
+            expand.nv = expand.ni = 0;
+            for (DrawCmd& d : list->draws) {
+                if (d.deferred) expand_triangles(*list, d, expand);
+            }
+            expand.verts.swap(list->dverts);
+            expand.idx.swap(list->didx);
+            expand_us += (uint32_t)(sceKernelGetProcessTimeWide() - start);
+            expand_lists++;
+            {
+                std::lock_guard lock{mutex};
+                pending.push_back(std::move(list));
+            }
+            sceKernelSignalSema(work_sema, 1);
+        }
+    }
+
     // ------------------------------------------------ the thread
     void run() {
-        sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), SCE_KERNEL_CPU_MASK_USER_0 | SCE_KERNEL_CPU_MASK_USER_2);
+        // On the reader's core: with the triangles made into vertices by the expander this thread
+        // is light (~6 ms a frame in the rain), and cores 0 and 2 have the game, the audio and the
+        // expander (the game got too little of them and ran at 15 fps).
+        sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), SCE_KERNEL_CPU_MASK_USER_1);
         init();
         ready = true;
         for (;;) {
@@ -1118,6 +1189,9 @@ private:
                 list = std::move(pending.front());
                 pending.pop_front();
             }
+            // The reader goes on once this thread took the list before (not when the expander
+            // took it: while this one waited, on a shader compile for instance, the reader made
+            // lists without end and the memory ran out). A list each: being read, expanded, drawn.
             sceKernelSignalSema(slot_sema, 1);
             const uint64_t start = sceKernelGetProcessTimeWide();
             ultramodern_trace("gl list", (uint32_t)list->cmds.size());
