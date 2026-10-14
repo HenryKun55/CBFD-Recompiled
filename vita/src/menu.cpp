@@ -166,7 +166,7 @@ namespace conker::vita::menu {
                         case 3: current().widescreen = !current().widescreen; save(); break;
                         case 4: current().cutscene_4x3 = !current().cutscene_4x3; save(); break;
                         case 5: current().cutscene_skip = (current().cutscene_skip + 1) % 3; save(); break;
-                        case 6: current().language = (current().language + 1) % 6; save(); break;
+                        case 6: current().language = (current().language + 1) % 6; current().language_chosen = true; save(); break;
                         case 7: current().censored = !current().censored; save(); break;
                         case 8: {
                             const Config kept = current();
@@ -175,6 +175,7 @@ namespace conker::vita::menu {
                             current().cutscene_4x3 = kept.cutscene_4x3;
                             current().cutscene_skip = kept.cutscene_skip;
                             current().language = kept.language;
+                            current().language_chosen = kept.language_chosen;
                             current().censored = kept.censored;
                             save();
                             set_status("Controls reset to the defaults.");

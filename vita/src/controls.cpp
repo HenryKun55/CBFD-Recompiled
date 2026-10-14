@@ -6,6 +6,9 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <psp2/apputil.h>
+#include <psp2/system_param.h>
+
 #include "controls.hpp"
 #include "vita_platform.hpp"
 
@@ -78,8 +81,24 @@ namespace conker::vita::controls {
         }
     }
 
+    // The text language matching the Vita's system language (English when there's none).
+    int system_language() {
+        int lang = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
+        if (sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG, &lang) < 0) return 0;
+        switch (lang) {
+            case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR:
+            case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: return 1;
+            case SCE_SYSTEM_PARAM_LANG_SPANISH: return 2;
+            case SCE_SYSTEM_PARAM_LANG_FRENCH: return 3;
+            case SCE_SYSTEM_PARAM_LANG_GERMAN: return 4;
+            case SCE_SYSTEM_PARAM_LANG_ITALIAN: return 5;
+            default: return 0;
+        }
+    }
+
     Config defaults() {
         Config c{};
+        c.language = system_language();
         for (auto& b : c.bindings) {
             b[0] = b[1] = Input::None;
         }
@@ -194,6 +213,9 @@ namespace conker::vita::controls {
 
     void load() {
         config = defaults();
+        // Language is only taken from the file once it was picked in the menu: 1.0.0 saved
+        // its default (Portuguese) with any other setting.
+        int file_language = -1;
         FILE* f = std::fopen(path, "r");
         if (f == nullptr) {
             return;
@@ -220,11 +242,13 @@ namespace conker::vita::controls {
             else if (!std::strcmp(key, "StickThreshold")) config.stick_threshold = std::clamp(std::atoi(a), 20, 90);
             else if (!std::strcmp(key, "Widescreen")) config.widescreen = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Cutscene4x3")) config.cutscene_4x3 = std::atoi(a) != 0;
-            else if (!std::strcmp(key, "Language")) config.language = std::clamp(std::atoi(a), 0, 5);
+            else if (!std::strcmp(key, "Language")) file_language = std::clamp(std::atoi(a), 0, 5);
+            else if (!std::strcmp(key, "LanguageChosen")) config.language_chosen = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Censored")) config.censored = std::atoi(a) != 0;
             else if (!std::strcmp(key, "CutsceneSkip")) config.cutscene_skip = std::clamp(std::atoi(a), 0, 2);
         }
         std::fclose(f);
+        if (config.language_chosen && file_language >= 0) config.language = file_language;
     }
 
     bool save() {
@@ -243,10 +267,10 @@ namespace conker::vita::controls {
             if (b != Input::None) std::fprintf(f, "%s = %s, %s\n", n64_names[i], input_names[(int)a], input_names[(int)b]);
             else std::fprintf(f, "%s = %s\n", n64_names[i], input_names[(int)a]);
         }
-        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nCensored = %d\n",
+        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nLanguageChosen = %d\nCensored = %d\n",
             config.stick == StickSource::Right ? "Right" : "Left", config.deadzone, config.sensitivity,
             config.invert_x ? 1 : 0, config.invert_y ? 1 : 0, config.stick_threshold, config.widescreen ? 1 : 0,
-            config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.censored ? 1 : 0);
+            config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.language_chosen ? 1 : 0, config.censored ? 1 : 0);
         std::fclose(f);
         return true;
     }

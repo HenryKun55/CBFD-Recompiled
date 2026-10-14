@@ -30,7 +30,7 @@ set(VITA_TITLEID  "CBFD00064")
 # v<this> on HenryKun55/conker-vita, and the game offers a release only when its version
 # is higher, so raise it for every release. major.minor.patch, minor and patch one digit
 # each (param.sfo's APP_VER is NN.NN: 1.0.0 is 01.00).
-set(CONKER_PORT_VERSION "1.0.0")
+set(CONKER_PORT_VERSION "1.0.1")
 set(CONKER_UPDATE_REPO "HenryKun55/conker-vita" CACHE STRING "GitHub owner/repo the update check reads")
 if(NOT CONKER_PORT_VERSION MATCHES "^([0-9]+)\\.([0-9])\\.([0-9])$")
     message(FATAL_ERROR "CONKER_PORT_VERSION must be major.minor.patch with one-digit minor and patch")

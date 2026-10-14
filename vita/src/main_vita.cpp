@@ -410,7 +410,7 @@ int main(int argc, char** argv) {
     recomp::Configuration cfg{};
     cfg.argc = (int)runtime_argv.size();
     cfg.argv = runtime_argv.data();
-    cfg.project_version = recomp::Version{ 1, 0, 0 };
+    cfg.project_version = recomp::Version{ 1, 0, 1 };
     cfg.rsp_callbacks.get_rsp_microcode = get_rsp_microcode;
     cfg.audio_callbacks = { conker::vita::queue_samples, conker::vita::get_frames_remaining, conker::vita::set_frequency };
     cfg.renderer_callbacks.create_render_context = conker::vita::create_renderer;

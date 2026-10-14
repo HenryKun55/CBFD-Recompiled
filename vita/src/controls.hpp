@@ -45,7 +45,8 @@ namespace conker::vita::controls {
         int stick_threshold = 50; // percent of tilt for a stick direction to count as pressed
         bool widescreen = true;   // the 3D view widened to the Vita's 16:9 screen
         bool cutscene_4x3 = true; // in widescreen, cutscenes in the N64's 4:3 (black bars)
-        int language = 1;         // speech bubbles: 0 English, 1 Portuguese (Brazil)
+        int language = 0;         // text: 0 English, 1 Portuguese (Brazil), 2 Spanish, 3 French, 4 German, 5 Italian
+        bool language_chosen = false; // picked in the menu (otherwise the Vita's system language)
         bool censored = false;    // translated swear words as the game's symbols (off: spelled out)
         int cutscene_skip = 1;    // L skips: 0 the game's rule (watched ones), 1 any, 2 also the unskippable
     };
