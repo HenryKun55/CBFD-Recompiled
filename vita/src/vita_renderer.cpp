@@ -27,6 +27,7 @@
 #include <deque>
 #include <functional>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -1402,6 +1403,16 @@ namespace {
             // lists going in turn with triangles only culled, prepared up to their draw state, or
             // none (a list each: a short scene gets them all).
             ab_phase = ab_on ? dl_count % 4 : 0;
+            // A texture's RDRAM may change between lists: no load is a repeat of the last list's.
+            materialize_all();
+            if (load_ab) {
+                const bool off = ((sceKernelGetProcessTimeWide() / 5000000) & 1) != 0;
+                if (off != no_load_skip) std::fprintf(stderr, "[loadskip] %s\n", off ? "off" : "on");
+                no_load_skip = off;
+            }
+            std::memset(tmem_tag, 0, sizeof(tmem_tag));
+            known_loads.resize(1);
+            table_stamp++;
             if (dumping()) std::fprintf(stderr, "[dl] start %u\n", dl_count);
             // One list in 300 timed by parts (two of them averaged in each [parts] line): the clock
             // costs ~1 us a read on the Vita, so a timed list takes half as long again.
@@ -1455,7 +1466,7 @@ namespace {
                             op_n[best] = 0;
                         }
                         std::fprintf(stderr, "[cmdtime] list %.2f ms in commands (clock %.2f us, taken off):%s\n", sum / part_lists / 1000.0, clock_us, top.c_str());
-                        std::fprintf(stderr, "[cmdtime] texture block loads %u, distinct %u\n", loads_in_list, (unsigned)seen_loads.size());
+                        std::fprintf(stderr, "[cmdtime] texture block loads %u, distinct %u; memo hashes checked %u, differing %u\n", loads_in_list, (unsigned)seen_loads.size(), memo_checks, memo_mismatches);
                         seen_loads.clear();
                         loads_in_list = 0;
                         for (uint64_t& u : op_us) u = 0;
@@ -1506,8 +1517,8 @@ namespace {
                     stats.draws, stats.tris);
             }
             if (dl_count % 60 == 0) {
-                std::fprintf(stderr, "[renderer] work: %u vertex loads (%u vertices), %u contexts, %u matrices, %u block loads (%u KB), %u tile loads, %u palettes, %u state changes\n",
-                    stats.vtx_loads, stats.vtx_count, stats.ctx_pushes, stats.matrices, stats.block_loads, stats.block_bytes / 1024, stats.tile_loads, stats.tlut_loads, stats.prepares);
+                std::fprintf(stderr, "[renderer] work: %u vertex loads (%u vertices), %u contexts, %u matrices, %u block loads (%u KB; %u repeats skipped, %u done late), %u tile loads, %u palettes, %u state changes\n",
+                    stats.vtx_loads, stats.vtx_count, stats.ctx_pushes, stats.matrices, stats.block_loads, stats.block_bytes / 1024, stats.block_repeats, stats.block_late, stats.tile_loads, stats.tlut_loads, stats.prepares);
             }
             if (dl_count < 5 || dl_count % 60 == 0) {
                 std::fprintf(stderr, "[renderer] display list #%u: %u tris (+%u clipped, %u culled, %u without fb), %u rects, %u fills, %u draws, %u verts, cimg 0x%06X w%u\n",
@@ -1571,7 +1582,7 @@ namespace {
         uint32_t dl_count = 0;
         struct {
             uint32_t programs = 0, program_us = 0, textures = 0, texture_us = 0, flush_us = 0;
-            uint32_t ctx_pushes = 0, vtx_loads = 0, vtx_count = 0, block_loads = 0, block_bytes = 0, tlut_loads = 0, tile_loads = 0, matrices = 0, prepares = 0;
+            uint32_t ctx_pushes = 0, vtx_loads = 0, vtx_count = 0, block_loads = 0, block_repeats = 0, block_late = 0, block_bytes = 0, tlut_loads = 0, tile_loads = 0, matrices = 0, prepares = 0;
             uint32_t tris = 0, tris_clipped = 0, tris_culled = 0, tris_nofb = 0, rects = 0, fills = 0, draws = 0, verts = 0;
         } stats;
         uint32_t present_count = 1;
@@ -1972,6 +1983,11 @@ namespace {
                         PartTimer part_timer(*this, P_LOAD);
                         const Tile& t = tiles[(w1 >> 24) & 7];
                         load_tlut(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
+                        // The palette's words (an entry a word, from the tile's) are its now.
+                        if (((w1 >> 14) & 0x3FF) >= ((w0 >> 14) & 0x3FF)) {
+                            const uint32_t n = std::min<uint32_t>(((w1 >> 14) & 0x3FF) - ((w0 >> 14) & 0x3FF) + 1, 256);
+                            for (uint32_t k = 0; k < n; k++) set_word((t.tmem + k) & 0x1FF, 0, false);
+                        }
                         stats.tlut_loads++;
                         state_dirty = true;
                         break;
@@ -1989,7 +2005,13 @@ namespace {
                         PartTimer part_timer(*this, P_LOAD);
                         if (__builtin_expect((debug_flags & 1048576) != 0, 0)) break; // debug: no texture loads
                         const Tile& t = tiles[(w1 >> 24) & 7];
-                        load_block(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
+                        if (skip_known_load(t, w0, w1)) {
+                            stats.block_repeats++;
+                        }
+                        else {
+                            load_block(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
+                            tag_load(t, w0, w1);
+                        }
                         if (__builtin_expect(profiling && cmd_timing, 0)) {
                             const uint64_t key = ((uint64_t)timg.addr << 32) ^ ((uint64_t)w0 << 7) ^ w1 ^ ((uint64_t)t.tmem << 50);
                             if (!std::count(seen_loads.begin(), seen_loads.end(), key)) seen_loads.push_back(key);
@@ -2003,7 +2025,9 @@ namespace {
                     }
                     case G_LOADTILE: {
                         const Tile& t = tiles[(w1 >> 24) & 7];
+                        materialize_all();
                         load_tile(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
+                        std::memset(tmem_tag, 0, sizeof(tmem_tag));
                         stats.tile_loads++;
                         note_tmem_load(t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, false);
                         state_dirty = true;
@@ -3530,6 +3554,189 @@ namespace {
             return nullptr;
         }
 
+        // Texture loads repeated in a list: Conker loads a texture again for every object that
+        // uses it (~470 loads a frame where the bar's entrance is drawn, ~100 of them
+        // different), each read from RDRAM (the slow part of a load) and the tiles' textures
+        // hashed from TMEM again. Each TMEM word keeps the load that wrote it (its tag: the
+        // load's key, 0 for anything else), and a load already done in this list isn't done
+        // again: its words take its tag, stale (data[] not written), and are written from
+        // RDRAM only if something reads them (a texture not in the cache yet, a tile across
+        // several loads). A tile within one load's words gets its hash from the first time
+        // (the same load, tile and palette: the same texture). Within a list a texture's RDRAM
+        // doesn't change; loads from a framebuffer (drawn into meanwhile) are left alone.
+        struct KnownLoad { TextureImage img; Tile tile; uint32_t w0, w1; };
+        // Tags are the list's load numbers (from 1). The tables are open-addressed over a power
+        // of two, stamped with the list (no clearing; the Cortex-A9 has no divide instruction).
+        uint16_t tmem_tag[512] = {};
+        uint8_t tmem_stale[512] = {};
+        uint32_t stale_count = 0;
+        std::vector<KnownLoad> known_loads{ KnownLoad{} }; // [0]: none
+        struct KeySlot { uint64_t key; uint32_t stamp; uint32_t value; };
+        static constexpr uint32_t known_slots = 2048, memo_slots = 4096;
+        std::vector<KeySlot> known_table = std::vector<KeySlot>(known_slots, KeySlot{ 0, 0, 0 });
+        std::vector<KeySlot> memo_table = std::vector<KeySlot>(memo_slots, KeySlot{ 0, 0, 0 });
+        uint32_t table_stamp = 1;
+        static KeySlot* table_find(std::vector<KeySlot>& t, uint32_t stamp, uint64_t key, bool insert) {
+            const uint32_t mask = (uint32_t)t.size() - 1;
+            uint32_t i = (uint32_t)((key * 0x9E3779B97F4A7C15ull) >> 40) & mask;
+            for (uint32_t n = 0; n <= mask; n++, i = (i + 1) & mask) {
+                KeySlot& slot = t[i];
+                if (slot.stamp != stamp) {
+                    if (!insert) return nullptr;
+                    slot.key = key;
+                    slot.stamp = stamp;
+                    slot.value = 0;
+                    return &slot;
+                }
+                if (slot.key == key) return &slot;
+            }
+            return nullptr; // full
+        }
+        Tmem scratch_tmem;
+        uint32_t memo_checks = 0, memo_mismatches = 0;
+        // Debug (ux0:data/conker/debug_no_load_skip): every load done, every hash worked out.
+        bool no_load_skip = [] {
+            FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_no_load_skip", "r");
+            if (f) std::fclose(f);
+            return f != nullptr;
+        }();
+        // Debug (ux0:data/conker/debug_load_ab): the skipping on and off by turns, 5 s each
+        // (logged as it changes), to compare the two in the same scene.
+        const bool load_ab = [] {
+            FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_load_ab", "r");
+            if (f) std::fclose(f);
+            return f != nullptr;
+        }();
+
+        uint64_t load_key(const Tile& t, uint32_t w0, uint32_t w1) const {
+            uint64_t k = ((uint64_t)timg.addr << 32) ^ ((uint64_t)timg.width << 20) ^ ((uint64_t)timg.siz << 16) ^ t.tmem;
+            k = (k ^ (w0 & 0x00FFFFFF)) * 0x9E3779B97F4A7C15ull;
+            k = (k ^ (w1 & 0x00FFFFFF)) * 0xC2B2AE3D27D4EB4Full;
+            return k | 1; // never 0
+        }
+        // The TMEM words a block load writes: from first, n of them, wrapping in a half for
+        // 32-bit texels (both halves, the same words) or in the whole for the rest.
+        template <typename F> static void load_words(const TextureImage& img, const Tile& t, uint32_t w0, uint32_t w1, F&& f) {
+            const uint32_t uls = (w0 >> 12) & 0xFFF, lrs = (w1 >> 12) & 0xFFF;
+            const uint32_t texels = std::min<uint32_t>(lrs - uls + 1, 2048);
+            if (img.siz == SIZ_32b) {
+                const uint32_t n = std::min<uint32_t>((texels * 2 + 7) / 8, 256);
+                for (uint32_t k = 0; k < n; k++) {
+                    f(((t.tmem & 0xFF) + k) & 0xFF);
+                    f(256 + (((t.tmem & 0xFF) + k) & 0xFF));
+                }
+                return;
+            }
+            const uint32_t n = std::min<uint32_t>((texels * (4u << img.siz) + 63) / 64, 512);
+            for (uint32_t k = 0; k < n; k++) f((t.tmem + k) & 0x1FF);
+        }
+        void set_word(uint32_t w, uint16_t tag, bool stale) {
+            tmem_tag[w] = tag;
+            if (tmem_stale[w] != stale) {
+                tmem_stale[w] = stale;
+                if (stale) stale_count++; else stale_count--;
+            }
+        }
+        // A block load already done in this list: its words take its tag, stale.
+        bool skip_known_load(const Tile& t, uint32_t w0, uint32_t w1) {
+            if (__builtin_expect(no_load_skip || (debug_flags & 2097152), 0)) return false; // debug: every load done
+            if (((w1 >> 12) & 0xFFF) < ((w0 >> 12) & 0xFFF)) return false;
+            const KeySlot* known = table_find(known_table, table_stamp, load_key(t, w0, w1), false);
+            if (known == nullptr || drawn_framebuffer_at(timg.addr) != nullptr) return false;
+            const uint16_t key = (uint16_t)known->value;
+            // As load_block would: the palette loaded since goes to TMEM's upper half first.
+            bool upper = false;
+            load_words(timg, t, w0, w1, [&](uint32_t w) { upper = upper || w >= 256; });
+            if (upper && tmem.tlut_dirty_lo <= tmem.tlut_dirty_hi) sync_tlut_mirror(tmem);
+            load_words(timg, t, w0, w1, [&](uint32_t w) {
+                if (tmem_tag[w] != key) set_word(w, key, true);
+            });
+            tmem.generation++;
+            return true;
+        }
+        // A block load done: its words written, with its tag (0 from a framebuffer).
+        void tag_load(const Tile& t, uint32_t w0, uint32_t w1) {
+            if (((w1 >> 12) & 0xFFF) < ((w0 >> 12) & 0xFFF)) return;
+            uint16_t key = 0;
+            if (drawn_framebuffer_at(timg.addr) == nullptr && known_loads.size() < 65535) {
+                if (KeySlot* slot = table_find(known_table, table_stamp, load_key(t, w0, w1), true)) {
+                    if (slot->value == 0) {
+                        slot->value = (uint32_t)known_loads.size();
+                        known_loads.push_back(KnownLoad{ timg, t, w0, w1 });
+                    }
+                    key = (uint16_t)slot->value;
+                }
+            }
+            load_words(timg, t, w0, w1, [&](uint32_t w) { set_word(w, key, false); });
+        }
+        // Writes the stale words for_each gives (each from its load, done again aside).
+        template <typename F> void materialize(F&& for_each) {
+            if (stale_count == 0) return;
+            for_each([&](uint32_t w) {
+                if (!tmem_stale[w]) return;
+                const uint16_t key = tmem_tag[w];
+                const KnownLoad& l = known_loads[key];
+                scratch_tmem.tlut_dirty_lo = 256;
+                scratch_tmem.tlut_dirty_hi = 0;
+                load_block(scratch_tmem, rdram, l.img, l.tile, (l.w0 >> 12) & 0xFFF, l.w0 & 0xFFF, (l.w1 >> 12) & 0xFFF, l.w1 & 0xFFF);
+                stats.block_late++;
+                load_words(l.img, l.tile, l.w0, l.w1, [&](uint32_t v) {
+                    if (tmem_stale[v] && tmem_tag[v] == key) {
+                        std::memcpy(&tmem.data[v * 8], &scratch_tmem.data[v * 8], 8);
+                        set_word(v, key, false);
+                    }
+                });
+            });
+        }
+        void materialize_all() {
+            materialize([](auto&& f) { for (uint32_t w = 0; w < 512; w++) f(w); });
+        }
+        // The words a tile's texture reads (as hash_tile).
+        template <typename F> static void tile_words(const Tile& tile, uint32_t w, uint32_t h, F&& f) {
+            uint32_t start, span, half;
+            tile_tmem_span(tile, w, h, start, span, half);
+            const uint32_t half_mask = half / 8 - 1, n = (span + 7) / 8; // half: 2048 or 4096
+            for (uint32_t k = 0; k < n; k++) {
+                const uint32_t word = (start / 8 + k) & half_mask;
+                f(word);
+                if (tile.siz == SIZ_32b) f(256 + word);
+            }
+        }
+        // hash_tile, from the memo when the tile is within one load's words.
+        uint32_t tile_hash(const Tile& tile, uint32_t w, uint32_t h, uint32_t tlut) {
+            uint16_t single = 0;
+            bool one = true;
+            tile_words(tile, w, h, [&](uint32_t word) {
+                const uint16_t t = tmem_tag[word];
+                if (t == 0 || (single != 0 && t != single)) one = false;
+                single = t;
+            });
+            auto real = [&] {
+                materialize([&](auto&& f) { tile_words(tile, w, h, f); });
+                return hash_tile(tmem, tile, w, h, tlut);
+            };
+            if (!one || single == 0 || no_load_skip || (debug_flags & 2097152)) return real();
+            uint64_t mk = single;
+            const uint32_t params[7] = { tile.fmt, tile.siz, tile.line, tile.palette, w, h, tlut };
+            for (uint32_t v : params) mk = (mk ^ v) * 0x9E3779B97F4A7C15ull;
+            mk = (mk ^ hash_tile_tlut(tmem, tile, tlut)) * 0xC2B2AE3D27D4EB4Full;
+            KeySlot* it = table_find(memo_table, table_stamp, mk, true);
+            if (it == nullptr) return real();
+            if (it->value == 0) {
+                const uint32_t hash = real();
+                it->value = hash; // 0: not worked out yet (a hash of 0 is just worked out each time)
+                return hash;
+            }
+            if (__builtin_expect(cmd_timing, 0)) {
+                // Debug: the hash worked out after all, checked against the memo's.
+                memo_checks++;
+                if (real() != it->value && ++memo_mismatches <= 20) {
+                    std::fprintf(stderr, "[tmem] memo hash differs: dl %u tile tmem %u fmt %u siz %u %ux%u\n", dl_count, tile.tmem, tile.fmt, tile.siz, w, h);
+                }
+            }
+            return it->value;
+        }
+
         bool note_tmem_load(const Tile& t, uint32_t uls, uint32_t ult, bool block) {
             // Loads overwrite what an earlier framebuffer load put at the same place.
             for (FbLoad& l : fb_loads) {
@@ -3672,7 +3879,7 @@ namespace {
             if (tmem.tlut_dirty_lo <= tmem.tlut_dirty_hi && tile_reads_upper(tile, h)) {
                 sync_tlut_mirror(tmem);
             }
-            const uint32_t hash = hash_tile(tmem, tile, w, h, tlut);
+            const uint32_t hash = tile_hash(tile, w, h, tlut);
             const uint64_t key = ((uint64_t)hash << 32) ^ ((uint64_t)w << 20) ^ ((uint64_t)h << 8) ^
                 ((uint64_t)(wrap_s == GL_REPEAT ? 1 : wrap_s == GL_MIRRORED_REPEAT ? 2 : 0) << 4) ^
                 ((uint64_t)(wrap_t == GL_REPEAT ? 1 : wrap_t == GL_MIRRORED_REPEAT ? 2 : 0) << 6) ^ (linear ? 1 : 0);
@@ -3680,6 +3887,7 @@ namespace {
                 cached->last_used = present_count;
                 tt.tex = cached->tex;
                 if (dumping()) {
+                    materialize_all();
                     std::vector<uint32_t> check((size_t)w * h);
                     decode_tile(tmem, tile, w, h, tlut, check.data());
                     uint32_t opaque = 0, clear = 0;
@@ -3691,6 +3899,7 @@ namespace {
             }
             const uint64_t tex_start = sceKernelGetProcessTimeWide();
             std::vector<uint32_t> texels((size_t)w * h);
+            materialize_all();
             decode_tile(tmem, tile, w, h, tlut, texels.data());
             // Decoded here (TMEM is the front's), uploaded by the GL thread.
             const uint32_t tex = new_tex_id();
