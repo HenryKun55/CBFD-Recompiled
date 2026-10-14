@@ -206,8 +206,20 @@ namespace {
     // A translation's game bytes in RDRAM past the game's 8 MB (kept while there's room).
     std::string wrap_to_width(uint8_t* rdram, const std::string& text, int max_px);
 
-    uint32_t place(uint8_t* rdram, uint32_t key, const std::string& line, bool censored, int wrap_px = 0) {
+    uint32_t place(uint8_t* rdram, uint32_t key, const std::string& line, bool censored, int wrap_px = 0,
+                   bool capital = false) {
         std::string text = encode(line.c_str(), censored, key);
+        // A page the game wrote with a capital first (32 of them: Birdy's, the Professor's...)
+        // is drawn from its second letter on unless the first is a capital too ("isso" showed
+        // as "sso"): the translation's first letter is made one.
+        if (capital) {
+            for (char& c : text) {
+                const uint8_t u = (uint8_t)c;
+                if (u >= 'a' && u <= 'z') { c = (char)(u - ('a' - 'A')); break; }
+                if (u >= 'A' && u <= 'Z') break;
+                if (u >= 0xC0) break; // an accented letter: already a capital in the font
+            }
+        }
         if (wrap_px > 0) text = wrap_to_width(rdram, text, wrap_px);
         const uint64_t slot = ((uint64_t)key << 4) | ((uint64_t)encoding_language << 1) | (censored ? 1 : 0);
         auto at = placed.find(slot);
@@ -281,7 +293,7 @@ extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
         return 0;
     }
 
-    ctx->r2 = addr(place(rdram, key, found->second, censored, bubble_wrap_px));
+    ctx->r2 = addr(place(rdram, key, found->second, censored, bubble_wrap_px, bytes[0] >= 'A' && bytes[0] <= 'Z'));
     return 1;
 }
 
