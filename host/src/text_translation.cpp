@@ -289,6 +289,22 @@ extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
     }
     const uint32_t key = crc32(bytes, n);
     auto found = lang.pages.find(key);
+#if defined(__vita__)
+    // Debug (ux0:data/conker/debug_text): each page asked for, its key, its kind and number, the
+    // bytes before it and its first ones, and whether a translation answered (and its first bytes).
+    static const bool text_log = [] {
+        FILE* f = std::fopen("ux0:data/conker/debug_text", "r");
+        if (f) std::fclose(f);
+        return f != nullptr;
+    }();
+    if (text_log) {
+        char before[40] = {}, first[40] = {};
+        for (int i = -4; i < 0; i++) std::snprintf(before + std::strlen(before), 8, "%02X ", (uint8_t)MEM_B(i, s));
+        for (size_t i = 0; i < 8 && i < n; i++) std::snprintf(first + std::strlen(first), 8, "%02X ", bytes[i]);
+        std::fprintf(stderr, "[text] page key %08X kind %d page %d message %08X | before %s| first %s| %s\n",
+            key, (int)kind, (int)page, (uint32_t)message, before, first, found == lang.pages.end() ? "untranslated" : "translated");
+    }
+#endif
     if (found == lang.pages.end()) {
         return 0;
     }
