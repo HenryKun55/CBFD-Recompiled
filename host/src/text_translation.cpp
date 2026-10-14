@@ -555,7 +555,14 @@ extern "C" void conker_font_patch(uint8_t* rdram, recomp_context* ctx) {
             const Accent& acc = n.acc == Acc::Acute ? acute : n.acc == Acc::Grave ? grave : tilde;
             Glyph G;
             switch (n.make) {
-                case Make::Accent: G = with_accent(base, acc); break;
+                case Make::Accent:
+                    G = with_accent(base, acc);
+                    // Í: the font's I is a bare stroke, and squashed under an accent it read as ¡;
+                    // a bar on top (as at its foot) makes it an I.
+                    if (n.base == g_i_circ && G.h >= 12) {
+                        for (int x = 0; x < G.w; x++) G.px[4][x] = G.px[11][x];
+                    }
+                    break;
                 case Make::Squash: G = with_accent(squashed(base), acc); break;
                 case Make::Rotate: G = rotated(base); break;
             }
