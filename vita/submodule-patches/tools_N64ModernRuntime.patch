@@ -1490,10 +1490,19 @@ index 17d7a47..c94de59 100644
      }
  }
 diff --git a/ultramodern/src/mesgqueue.cpp b/ultramodern/src/mesgqueue.cpp
-index 9944a02..7afbd85 100644
+index 9944a02..3bf5fdc 100644
 --- a/ultramodern/src/mesgqueue.cpp
 +++ b/ultramodern/src/mesgqueue.cpp
-@@ -28,10 +28,18 @@ void ultramodern::set_message_queue_control(const ultramodern::MessageQueueContr
+@@ -1,4 +1,8 @@
++#include <algorithm>
+ #include <bitset>
++#include <deque>
++#include <mutex>
++#include <vector>
+ #include <thread>
+ 
+ #include "blockingconcurrentqueue.h"
+@@ -28,42 +32,89 @@ void ultramodern::set_message_queue_control(const ultramodern::MessageQueueContr
  }
  
  void ultramodern::enqueue_external_message_src(PTR(OSMesgQueue) mq, OSMesg msg, bool jam, EventMessageSource src) {
@@ -1512,19 +1521,91 @@ index 9944a02..7afbd85 100644
      external_messages.enqueue({mq, msg, jam, requeue_if_blocked});
  }
  
-@@ -41,8 +49,9 @@ void dequeue_external_messages(RDRAM_ARG1) {
+ bool do_send(RDRAM_ARG PTR(OSMesgQueue) mq_, OSMesg msg, bool jam, bool block);
+ 
++// Messages a full queue turned away, in arrival order. They used to go back to the end of
++// external_messages, behind ones that arrived after them, so a queue could get them out of
++// order: Conker's scheduler, hearing "RDP done" before "RSP done" for a graphics task it had
++// asked to yield, started its audio task and then waited forever for the frame (a freeze after
++// a stall, such as the Vita's screenshot, filled its queue).
++static std::deque<QueuedMessage> pending_messages;
++static std::mutex pending_mutex;
++
++// Sends what it can of pending_messages in order; a message whose queue turned an earlier one
++// away waits behind it. Returns whether any was sent.
++static bool send_pending_messages(RDRAM_ARG1) {
++    bool sent_any = false;
++    std::vector<PTR(OSMesgQueue)> blocked{};
++    for (auto it = pending_messages.begin(); it != pending_messages.end();) {
++        const QueuedMessage& m = *it;
++        if (std::find(blocked.begin(), blocked.end(), m.mq) != blocked.end()) {
++            ++it;
++            continue;
++        }
++        if (do_send(PASS_RDRAM m.mq, m.mesg, m.jam, false)) {
++            sent_any = true;
++            it = pending_messages.erase(it);
++            continue;
++        }
++        debug_printf("[External] queue 0x%08X full, msg 0x%08X %s\n", (uint32_t)m.mq, (uint32_t)m.mesg, m.requeue_if_blocked ? "requeued" : "DROPPED");
++        if (m.requeue_if_blocked) {
++            blocked.push_back(m.mq);
++            ++it;
++        } else {
++            it = pending_messages.erase(it);
++        }
++    }
++    return sent_any;
++}
++
+ void dequeue_external_messages(RDRAM_ARG1) {
++    std::lock_guard lock{pending_mutex};
      QueuedMessage to_send;
-     std::vector<QueuedMessage> requeued_messages{};
+-    std::vector<QueuedMessage> requeued_messages{};
      while (external_messages.try_dequeue(to_send)) {
 -        if (!do_send(PASS_RDRAM to_send.mq, to_send.mesg, to_send.jam, false) && to_send.requeue_if_blocked) {
 -            requeued_messages.push_back(to_send);
-+        if (!do_send(PASS_RDRAM to_send.mq, to_send.mesg, to_send.jam, false)) {
-+            debug_printf("[External] queue 0x%08X full, msg 0x%08X %s\n", (uint32_t)to_send.mq, (uint32_t)to_send.mesg, to_send.requeue_if_blocked ? "requeued" : "DROPPED");
-+            if (to_send.requeue_if_blocked) requeued_messages.push_back(to_send);
-         }
+-        }
+-    }
+-    for (QueuedMessage& cur_mesg : requeued_messages) {
+-        external_messages.enqueue(cur_mesg);
++        pending_messages.push_back(to_send);
      }
-     for (QueuedMessage& cur_mesg : requeued_messages) {
-@@ -139,8 +148,15 @@ bool do_recv(RDRAM_ARG PTR(OSMesgQueue) mq_, PTR(OSMesg) msg_, bool block) {
++    send_pending_messages(PASS_RDRAM1);
+ }
+ 
+ void ultramodern::wait_for_external_message(RDRAM_ARG1) {
++    {
++        std::lock_guard lock{pending_mutex};
++        if (!pending_messages.empty() && send_pending_messages(PASS_RDRAM1)) return;
++    }
+     QueuedMessage to_send;
+     external_messages.wait_dequeue(to_send);
+-    if (!do_send(PASS_RDRAM to_send.mq, to_send.mesg, to_send.jam, false) && to_send.requeue_if_blocked) {
+-        external_messages.enqueue(to_send);
+-    }
++    std::lock_guard lock{pending_mutex};
++    pending_messages.push_back(to_send);
++    send_pending_messages(PASS_RDRAM1);
+ }
+ 
+ void ultramodern::wait_for_external_message_timed(RDRAM_ARG u32 millis) {
++    {
++        std::lock_guard lock{pending_mutex};
++        if (!pending_messages.empty() && send_pending_messages(PASS_RDRAM1)) return;
++    }
+     QueuedMessage to_send;
+     if (external_messages.wait_dequeue_timed(to_send, std::chrono::milliseconds{millis})) {
+-        if (!do_send(PASS_RDRAM to_send.mq, to_send.mesg, to_send.jam, false) && to_send.requeue_if_blocked) {
+-            external_messages.enqueue(to_send);
+-        }
++        std::lock_guard lock{pending_mutex};
++        pending_messages.push_back(to_send);
++        send_pending_messages(PASS_RDRAM1);
+     }
+ }
+ 
+@@ -139,8 +190,15 @@ bool do_recv(RDRAM_ARG PTR(OSMesgQueue) mq_, PTR(OSMesg) msg_, bool block) {
          // Otherwise, yield this thread in a loop until the queue is no longer full
          while (MQ_IS_EMPTY(mq)) {
              debug_printf("[Message Queue] Thread %d is blocked on receive\n", TO_PTR(OSThread, ultramodern::this_thread())->id);
