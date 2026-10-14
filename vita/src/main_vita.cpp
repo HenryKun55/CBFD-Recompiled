@@ -32,6 +32,7 @@
 #include "vita_platform.hpp"
 #include "vita_renderer.hpp"
 #include "bench.hpp"
+#include "vita_bootui.h"
 
 // Memory: the newlib heap gets most of the app's budget (the ROM, RDRAM and the
 // renderer's buffers come from it); every thread gets a generous stack, since the
@@ -317,7 +318,7 @@ int main(int argc, char** argv) {
     std::filesystem::create_directories(data_dir, ec);
     sceClibPrintf("[vita] data dir: %s\n", ec ? ec.message().c_str() : "ok");
     redirect_output();
-    std::fprintf(stderr, "[vita] Conker's Bad Fur Day: Recompiled, PS Vita build\n");
+    std::fprintf(stderr, "[vita] Conker's Bad Fur Day: Recompiled, PS Vita build, version " CONKER_PORT_VERSION "\n");
     {
         tls_probe = 1;
         void* main_addr = &tls_probe;
@@ -337,6 +338,11 @@ int main(int argc, char** argv) {
         }
     }
     conker::vita::bench::init();
+    // The boot picture with the port's version, and the check for a newer release
+    // (vita_bootui.c), before the renderer takes the screen. Not during a bench run.
+    if (uint32_t* boot_fb = vita_boot_picture_show(); boot_fb && !conker::vita::bench::active()) {
+        vita_bootui_run(boot_fb);
+    }
     if (run_rsp_native()) {
         sceKernelExitProcess(0);
         return 0;
@@ -404,7 +410,7 @@ int main(int argc, char** argv) {
     recomp::Configuration cfg{};
     cfg.argc = (int)runtime_argv.size();
     cfg.argv = runtime_argv.data();
-    cfg.project_version = recomp::Version{ 0, 1, 5 };
+    cfg.project_version = recomp::Version{ 1, 0, 0 };
     cfg.rsp_callbacks.get_rsp_microcode = get_rsp_microcode;
     cfg.audio_callbacks = { conker::vita::queue_samples, conker::vita::get_frames_remaining, conker::vita::set_frequency };
     cfg.renderer_callbacks.create_render_context = conker::vita::create_renderer;
