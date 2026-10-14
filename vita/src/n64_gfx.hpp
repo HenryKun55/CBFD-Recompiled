@@ -102,11 +102,6 @@ namespace n64gfx {
                      uint32_t tlut_type, uint32_t* out);
     // A hash of everything decode_tile reads for this tile and size.
     uint32_t hash_tile(const Tmem& tmem, const Tile& tile, uint32_t width, uint32_t height, uint32_t tlut_type);
-    // The palette part of hash_tile (0 when the tile reads none).
-    uint32_t hash_tile_tlut(const Tmem& tmem, const Tile& tile, uint32_t tlut_type);
-    // The TMEM data hash_tile reads: from start, span bytes, wrapping in a half (half bytes;
-    // 32-bit texels: the same bytes in both halves, 2048 each).
-    void tile_tmem_span(const Tile& tile, uint32_t width, uint32_t height, uint32_t& start, uint32_t& span, uint32_t& half);
 
     // Decodes an RDRAM framebuffer (16 or 32-bit) to RGBA8888.
     void decode_framebuffer(const uint8_t* rdram, uint32_t addr, uint32_t siz, uint32_t width, uint32_t height, uint32_t* out);
