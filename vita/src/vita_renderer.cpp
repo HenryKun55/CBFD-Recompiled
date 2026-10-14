@@ -427,6 +427,11 @@ namespace {
         // outside it the image keeps whatever was there.
         float drawn_x0 = 1e9f, drawn_y0 = 1e9f, drawn_x1 = 0, drawn_y1 = 0;
         float shown_x0 = 0, shown_y0 = 0, shown_x1 = 0, shown_y1 = 0;
+        // Frame interpolation: the frame the game drew, copied aside (tex then holds the frame
+        // drawn between it and the one before), shown a VI after that one.
+        uint32_t real_fbo = 0, real_tex = 0;
+        bool interp_ready = false; // tex holds an in-between frame not shown yet
+        bool showing_real = false; // shown: real_tex
     };
 
     struct Program {
@@ -1409,7 +1414,10 @@ namespace {
             last_op = -1;
             const bool timing_tail = profiling;
             const uint64_t list_t0 = profiling ? sceKernelGetProcessTimeWide() : 0;
+            start_matrices(true);
             run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
+            // The screen it drew (an in-between frame goes there).
+            interp_main = (current_fb != nullptr && current_fb->width >= 256 && current_fb->siz != SIZ_8b) ? current_fb : nullptr;
             if (profiling) {
                 part_total_us += sceKernelGetProcessTimeWide() - list_t0;
                 profiling = false;
@@ -1482,6 +1490,7 @@ namespace {
                     (tail_t4 - dl_start) / 1000.0);
             }
             const uint32_t dl_us = (uint32_t)(sceKernelGetProcessTimeWide() - dl_start);
+            last_list_us = dl_us;
             if (ab_on) {
                 ab_us[ab_phase] += dl_us;
                 ab_lists[ab_phase]++;
@@ -1533,6 +1542,15 @@ namespace {
             struct StageEnd { ~StageEnd() { g_front_stage = 0; } } stage_end;
             struct TraceScope { TraceScope() { ultramodern_trace("update_screen", 0); } ~TraceScope() { ultramodern_trace("update_screen end", 0); } } trace_scope;
             flush();
+            // An in-between frame was shown at the last VI: the game's own now.
+            if (real_pending) {
+                real_pending = false;
+                const uint32_t o = ultramodern::renderer::get_vi_regs()->VI_ORIGIN_REG & 0x00FFFFFF;
+                if (o == last_origin) {
+                    present();
+                    return;
+                }
+            }
             // Only when there's something new to show: the VI asks every 1/60s, the game
             // draws at 20-30 frames a second.
             // When the VI shows another image (the game swapped buffers). A game drawing
@@ -2075,7 +2093,16 @@ namespace {
                     return pc + 8;
                 }
                 case G_EX_MATRIXGROUP_V1:
+                    // An object's commands: its matrices pair with its own last frame's.
+                    if (group_depth < max_groups) {
+                        group_ids[group_depth] = w1;
+                        group_counts[group_depth] = 0;
+                    }
+                    group_depth++;
                     return pc + 8;
+                case 0x00000D: // G_EX_POPMATRIXGROUP_V1
+                    group_depth = std::max(0, group_depth - (int)std::max<uint32_t>(w1, 1));
+                    return pc;
                 default:
                     // G_EX_POPMATRIXGROUP_V1, G_EX_SETRECTASPECT_V1 and others of one command.
                     return pc;
@@ -2127,13 +2154,160 @@ namespace {
             return r;
         }
 
+        // ======================================================== frame interpolation
+        // A frame drawn between each two of the game's (30 a second, the VI 60): the list just
+        // read is read again with each matrix halfway from its last frame's, and that frame
+        // shown at the VI the game shows its own, its own a VI later (vita_interpolation, the
+        // menu's "Frame rate"). Matrices pair by the object they're drawn for (the matrix
+        // groups host/src/interpolation.cpp puts around each object) and their order in it;
+        // the rest (the camera's) by their order in the list. A matrix far from its pair (a cut,
+        // a teleport) isn't moved. Only where there's time for it: a list read in under
+        // interp_budget_us (the second reading takes as long; the Vita's busiest scenes don't
+        // have it), and not for lists the CPU reads back from.
+        bool interp_pass = false;
+        float interp_t = 0.5f;
+        static constexpr uint32_t interp_budget_us = 12000;
+        static constexpr int max_groups = 16;
+        uint32_t group_ids[max_groups] = {}, group_counts[max_groups] = {};
+        int group_depth = 0;
+        uint32_t loose_count = 0;
+        struct MtxSlot { uint64_t key; uint32_t stamp; uint32_t index; };
+        static constexpr uint32_t mtx_slots = 8192;
+        std::vector<MtxSlot> mtx_table[2] = { std::vector<MtxSlot>(mtx_slots, MtxSlot{ 0, 0, 0 }),
+                                              std::vector<MtxSlot>(mtx_slots, MtxSlot{ 0, 0, 0 }) };
+        std::vector<Mat4> mtx_values[2];
+        uint32_t mtx_stamp[2] = { 1, 1 };
+        int mtx_cur = 0; // this list's; the other holds the last list's
+        Framebuffer* interp_main = nullptr; // the screen the last list drew
+        uint32_t last_list_us = ~0u;
+        bool real_pending = false;
+        uint32_t interp_frames = 0, interp_lerped = 0, interp_jumped = 0, interp_skipped = 0;
+
+        uint64_t matrix_key(uint32_t params) {
+            if (group_depth > 0) {
+                const int d = std::min(group_depth, max_groups) - 1;
+                return ((uint64_t)group_ids[d] << 32) | ((uint64_t)(group_counts[d]++) << 4) | params;
+            }
+            return (0xFFFFFFFFull << 32) | ((uint64_t)(loose_count++) << 4) | params;
+        }
+        static uint32_t mtx_slot(uint64_t key) { return (uint32_t)((key * 0x9E3779B97F4A7C15ull) >> 51) & (mtx_slots - 1); }
+        void record_matrix(uint64_t key, const Mat4& m) {
+            std::vector<MtxSlot>& t = mtx_table[mtx_cur];
+            for (uint32_t n = 0, i = mtx_slot(key); n < mtx_slots; n++, i = (i + 1) & (mtx_slots - 1)) {
+                MtxSlot& slot = t[i];
+                if (slot.stamp != mtx_stamp[mtx_cur] || slot.key == key) {
+                    slot.key = key;
+                    slot.stamp = mtx_stamp[mtx_cur];
+                    slot.index = (uint32_t)mtx_values[mtx_cur].size();
+                    mtx_values[mtx_cur].push_back(m);
+                    return;
+                }
+            }
+        }
+        const Mat4* last_matrix(uint64_t key) const {
+            const int p = mtx_cur ^ 1;
+            const std::vector<MtxSlot>& t = mtx_table[p];
+            for (uint32_t n = 0, i = mtx_slot(key); n < mtx_slots; n++, i = (i + 1) & (mtx_slots - 1)) {
+                const MtxSlot& slot = t[i];
+                if (slot.stamp != mtx_stamp[p]) return nullptr;
+                if (slot.key == key) return &mtx_values[p][slot.index];
+            }
+            return nullptr;
+        }
+        // Near enough to move between: the rotation and scale rows within a fraction of
+        // their size, the translation within a step (a camera cut or a teleport is not).
+        static bool matrices_close(const Mat4& a, const Mat4& b) {
+            float big = 1e-3f, diff = 0.0f;
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 4; j++) {
+                    big = std::max(big, std::fabs(b.m[i][j]));
+                    diff = std::max(diff, std::fabs(a.m[i][j] - b.m[i][j]));
+                }
+            }
+            if (diff > 0.6f * big) return false;
+            float t = 0.0f, d = 0.0f;
+            for (int j = 0; j < 3; j++) {
+                t += std::fabs(a.m[3][j]) + std::fabs(b.m[3][j]);
+                d += std::fabs(a.m[3][j] - b.m[3][j]);
+            }
+            return d <= 0.35f * t + 64.0f;
+        }
+        void start_matrices(bool real) {
+            group_depth = 0;
+            loose_count = 0;
+            if (real) {
+                mtx_cur ^= 1;
+                mtx_stamp[mtx_cur]++;
+                mtx_values[mtx_cur].clear();
+            }
+        }
+
+    public:
+        // The in-between frame for the list just read (the gfx thread, the list's capture held).
+        void interp_dl(const OSTask* task) {
+            Framebuffer* fb = interp_main;
+            if (!conker::vita_interpolation() || fb == nullptr || mtx_values[mtx_cur ^ 1].empty() ||
+                last_list_us > interp_budget_us || conker::vita::menu::is_open()) {
+                if (fb != nullptr && conker::vita_interpolation()) interp_skipped++;
+                return;
+            }
+            const int cap = ultramodern_vita_current_capture;
+            cap_pt = cap >= 0 ? capture::slots[cap].pt : nullptr;
+            struct CapEnd { const uint8_t* const*& p; ~CapEnd() { p = nullptr; } } cap_end{ cap_pt };
+            ultramodern_trace("interp", 0);
+            if (fb->real_tex == 0) {
+                fb->real_tex = new_tex_id();
+                fb->real_fbo = next_fbo_id++;
+            }
+            enqueue([src = fb->tex, fbo = fb->real_fbo, tex = fb->real_tex, w = fb->gl_width, h = fb->height](Backend& b, CommandList&) {
+                b.copy_texture(src, fbo, tex, w, h);
+            });
+            interp_pass = true;
+            start_matrices(false);
+            cbfd_advanced_lighting = false;
+            vctx_dirty = true;
+            profiling = false;
+            list->debug_flags = debug_flags;
+            run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
+            flush();
+            for (auto& [base, f] : framebuffers) f.drawn_this_dl = false;
+            submit();
+            interp_pass = false;
+            fb->interp_ready = true;
+            fb->showing_real = false;
+            stats = {};
+            if (++interp_frames % 300 == 0) {
+                std::fprintf(stderr, "[interp] %u frames: matrices moved %u, left (far) %u; lists without one %u\n",
+                    interp_frames, interp_lerped, interp_jumped, interp_skipped);
+                interp_lerped = interp_jumped = interp_skipped = 0;
+            }
+        }
+    private:
+
         void load_matrix(uint32_t w0, uint32_t w1) {
             PartTimer part_timer(*this, P_MTX);
             const uint32_t params = (w0 & 0xFF) ^ 1; // F3DEX2 inverts G_MTX_PUSH
             const bool push = params & 1, load = params & 2, proj = params & 4;
             mark_read(segmented(w1), 64, 4);
-            const Mat4 m = read_matrix(segmented(w1));
+            Mat4 m = read_matrix(segmented(w1));
             stats.matrices++;
+            const uint64_t key = matrix_key(params & 7);
+            if (interp_pass) {
+                if (const Mat4* last = last_matrix(key)) {
+                    if (matrices_close(*last, m)) {
+                        for (int i = 0; i < 4; i++) {
+                            for (int j = 0; j < 4; j++) m.m[i][j] = last->m[i][j] + (m.m[i][j] - last->m[i][j]) * interp_t;
+                        }
+                        interp_lerped++;
+                    }
+                    else {
+                        interp_jumped++;
+                    }
+                }
+            }
+            else {
+                record_matrix(key, m);
+            }
             if (proj) {
                 projection = load ? m : mul(m, projection);
             }
@@ -3429,6 +3603,14 @@ namespace {
             });
             free_tex_ids.push_back(old.tex);
             if (old.snapshot_tex) free_tex_ids.push_back(old.snapshot_tex);
+            if (old.real_tex) {
+                enqueue([fbo = old.real_fbo, tex = old.real_tex](Backend& b, CommandList&) {
+                    b.delete_framebuffer(fbo);
+                    b.delete_texture(tex);
+                });
+                free_tex_ids.push_back(old.real_tex);
+            }
+            if (interp_main == &fb) interp_main = nullptr;
             if (current_fb == &fb) current_fb = nullptr;
             if (batch_state.fb == &fb) batch_state.fb = nullptr;
             for (FbLoad& l : fb_loads) {
@@ -4107,6 +4289,10 @@ namespace {
             s.fb->last_drawn = present_count;
             s.fb->sig_pending = true;
             s.fb->drawn_this_dl = true;
+            if (!interp_pass) {
+                s.fb->interp_ready = false;
+                s.fb->showing_real = false;
+            }
             if ((debug_flags & 4096) && s.dbg_cc0 == 0x26A004 && s.blend) s.fb->water_draws++;
             mark_drawn(s.fb, s.scissor);
 
@@ -4328,7 +4514,14 @@ namespace {
                 shown->last_used = present_count;
             }
             if (shown != nullptr && present_count - shown->last_drawn <= 3) {
-                source_tex = shown->tex;
+                source_tex = shown->showing_real && shown->real_tex ? shown->real_tex : shown->tex;
+                if (shown->interp_ready) {
+                    // The in-between frame first, the game's own (copied aside) at the next VI.
+                    source_tex = shown->tex;
+                    shown->interp_ready = false;
+                    shown->showing_real = true;
+                    real_pending = true;
+                }
                 // Only what the game drew this frame (its scissor), as RT64 shows it.
                 if (shown->drawn_x1 > shown->drawn_x0 && shown->drawn_y1 > shown->drawn_y0) {
                     shown->shown_x0 = shown->drawn_x0; shown->shown_x1 = shown->drawn_x1;
@@ -4386,7 +4579,7 @@ namespace {
             const std::array<float, 4> uv = { u0, v0, u1, v1 };
             // The shown part's width on the screen: 4:3, or wider when the image is.
             float aspect = 4.0f / 3.0f;
-            if (shown != nullptr && source_tex == shown->tex && shown->shown_x1 > shown->shown_x0 && shown->shown_y1 > shown->shown_y0) {
+            if (shown != nullptr && (source_tex == shown->tex || source_tex == shown->real_tex) && shown->shown_x1 > shown->shown_x0 && shown->shown_y1 > shown->shown_y0) {
                 aspect = (shown->shown_x1 - shown->shown_x0) / (shown->shown_y1 - shown->shown_y0) * (4.0f / 3.0f) /
                     ((float)shown->width / (float)shown->height);
             }
@@ -4406,8 +4599,12 @@ namespace {
     };
 }
 
+// The gfx thread's call for an in-between frame (ultramodern events.cpp), after a list was read.
+extern "C" void (*ultramodern_vita_interp_hook)(void* renderer, const OSTask* task);
+
 std::unique_ptr<ultramodern::renderer::RendererContext> conker::vita::create_renderer(
     uint8_t* rdram, ultramodern::renderer::WindowHandle, bool) {
+    ultramodern_vita_interp_hook = [](void* r, const OSTask* task) { static_cast<VitaRenderer*>(r)->interp_dl(task); };
     return std::make_unique<VitaRenderer>(rdram);
 }
 

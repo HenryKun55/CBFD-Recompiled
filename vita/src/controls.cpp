@@ -245,6 +245,7 @@ namespace conker::vita::controls {
             else if (!std::strcmp(key, "Language")) file_language = std::clamp(std::atoi(a), 0, 5);
             else if (!std::strcmp(key, "LanguageChosen")) config.language_chosen = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Censored")) config.censored = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "Interpolation")) config.interpolation = std::atoi(a) != 0;
             else if (!std::strcmp(key, "CutsceneSkip")) config.cutscene_skip = std::clamp(std::atoi(a), 0, 2);
         }
         std::fclose(f);
@@ -267,10 +268,10 @@ namespace conker::vita::controls {
             if (b != Input::None) std::fprintf(f, "%s = %s, %s\n", n64_names[i], input_names[(int)a], input_names[(int)b]);
             else std::fprintf(f, "%s = %s\n", n64_names[i], input_names[(int)a]);
         }
-        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nLanguageChosen = %d\nCensored = %d\n",
+        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nLanguageChosen = %d\nCensored = %d\nInterpolation = %d\n",
             config.stick == StickSource::Right ? "Right" : "Left", config.deadzone, config.sensitivity,
             config.invert_x ? 1 : 0, config.invert_y ? 1 : 0, config.stick_threshold, config.widescreen ? 1 : 0,
-            config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.language_chosen ? 1 : 0, config.censored ? 1 : 0);
+            config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.language_chosen ? 1 : 0, config.censored ? 1 : 0, config.interpolation ? 1 : 0);
         std::fclose(f);
         return true;
     }
@@ -297,5 +298,10 @@ namespace conker {
 
     bool text_censored() {
         return vita::controls::current().censored;
+    }
+
+    // Frames drawn between the game's (vita_renderer.cpp).
+    bool vita_interpolation() {
+        return vita::controls::current().interpolation;
     }
 }

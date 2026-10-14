@@ -1191,7 +1191,7 @@ index 8ca779e..1e250b8 100644
  #else
      std::quick_exit(exit_status);
 diff --git a/ultramodern/src/events.cpp b/ultramodern/src/events.cpp
-index 17d7a47..bd6364d 100644
+index 17d7a47..eb1d009 100644
 --- a/ultramodern/src/events.cpp
 +++ b/ultramodern/src/events.cpp
 @@ -6,6 +6,7 @@
@@ -1212,7 +1212,7 @@ index 17d7a47..bd6364d 100644
  };
  
  struct ScreenUpdateAction {
-@@ -142,6 +146,24 @@ static struct {
+@@ -142,6 +146,26 @@ static struct {
      moodycamel::ConcurrentQueue<OSThread*> deleted_threads{};
  } events_context{};
  
@@ -1228,6 +1228,8 @@ index 17d7a47..bd6364d 100644
 +// of drawing a frame between each two of the game's (60 fps by interpolation).
 +extern "C" { volatile bool ultramodern_vita_double_draw = false; }
 +extern "C" { volatile bool ultramodern_vita_late_signal = false; }
++// Vita: draws the frame between the game's last two (the renderer sets it).
++extern "C" { void (*ultramodern_vita_interp_hook)(void* renderer, const OSTask* task) = nullptr; }
 +extern "C" int ultramodern_vita_capture_early_dp(int index);
 +extern "C" int ultramodern_vita_capture(uint8_t* rdram, const OSTask* task);
 +extern "C" void ultramodern_vita_release_capture(int index);
@@ -1237,7 +1239,7 @@ index 17d7a47..bd6364d 100644
  ultramodern::renderer::ViRegs* ultramodern::renderer::get_vi_regs() {
      return &events_context.vi.update_screen_regs;
  }
-@@ -184,6 +206,42 @@ extern moodycamel::LightweightSemaphore graphics_shutdown_ready;
+@@ -184,6 +208,42 @@ extern moodycamel::LightweightSemaphore graphics_shutdown_ready;
  
  void set_dummy_vi(bool odd);
  
@@ -1280,7 +1282,7 @@ index 17d7a47..bd6364d 100644
  void vi_thread_func() {
      ultramodern::set_native_thread_name("VI Thread");
      // This thread should be prioritized over every other thread in the application, as it's what allows
-@@ -247,6 +305,7 @@ void vi_thread_func() {
+@@ -247,6 +307,7 @@ void vi_thread_func() {
                      ultramodern::enqueue_external_message_src(cur_state->mq, cur_state->msg, false, ultramodern::EventMessageSource::Vi);
                  }
                  remaining_retraces = cur_state->retrace_count;
@@ -1288,7 +1290,7 @@ index 17d7a47..bd6364d 100644
              }
              if (events_context.ai.mq != NULLPTR) {
                  // Send a message to the VI queue, and do not set it to be requeued if the queue was full for the same reason as the VI message above.
-@@ -260,18 +319,42 @@ void vi_thread_func() {
+@@ -260,18 +321,42 @@ void vi_thread_func() {
      }
  }
  
@@ -1331,7 +1333,7 @@ index 17d7a47..bd6364d 100644
  void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_ready) {
      ultramodern::set_native_thread_name("SP Task Thread");
      ultramodern::set_native_thread_priority(ultramodern::ThreadPriority::Normal);
-@@ -288,6 +371,28 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
+@@ -288,6 +373,28 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
              return;
          }
  
@@ -1360,7 +1362,7 @@ index 17d7a47..bd6364d 100644
          if (!ultramodern::rsp::run_task(PASS_RDRAM task)) {
              fprintf(stderr, "Failed to execute task type: %" PRIu32 "\n", task->t.type);
              ULTRAMODERN_QUICK_EXIT();
-@@ -295,6 +400,7 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
+@@ -295,6 +402,7 @@ void task_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_r
  
          // Tell the game that the RSP has completed
          sp_complete();
@@ -1368,7 +1370,7 @@ index 17d7a47..bd6364d 100644
      }
  }
  
-@@ -355,6 +461,10 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -355,6 +463,10 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
  
      ultramodern::rsp::init();
  
@@ -1379,7 +1381,7 @@ index 17d7a47..bd6364d 100644
      // Notify the caller thread that this thread is ready.
      thread_ready->signal();
  
-@@ -362,22 +472,65 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -362,22 +474,68 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
          // Try to pull an action from the queue
          Action action;
          if (events_context.action_queue.wait_dequeue_timed(action, 1ms)) {
@@ -1431,6 +1433,9 @@ index 17d7a47..bd6364d 100644
 +                    if (ultramodern_vita_double_draw) {
 +                        renderer_context->send_dl(&task_action->task);
 +                    }
++                    else if (early_dp && ultramodern_vita_interp_hook != nullptr) {
++                        ultramodern_vita_interp_hook(renderer_context.get(), &task_action->task);
++                    }
 +                    ultramodern_vita_current_capture = -1;
 +                }
 +                ultramodern_vita_release_capture(task_action->capture);
@@ -1446,7 +1451,7 @@ index 17d7a47..bd6364d 100644
                  dp_complete();
                  // TODO hook the parsed event up to the actual parsing point when a callback is added to RT64.
                  ultramodern::extensions::on_displaylist_parsed(displaylist);
-@@ -385,6 +538,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -385,6 +543,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
                  // printf("Renderer ProcessDList time: %d us\n", static_cast<u32>(std::chrono::duration_cast<std::chrono::microseconds>(renderer_end - renderer_start).count()));
              }
              else if (const auto* screen_update_action = std::get_if<ScreenUpdateAction>(&action)) {
@@ -1456,7 +1461,7 @@ index 17d7a47..bd6364d 100644
                  events_context.vi.update_screen_regs = screen_update_action->regs;
                  renderer_context->update_screen();
                  display_refresh_rate = renderer_context->get_display_framerate();
-@@ -393,6 +549,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -393,6 +554,9 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
              else if (const auto* config_action = std::get_if<UpdateConfigAction>(&action)) {
                  (void)config_action;
                  auto new_config = ultramodern::renderer::get_graphics_config();
@@ -1466,7 +1471,7 @@ index 17d7a47..bd6364d 100644
                  if (renderer_context->update_config(old_config, new_config)) {
                      old_config = new_config;
                  }
-@@ -404,6 +563,12 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
+@@ -404,6 +568,12 @@ void gfx_thread_func(uint8_t* rdram, moodycamel::LightweightSemaphore* thread_re
      }
  
      graphics_shutdown_ready.wait();
@@ -1479,7 +1484,7 @@ index 17d7a47..bd6364d 100644
      renderer_context->shutdown();
  }
  
-@@ -567,10 +732,43 @@ void ultramodern::submit_rsp_task(RDRAM_ARG PTR(OSTask) task_) {
+@@ -567,10 +737,43 @@ void ultramodern::submit_rsp_task(RDRAM_ARG PTR(OSTask) task_) {
  
      // Send gfx tasks to the graphics action queue
      if (task->t.type == M_GFXTASK) {

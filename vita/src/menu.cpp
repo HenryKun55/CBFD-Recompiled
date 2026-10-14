@@ -101,8 +101,8 @@ namespace conker::vita::menu {
         }
 
         static const char* const language_names[] = { "English", "Portugues (Brasil)", "Espanol", "Francais", "Deutsch", "Italiano" };
-        const char* main_items[] = { "Resume", "Controls", "Analog stick", "Widescreen", "Cutscenes", "Skip cutscenes (L)", "Language (text)", "Censorship", "Reset controls to defaults", "Debug", "Quit game" };
-        constexpr int main_count = 11;
+        const char* main_items[] = { "Resume", "Controls", "Analog stick", "Widescreen", "Cutscenes", "Skip cutscenes (L)", "Language (text)", "Censorship", "Frame rate", "Reset controls to defaults", "Debug", "Quit game" };
+        constexpr int main_count = 12;
         const char* skip_names[] = { "Watched ones (original)", "Any", "Any, even unskippable" };
         constexpr int stick_count = 6;
 
@@ -142,17 +142,18 @@ namespace conker::vita::menu {
             else if (button == SCE_CTRL_DOWN) cursor = (cursor + 1) % count;
             else if (page == Page::Controls && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) slot ^= 1;
             else if (page == Page::Stick && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) adjust_stick(cursor, button == SCE_CTRL_LEFT ? -1 : 1);
-            else if (page == Page::Main && cursor >= 4 && cursor <= 7 && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) {
+            else if (page == Page::Main && cursor >= 4 && cursor <= 8 && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) {
                 if (cursor == 4) current().cutscene_4x3 = !current().cutscene_4x3;
                 else if (cursor == 5) current().cutscene_skip = (current().cutscene_skip + (button == SCE_CTRL_LEFT ? 2 : 1)) % 3;
-                else if (cursor == 6) current().language = (current().language + (button == SCE_CTRL_LEFT ? 5 : 1)) % 6;
-                else current().censored = !current().censored;
+                else if (cursor == 6) { current().language = (current().language + (button == SCE_CTRL_LEFT ? 5 : 1)) % 6; current().language_chosen = true; }
+                else if (cursor == 7) current().censored = !current().censored;
+                else current().interpolation = !current().interpolation;
                 save();
             }
             else if (page == Page::Debug && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT) && cursor != 5 && cursor != 6) debug_action(cursor, button == SCE_CTRL_LEFT ? -1 : 1);
             else if (button == SCE_CTRL_CIRCLE) {
                 if (page == Page::Main) close_menu();
-                else { cursor = page == Page::Controls ? 1 : page == Page::Stick ? 2 : 9; page = Page::Main; save(); }
+                else { cursor = page == Page::Controls ? 1 : page == Page::Stick ? 2 : 10; page = Page::Main; save(); }
             }
             else if (button == SCE_CTRL_TRIANGLE && page == Page::Controls) {
                 current().bindings[cursor][slot] = Input::None;
@@ -168,7 +169,8 @@ namespace conker::vita::menu {
                         case 5: current().cutscene_skip = (current().cutscene_skip + 1) % 3; save(); break;
                         case 6: current().language = (current().language + 1) % 6; current().language_chosen = true; save(); break;
                         case 7: current().censored = !current().censored; save(); break;
-                        case 8: {
+                        case 8: current().interpolation = !current().interpolation; save(); break;
+                        case 9: {
                             const Config kept = current();
                             current() = defaults();
                             current().widescreen = kept.widescreen;
@@ -177,12 +179,13 @@ namespace conker::vita::menu {
                             current().language = kept.language;
                             current().language_chosen = kept.language_chosen;
                             current().censored = kept.censored;
+                            current().interpolation = kept.interpolation;
                             save();
                             set_status("Controls reset to the defaults.");
                             break;
                         }
-                        case 9: page = Page::Debug; cursor = 0; break;
-                        case 10: quit = true; break;
+                        case 10: page = Page::Debug; cursor = 0; break;
+                        case 11: quit = true; break;
                     }
                 }
                 else if (page == Page::Controls) {
@@ -300,7 +303,7 @@ namespace conker::vita::menu {
         const char* titles[] = { "Conker's Bad Fur Day", "Controls", "Analog stick", "Debug" };
         text(x0 + 24, y0 + 16, titles[(int)page], 0xFFC34DFF, 1.0f);
 
-        const float row_h = page == Page::Controls ? 24.0f : (page == Page::Main || page == Page::Debug) ? 30.0f : 34.0f;
+        const float row_h = page == Page::Controls ? 24.0f : page == Page::Main ? 27.0f : page == Page::Debug ? 30.0f : 34.0f;
         const float list_y = y0 + (page == Page::Controls ? 82 : 62);
         auto row_highlight = [&](int i) {
             items.push_back({ Item::Rect, x0 + 12, list_y + i * row_h - 3, w - 24, row_h, 0x3A3A55FF, "" });
@@ -316,7 +319,8 @@ namespace conker::vita::menu {
                 const char* value = i == 4 ? (!current().widescreen ? "4:3 (as the game)" : current().cutscene_4x3 ? "4:3 (original)" : "16:9")
                                   : i == 5 ? skip_names[current().cutscene_skip]
                                   : i == 6 ? language_names[std::clamp(current().language, 0, 5)]
-                                  : i == 7 ? (current().censored ? "On (symbols)" : "Off (swear words)") : nullptr;
+                                  : i == 7 ? (current().censored ? "On (symbols)" : "Off (swear words)")
+                                  : i == 8 ? (current().interpolation ? "Up to 60 (interpolated)" : "30 (original)") : nullptr;
                 if (value) {
                     text(x0 + 360, list_y + i * row_h, value, i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
                 }

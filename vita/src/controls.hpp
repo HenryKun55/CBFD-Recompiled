@@ -49,6 +49,7 @@ namespace conker::vita::controls {
         bool language_chosen = false; // picked in the menu (otherwise the Vita's system language)
         bool censored = false;    // translated swear words as the game's symbols (off: spelled out)
         int cutscene_skip = 1;    // L skips: 0 the game's rule (watched ones), 1 any, 2 also the unskippable
+        bool interpolation = true; // a frame drawn between each two of the game's, where there's time
     };
 
     // The state of the Vita's inputs at one poll.
