@@ -362,6 +362,8 @@ public:
         std::fprintf(stderr, "[gxm] frames %u submitted, %u shown; %u textures waiting to be freed; %u textures, %u framebuffers; video memory %u KB in use, %u failed allocations\n",
             frames_submitted, frames_shown.load(), (unsigned)deferred.size(), live, (unsigned)std::count_if(fbos.begin(), fbos.end(), [](const Fbo& f) { return f.valid; }),
             heap_used >> 10, alloc_failures);
+        std::fprintf(stderr, "[gxm] flips since: %u after 1 VI, %u after 2, %u after 3 or more (%u in the same VI)\n",
+            flip_vis[1].exchange(0), flip_vis[2].exchange(0), flip_vis[3].exchange(0), flip_vis[0].exchange(0));
     }
 
     void create_texture(uint32_t id) {
@@ -721,7 +723,10 @@ private:
     Program present_prog, copy_prog, ui_prog, fill_prog;
     uint16_t* sequence = nullptr; // 0, 1, 2... (quads and lists of triangles)
 
-    static constexpr uint32_t display_buffers = 3;
+    // One more than the two an interpolated frame's pair needs: the next pair, a little late
+    // (the game's frames don't come exactly two VIs apart), still finds one waiting, not the
+    // last one shown again (a frame held two VIs looked like 30 a second).
+    static constexpr uint32_t display_buffers = 4;
     gxm::Block display_mem[display_buffers];
     SceGxmColorSurface display_surface[display_buffers]{};
     SceGxmSyncObject* display_sync[display_buffers]{};
@@ -732,7 +737,7 @@ private:
     uint32_t dropped[4] = {}, drains = 0, presents_logged = 0;
 
     // The frames' vertices and indices: a third of a ring each, reused once that frame is shown.
-    static constexpr uint32_t ring_parts = 3;
+    static constexpr uint32_t ring_parts = 4; // a frame being drawn, up to three shown or waiting (display_buffers)
     static constexpr uint32_t ring_part_size = 4 * 1024 * 1024;
     gxm::Block ring;
     uint32_t ring_used = 0;
@@ -763,8 +768,16 @@ private:
         int depth_func = -1, depth_write = -1, bias = -1, stencil = -1;
     } st;
 
+    // How many VIs each frame stayed on the screen (the VI count at each flip, a frame apart),
+    // for the log: 1 for every frame at 60.
+    static std::atomic<uint32_t> flip_vis[4];
     static void display_callback_counted(const void* data) {
         gxm::display_callback(data);
+        static uint32_t last_vcount = 0;
+        const uint32_t v = (uint32_t)sceDisplayGetVcount();
+        const uint32_t d = v - last_vcount;
+        last_vcount = v;
+        flip_vis[d >= 3 ? 3 : d]++;
         frames_shown++;
     }
 
@@ -1411,3 +1424,4 @@ private:
 };
 
 std::atomic<uint32_t> GxmBackend::frames_shown{0};
+std::atomic<uint32_t> GxmBackend::flip_vis[4];
