@@ -1541,10 +1541,10 @@ index 9944a02..7afbd85 100644
      }
  
 diff --git a/ultramodern/src/threads.cpp b/ultramodern/src/threads.cpp
-index 6e3ed18..882896c 100644
+index 6e3ed18..83d5876 100644
 --- a/ultramodern/src/threads.cpp
 +++ b/ultramodern/src/threads.cpp
-@@ -137,6 +137,24 @@ void ultramodern::set_native_thread_priority(ThreadPriority pri) {
+@@ -137,6 +137,40 @@ void ultramodern::set_native_thread_priority(ThreadPriority pri) {
      //         break;
      // }
  }
@@ -1556,20 +1556,36 @@ index 6e3ed18..882896c 100644
 +// core of its own, the RSP's audio tasks another, and the game's threads (one runs at a
 +// time) the first.
 +extern "C" void conker_vita_register_thread(const char* name);
++// Priorities (lower is more urgent; the Vita runs a ready thread of higher priority at once, but
++// one of the same priority only when the running one blocks): the VI and the timer, then the
++// audio's RSP tasks, then the game, then the list reader. The renderer's GPU thread and expander
++// are below (vita gxm_backend.inc): at the same priority the audio's RSP thread waited ~30 ms
++// a frame on core 2 for the expander, and the game for it (15-20 fps in the rain).
 +void ultramodern::set_native_thread_name(const std::string& name) {
 +    conker_vita_register_thread(name.c_str());
 +    int mask = SCE_KERNEL_CPU_MASK_USER_0;
-+    if (name == "Gfx Thread") mask = SCE_KERNEL_CPU_MASK_USER_1;
-+    else if (name == "SP Task Thread") mask = SCE_KERNEL_CPU_MASK_USER_2;
-+    else if (name == "VI Thread" || name == "Timer Thread") mask = SCE_KERNEL_CPU_MASK_USER_0 | SCE_KERNEL_CPU_MASK_USER_2;
++    int priority = 0x10000100 /* the default */ - 8; // the game's threads
++    if (name == "Gfx Thread") {
++        mask = SCE_KERNEL_CPU_MASK_USER_1;
++        priority = 0x10000100 /* the default */;
++    }
++    else if (name == "SP Task Thread") {
++        mask = SCE_KERNEL_CPU_MASK_USER_2;
++        priority = 0x10000100 /* the default */ - 16;
++    }
++    else if (name == "VI Thread" || name == "Timer Thread") {
++        mask = SCE_KERNEL_CPU_MASK_USER_0 | SCE_KERNEL_CPU_MASK_USER_2;
++        priority = 0x10000100 /* the default */ - 24;
++    }
 +    sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), mask);
++    sceKernelChangeThreadPriority(0, priority);
 +}
 +
 +void ultramodern::set_native_thread_priority(ThreadPriority pri) {}
  #elif defined(__APPLE__)
  void ultramodern::set_native_thread_name(const std::string& name) {
      if (name.length() > 15) {
-@@ -150,8 +168,18 @@ void ultramodern::set_native_thread_name(const std::string& name) {
+@@ -150,8 +184,18 @@ void ultramodern::set_native_thread_name(const std::string& name) {
  void ultramodern::set_native_thread_priority(ThreadPriority pri) {}
  #endif
  

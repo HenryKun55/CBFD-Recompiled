@@ -1138,11 +1138,13 @@ private:
 
     void run_expander() {
         conker_vita_register_thread("expander");
+        // Cores 0 and 2, in the time the game and the audio leave (it's below them): on core 2
+        // alone, with the audio's RSP thread, it had too little (the reader waited for it).
         sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), SCE_KERNEL_CPU_MASK_USER_0 | SCE_KERNEL_CPU_MASK_USER_2);
         // Below the game's threads (they share cores 0 and 2): at the same priority the Vita doesn't
         // share a core between them by turns, and the game's main thread waited for the expander's
         // ~27 ms of each frame (it took ~50 ms a frame for ~11 ms of work: 15 fps in the rain).
-        sceKernelChangeThreadPriority(0, sceKernelGetThreadCurrentPriority() + 16);
+        sceKernelChangeThreadPriority(0, 0x10000100 /* the default */ + 16);
         for (;;) {
             sceKernelWaitSema(expand_sema, 1, nullptr);
             std::unique_ptr<CommandList> list;
@@ -1156,6 +1158,7 @@ private:
                 to_expand.pop_front();
             }
             const uint64_t start = sceKernelGetProcessTimeWide();
+            ultramodern_trace("exp start", (uint32_t)list->tris.size());
             expand.verts.swap(list->dverts);
             expand.idx.swap(list->didx);
             expand.nv = expand.ni = 0;
@@ -1164,6 +1167,7 @@ private:
             }
             expand.verts.swap(list->dverts);
             expand.idx.swap(list->didx);
+            ultramodern_trace("exp end", 0);
             expand_us += (uint32_t)(sceKernelGetProcessTimeWide() - start);
             expand_lists++;
             {
@@ -1181,6 +1185,7 @@ private:
         // is light (~6 ms a frame in the rain), and cores 0 and 2 have the game, the audio and the
         // expander (the game got too little of them and ran at 15 fps).
         sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), SCE_KERNEL_CPU_MASK_USER_1);
+        sceKernelChangeThreadPriority(0, 0x10000100 /* the default */ + 8); // below the reader
         init();
         ready = true;
         for (;;) {
