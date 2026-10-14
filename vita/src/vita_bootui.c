@@ -24,7 +24,9 @@
 #include <png.h>
 #include <psp2/kernel/sysmem.h>
 
+#include <psp2/apputil.h>
 #include <psp2/ctrl.h>
+#include <psp2/system_param.h>
 #include <psp2/display.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/kernel/threadmgr.h>
@@ -344,6 +346,75 @@ static void launch_failed(void)
         sceKernelDelayThread(1000 * 1000);
 }
 
+/* ---- notices --------------------------------------------------------------- */
+
+/* What's new, told once (ux0:data/conker/notices.txt keeps the ones seen: the game's data
+ * folder, which installing a vpk or an update leaves alone), in the Vita's language. Latin-1. */
+#define NOTICES_PATH "ux0:data/conker/notices.txt"
+#define NOTICE_ID "interpolation-1"
+/* English, Portuguese, Spanish, French, German, Italian. */
+static const char *const notice_text[6][3] = {
+    { "New: up to 60 fps (interpolated)",
+      "Turn it on in the game's menu: START + SELECT > Frame rate. It's off by default: shadows, footprints and dust still move at 30.",
+      "Press any button to continue." },
+    { "Novidade: at\351 60 fps (interpolado)",
+      "Ative no menu do jogo: START + SELECT > Frame rate. Vem desligado porque sombras, pegadas e poeira ainda se mexem a 30.",
+      "Aperte qualquer bot\343o para continuar." },
+    { "Novedad: hasta 60 fps (interpolado)",
+      "Act\355valo en el men\372 del juego: START + SELECT > Frame rate. Viene desactivado porque las sombras, las huellas y el polvo siguen a 30.",
+      "Pulsa cualquier bot\363n para continuar." },
+    { "Nouveau : jusqu'\340 60 fps (interpol\351)",
+      "Active-le dans le menu du jeu : START + SELECT > Frame rate. Il est d\351sactiv\351 par d\351faut : les ombres, les traces de pas et la poussi\350re restent \340 30.",
+      "Appuie sur un bouton pour continuer." },
+    { "Neu: bis zu 60 fps (interpoliert)",
+      "Im Spielmen\374 einschalten: START + SELECT > Frame rate. Standardm\344\337ig aus, weil Schatten, Fu\337spuren und Staub weiter mit 30 laufen.",
+      "Beliebige Taste dr\374cken, um fortzufahren." },
+    { "Novit\340: fino a 60 fps (interpolato)",
+      "Attivalo nel menu del gioco: START + SELECT > Frame rate. \310 disattivato di default: ombre, impronte e polvere restano a 30.",
+      "Premi un tasto qualsiasi per continuare." }
+};
+
+static int notice_language(void)
+{
+    int lang = SCE_SYSTEM_PARAM_LANG_ENGLISH_US;
+    if (sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG, &lang) < 0)
+        return 0;
+    switch (lang) {
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR:
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: return 1;
+    case SCE_SYSTEM_PARAM_LANG_SPANISH: return 2;
+    case SCE_SYSTEM_PARAM_LANG_FRENCH: return 3;
+    case SCE_SYSTEM_PARAM_LANG_GERMAN: return 4;
+    case SCE_SYSTEM_PARAM_LANG_ITALIAN: return 5;
+    default: return 0;
+    }
+}
+
+static void show_notice(void)
+{
+    char line[128];
+    FILE *f = fopen(NOTICES_PATH, "r");
+    if (f) {
+        while (fgets(line, sizeof(line), f)) {
+            line[strcspn(line, "\r\n")] = 0;
+            if (!strcmp(line, NOTICE_ID)) {
+                fclose(f);
+                return;
+            }
+        }
+        fclose(f);
+    }
+    const char *const *t = notice_text[notice_language()];
+    rt_log("notice %s shown", NOTICE_ID);
+    show(t[0], C_ACCENT, t[1], -1.0f, t[2]);
+    wait_button(ANY_BUTTON, 0);
+    f = fopen(NOTICES_PATH, "a");
+    if (f) {
+        fprintf(f, "%s\n", NOTICE_ID);
+        fclose(f);
+    }
+}
+
 static void run_check(void)
 {
     char url[256], text[512];
@@ -491,6 +562,7 @@ void vita_bootui_run(uint32_t *framebuffer)
         run_check();
     else
         rt_log("update: check off (update_check=0)");
+    show_notice();
     hide();
 out:
     free(s_bg);
