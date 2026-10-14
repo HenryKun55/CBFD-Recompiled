@@ -215,7 +215,9 @@ public:
         slot_sema = sceKernelCreateSema("gxm_slot", 0, 2, 2, nullptr); // lists ahead of the GPU's thread
         expand_sema = sceKernelCreateSema("gxm_expand", 0, 0, 64, nullptr);
         thread = std::thread([this] { run(); });
-        expand_thread = std::thread([this] { run_expander(); });
+        for (int i = 0; i < expanders; i++) {
+            expand_thread[i] = std::thread([this, i] { run_expander(i); });
+        }
         while (!ready.load()) {
             sceKernelDelayThread(1000);
         }
@@ -223,8 +225,10 @@ public:
 
     ~GxmBackend() {
         quit = true;
-        sceKernelSignalSema(expand_sema, 1);
-        if (expand_thread.joinable()) expand_thread.join();
+        sceKernelSignalSema(expand_sema, expanders);
+        for (std::thread& t : expand_thread) {
+            if (t.joinable()) t.join();
+        }
         sceKernelDeleteSema(expand_sema);
         sceKernelSignalSema(work_sema, 1);
         if (thread.joinable()) thread.join();
@@ -241,7 +245,7 @@ public:
         g_front_stage = stage;
         {
             std::lock_guard lock{mutex};
-            to_expand.push_back(std::move(list));
+            to_expand.push_back({ next_expand_seq++, std::move(list) });
         }
         submitted++;
         sceKernelSignalSema(expand_sema, 1);
@@ -1126,18 +1130,28 @@ private:
     }
 
     // ------------------------------------------------ the expander
-    // The lists' deferred triangles made into vertices (expand_triangles) on a thread of their
-    // own, between the reader and the GPU's thread: it does one list while the GPU's thread
+    // The lists' deferred triangles made into vertices (expand_triangles) on threads of their
+    // own, between the reader and the GPU's thread: they do the next lists while the GPU's thread
     // draws the one before (on the Vita that was ~24 ms a frame in the rain, on the GPU's
-    // thread with its own ~8 ms, past a frame's 33).
-    ExpandScratch expand;
-    std::thread expand_thread;
+    // thread with its own ~8 ms, past a frame's 33). Two of them, each taking the next list:
+    // where the game draws ~12000 triangles a frame one took ~28 ms of a list's 33 (most of a
+    // core) and the frame rate swayed between 23 and 30. The lists go on to the GPU's thread
+    // in the order they came.
+    static constexpr int expanders = 2;
+    ExpandScratch expand[expanders];
+    std::thread expand_thread[expanders];
     SceUID expand_sema = -1;
-    std::deque<std::unique_ptr<CommandList>> to_expand;
+    struct ToExpand {
+        uint32_t seq;
+        std::unique_ptr<CommandList> list;
+    };
+    std::deque<ToExpand> to_expand;
+    uint32_t next_expand_seq = 0, next_pending_seq = 0;
+    std::map<uint32_t, std::unique_ptr<CommandList>> expanded; // done out of order, waiting
     std::atomic<uint32_t> expand_us{0}, expand_lists{0};
 
-    void run_expander() {
-        conker_vita_register_thread("expander");
+    void run_expander(int which) {
+        conker_vita_register_thread(which == 0 ? "expander" : "expander2");
         // Cores 0 and 2, in the time the game and the audio leave (it's below them): on core 2
         // alone, with the audio's RSP thread, it had too little (the reader waited for it).
         sceKernelChangeThreadCpuAffinityMask(sceKernelGetThreadId(), SCE_KERNEL_CPU_MASK_USER_0 | SCE_KERNEL_CPU_MASK_USER_2);
@@ -1145,36 +1159,45 @@ private:
         // share a core between them by turns, and the game's main thread waited for the expander's
         // ~27 ms of each frame (it took ~50 ms a frame for ~11 ms of work: 15 fps in the rain).
         sceKernelChangeThreadPriority(0, 0x10000100 /* the default */ + 16);
+        ExpandScratch& x = expand[which];
         for (;;) {
             sceKernelWaitSema(expand_sema, 1, nullptr);
-            std::unique_ptr<CommandList> list;
+            ToExpand job;
             {
                 std::lock_guard lock{mutex};
                 if (to_expand.empty()) {
                     if (quit) return;
                     continue;
                 }
-                list = std::move(to_expand.front());
+                job = std::move(to_expand.front());
                 to_expand.pop_front();
             }
+            CommandList& list = *job.list;
             const uint64_t start = sceKernelGetProcessTimeWide();
-            ultramodern_trace("exp start", (uint32_t)list->tris.size());
-            expand.verts.swap(list->dverts);
-            expand.idx.swap(list->didx);
-            expand.nv = expand.ni = 0;
-            for (DrawCmd& d : list->draws) {
-                if (d.deferred) expand_triangles(*list, d, expand);
+            ultramodern_trace("exp start", (uint32_t)list.tris.size());
+            x.verts.swap(list.dverts);
+            x.idx.swap(list.didx);
+            x.nv = x.ni = 0;
+            for (DrawCmd& d : list.draws) {
+                if (d.deferred) expand_triangles(list, d, x);
             }
-            expand.verts.swap(list->dverts);
-            expand.idx.swap(list->didx);
+            x.verts.swap(list.dverts);
+            x.idx.swap(list.didx);
             ultramodern_trace("exp end", 0);
             expand_us += (uint32_t)(sceKernelGetProcessTimeWide() - start);
             expand_lists++;
+            int ready = 0;
             {
                 std::lock_guard lock{mutex};
-                pending.push_back(std::move(list));
+                expanded.emplace(job.seq, std::move(job.list));
+                for (auto it = expanded.find(next_pending_seq); it != expanded.end(); it = expanded.find(next_pending_seq)) {
+                    pending.push_back(std::move(it->second));
+                    expanded.erase(it);
+                    next_pending_seq++;
+                    ready++;
+                }
             }
-            sceKernelSignalSema(work_sema, 1);
+            if (ready) sceKernelSignalSema(work_sema, ready);
         }
     }
 
