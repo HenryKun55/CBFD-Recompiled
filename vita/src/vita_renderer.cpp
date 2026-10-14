@@ -1455,6 +1455,9 @@ namespace {
                             op_n[best] = 0;
                         }
                         std::fprintf(stderr, "[cmdtime] list %.2f ms in commands (clock %.2f us, taken off):%s\n", sum / part_lists / 1000.0, clock_us, top.c_str());
+                        std::fprintf(stderr, "[cmdtime] texture block loads %u, distinct %u\n", loads_in_list, (unsigned)seen_loads.size());
+                        seen_loads.clear();
+                        loads_in_list = 0;
                         for (uint64_t& u : op_us) u = 0;
                         for (uint32_t& n : op_n) n = 0;
                     }
@@ -1755,6 +1758,8 @@ namespace {
             if (f) std::fclose(f);
             return f != nullptr;
         }();
+        std::vector<uint64_t> seen_loads; // the timed lists' distinct texture loads
+        uint32_t loads_in_list = 0;
         uint64_t op_us[256] = {};
         uint32_t op_n[256] = {};
         int last_op = -1;
@@ -1985,6 +1990,11 @@ namespace {
                         if (__builtin_expect((debug_flags & 1048576) != 0, 0)) break; // debug: no texture loads
                         const Tile& t = tiles[(w1 >> 24) & 7];
                         load_block(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
+                        if (__builtin_expect(profiling && cmd_timing, 0)) {
+                            const uint64_t key = ((uint64_t)timg.addr << 32) ^ ((uint64_t)w0 << 7) ^ w1 ^ ((uint64_t)t.tmem << 50);
+                            if (!std::count(seen_loads.begin(), seen_loads.end(), key)) seen_loads.push_back(key);
+                            loads_in_list++;
+                        }
                         stats.block_loads++;
                         stats.block_bytes += ((((w1 >> 12) & 0xFFF) - ((w0 >> 12) & 0xFFF) + 1) * (4u << timg.siz)) / 8;
                         note_tmem_load(t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, true);
