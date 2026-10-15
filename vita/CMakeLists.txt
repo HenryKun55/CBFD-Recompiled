@@ -2,9 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 # PS Vita build of Conker's Bad Fur Day: Recompiled.
 #
-# RecompiledFuncs/ must exist first (`python3 recomp/recompile.py`, see vita/build_vita.sh),
-# and tools/N64ModernRuntime must have recomp/n64modernruntime.patch and
-# vita/n64modernruntime-vita.patch applied.
+# RecompiledFuncs/ must exist first (`python3 recomp/recompile.py`), and the submodules must
+# have the port's changes (vita/submodule-patches/apply.sh). See the README's "PS Vita port".
 #
 #   cmake -S vita -B vita/build -G Ninja -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake
 #   cmake --build vita/build

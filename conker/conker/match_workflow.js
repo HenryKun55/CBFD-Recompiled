@@ -4,7 +4,7 @@ export const meta = {
   phases: [{ title: 'Match', detail: 'one agent per function iterates C until IDO output equals the ROM' }],
 }
 
-const REPO = '/Users/flaviohenriquedonascimentoandrade/Documents/workspace/games/cbfd/CBFD-Recompiled'
+const REPO = '.' // run from the repository's root
 const SCHEMA = {
   type: 'object',
   properties: {

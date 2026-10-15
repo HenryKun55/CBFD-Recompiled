@@ -12,6 +12,28 @@ starting from the [Conker decompilation](https://github.com/mkst/conker). It run
 > copy of the US ROM. Everything from the game is extracted from that ROM on
 > your machine during the build.
 
+## PS Vita port
+
+This branch also builds a **native PS Vita / PS TV port** (`vita/`): the same
+recompiled game on the Vita, drawn with sceGxm by a renderer written for the
+game's microcode, with six text languages, an optional interpolated 60 fps mode
+and an in-game updater. Ready-to-install builds (`conker.vpk`, no game data) and
+the install guide are at
+[HenryKun55/conker-vita](https://github.com/HenryKun55/conker-vita/releases).
+
+To build it you need [VitaSDK](https://vitasdk.org) (with its vitaGL, vitashark,
+libcurl, OpenSSL, libpng and zstd packages), Python 3 with Pillow, CMake and Ninja:
+
+1. Clone with the submodules and apply the port's changes to them:
+   `git submodule update --init --recursive`, then `vita/submodule-patches/apply.sh`.
+2. Put your US ROM at `conker/baserom.us.z64`, build tools/N64Recomp (its
+   `N64Recomp` and `RSPRecomp`) and run `python3 recomp/recompile.py`
+   (it writes `RecompiledFuncs/`).
+3. `cmake -S vita -B vita/build -G Ninja -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake`
+   and `cmake --build vita/build`: the package is `vita/build/ConkerVita.vpk`.
+
+Releases and the updater are described in [vita/RELEASE.md](vita/RELEASE.md).
+
 ## Download
 
 Ready-to-play Windows, Linux and macOS (Apple Silicon, macOS 15 or later) builds
