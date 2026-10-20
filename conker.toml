@@ -689,3 +689,22 @@ text = "{ extern void conker_font_patch(uint8_t*, recomp_context*); conker_font_
 func = "func_15042ECC"
 before_vram = 0x15042ECC
 text = "{ extern void conker_translate_ui(uint8_t*, recomp_context*); conker_translate_ui(rdram, ctx); }"
+
+# The PS Vita port's Extras (host/src/extras.cpp; the PC build has the Skip Intro and Cheats
+# mods instead, and these do nothing there): the cheats each game frame, before func_1501BBB8
+# (the controllers' reading) returns; skip intro, before the logos' frame (func_151DE6D4) and a
+# scene's loading (func_15007A70) return.
+[[patches.hook]]
+func = "func_1501BBB8"
+before_vram = 0x1501C008
+text = "{ extern void conker_extras_frame(uint8_t*, recomp_context*); conker_extras_frame(rdram, ctx); }"
+
+[[patches.hook]]
+func = "func_151DE6D4"
+before_vram = 0x151DE7CC
+text = "{ extern void conker_skip_intro_logos(uint8_t*, recomp_context*); conker_skip_intro_logos(rdram, ctx); }"
+
+[[patches.hook]]
+func = "func_15007A70"
+before_vram = 0x15007B34
+text = "{ extern void conker_skip_intro_scene_load(uint8_t*, recomp_context*); conker_skip_intro_scene_load(rdram, ctx); }"

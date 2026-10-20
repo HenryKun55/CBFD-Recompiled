@@ -89,6 +89,7 @@ add_executable(ConkerRecomp
     src/cutscene_aspect.cpp
     src/field_of_view.cpp
     src/interpolation.cpp
+    src/extras.cpp
     src/cutscene_skip.cpp
     src/text_translation.cpp
     src/render_fixes.cpp

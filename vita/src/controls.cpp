@@ -136,6 +136,14 @@ namespace conker::vita::controls {
 
     bool held(const Config& cfg, const VitaState& s, Input input) {
         const float t = cfg.stick_threshold / 100.0f;
+        // The stick that isn't the N64's, turned around if set (Invert X/Y of the other stick).
+        const bool other_left = cfg.stick == StickSource::Right;
+        const Input first = other_left ? Input::LStickUp : Input::RStickUp; // Up, Down, Left, Right
+        if (input >= first && input <= (Input)((int)first + 3)) {
+            const int dir = (int)input - (int)first;
+            if (cfg.invert_other_y && dir < 2) input = (Input)((int)first + (dir ^ 1));
+            if (cfg.invert_other_x && dir >= 2) input = (Input)((int)first + 2 + ((dir - 2) ^ 1));
+        }
         switch (input) {
             case Input::None: return false;
             case Input::LStickUp: return axis(s.pad.ly) < -t;
@@ -239,6 +247,8 @@ namespace conker::vita::controls {
             else if (!std::strcmp(key, "Sensitivity")) config.sensitivity = std::clamp(std::atoi(a), 50, 200);
             else if (!std::strcmp(key, "InvertX")) config.invert_x = std::atoi(a) != 0;
             else if (!std::strcmp(key, "InvertY")) config.invert_y = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "InvertOtherX")) config.invert_other_x = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "InvertOtherY")) config.invert_other_y = std::atoi(a) != 0;
             else if (!std::strcmp(key, "StickThreshold")) config.stick_threshold = std::clamp(std::atoi(a), 20, 90);
             else if (!std::strcmp(key, "Widescreen")) config.widescreen = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Cutscene4x3")) config.cutscene_4x3 = std::atoi(a) != 0;
@@ -246,6 +256,10 @@ namespace conker::vita::controls {
             else if (!std::strcmp(key, "LanguageChosen")) config.language_chosen = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Censored")) config.censored = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Interpolation")) config.interpolation = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "SkipIntro")) config.skip_intro = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "InfiniteHealth")) config.cheat_health = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "InfiniteLives")) config.cheat_lives = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "MaxCash")) config.cheat_cash = std::atoi(a) != 0;
             else if (!std::strcmp(key, "CutsceneSkip")) config.cutscene_skip = std::clamp(std::atoi(a), 0, 2);
         }
         std::fclose(f);
@@ -268,10 +282,11 @@ namespace conker::vita::controls {
             if (b != Input::None) std::fprintf(f, "%s = %s, %s\n", n64_names[i], input_names[(int)a], input_names[(int)b]);
             else std::fprintf(f, "%s = %s\n", n64_names[i], input_names[(int)a]);
         }
-        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nLanguageChosen = %d\nCensored = %d\nInterpolation = %d\n",
+        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nInvertOtherX = %d\nInvertOtherY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nLanguageChosen = %d\nCensored = %d\nInterpolation = %d\nSkipIntro = %d\nInfiniteHealth = %d\nInfiniteLives = %d\nMaxCash = %d\n",
             config.stick == StickSource::Right ? "Right" : "Left", config.deadzone, config.sensitivity,
-            config.invert_x ? 1 : 0, config.invert_y ? 1 : 0, config.stick_threshold, config.widescreen ? 1 : 0,
-            config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.language_chosen ? 1 : 0, config.censored ? 1 : 0, config.interpolation ? 1 : 0);
+            config.invert_x ? 1 : 0, config.invert_y ? 1 : 0, config.invert_other_x ? 1 : 0, config.invert_other_y ? 1 : 0, config.stick_threshold, config.widescreen ? 1 : 0,
+            config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.language_chosen ? 1 : 0, config.censored ? 1 : 0, config.interpolation ? 1 : 0,
+            config.skip_intro ? 1 : 0, config.cheat_health ? 1 : 0, config.cheat_lives ? 1 : 0, config.cheat_cash ? 1 : 0);
         std::fclose(f);
         return true;
     }
@@ -304,4 +319,9 @@ namespace conker {
     bool vita_interpolation() {
         return vita::controls::current().interpolation;
     }
+
+    bool vita_skip_intro() { return vita::controls::current().skip_intro; }
+    bool vita_cheat_health() { return vita::controls::current().cheat_health; }
+    bool vita_cheat_lives() { return vita::controls::current().cheat_lives; }
+    bool vita_cheat_cash() { return vita::controls::current().cheat_cash; }
 }

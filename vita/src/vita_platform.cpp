@@ -22,7 +22,7 @@
 
 // ---------------------------------------------------------------- input
 //
-// The Vita's state goes through the remapping (controls.cpp); START + SELECT opens the
+// The Vita's state goes through the remapping (controls.cpp); SELECT twice opens the
 // menu (menu.cpp), and while it's open the game sees a released controller.
 extern "C" void conker_vita_register_thread(const char* name);
 

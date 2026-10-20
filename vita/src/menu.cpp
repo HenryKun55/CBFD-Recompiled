@@ -1,7 +1,7 @@
 // The in-game menu (menu.hpp).
 //
 // It reads the Vita's buttons directly (not through the remapping), so it always works:
-// D-pad or left stick to move, Cross to choose, Circle to go back, START + SELECT to
+// D-pad or left stick to move, Cross to choose, Circle to go back, SELECT twice to
 // open and close it.
 
 #include <algorithm>
@@ -19,7 +19,7 @@ namespace conker::vita::menu {
     namespace {
         using namespace controls;
 
-        enum class Page { Main, Controls, Stick, Debug };
+        enum class Page { Main, Controls, Stick, Debug, Extras };
 
         std::mutex mutex;
         bool open = false;
@@ -78,7 +78,8 @@ namespace conker::vita::menu {
         std::string status;      // a line of feedback at the bottom
         uint64_t status_until = 0;
         uint32_t previous_buttons = 0;
-        bool combo_was_held = false;
+        bool select_was_held = false;
+        uint64_t last_select_us = 0;
         uint64_t repeat_at = 0;
         uint32_t repeat_button = 0;
 
@@ -101,10 +102,12 @@ namespace conker::vita::menu {
         }
 
         static const char* const language_names[] = { "English", "Portugues (Brasil)", "Espanol", "Francais", "Deutsch", "Italiano" };
-        const char* main_items[] = { "Resume", "Controls", "Analog stick", "Widescreen", "Cutscenes", "Skip cutscenes (L)", "Language (text)", "Censorship", "Frame rate", "Reset controls to defaults", "Debug", "Quit game" };
-        constexpr int main_count = 12;
+        const char* main_items[] = { "Resume", "Controls", "Analog stick", "Widescreen", "Cutscenes", "Skip cutscenes (L)", "Language (text)", "Censorship", "Frame rate", "Extras", "Reset controls to defaults", "Debug", "Quit game" };
+        constexpr int main_count = 13;
+        const char* const extras_items[] = { "Skip intro", "Infinite health", "Infinite lives", "Max cash" };
+        constexpr int extras_count = 4;
         const char* skip_names[] = { "Watched ones (original)", "Any", "Any, even unskippable" };
-        constexpr int stick_count = 6;
+        constexpr int stick_count = 8;
 
         int item_count() {
             switch (page) {
@@ -112,6 +115,7 @@ namespace conker::vita::menu {
                 case Page::Controls: return (int)N64::Count;
                 case Page::Stick: return stick_count;
                 case Page::Debug: return debug_count;
+                case Page::Extras: return extras_count;
             }
             return 0;
         }
@@ -133,7 +137,20 @@ namespace conker::vita::menu {
                 case 3: c.invert_x = !c.invert_x; break;
                 case 4: c.invert_y = !c.invert_y; break;
                 case 5: c.stick_threshold = std::clamp(c.stick_threshold + dir * 5, 20, 90); break;
+                case 6: c.invert_other_x = !c.invert_other_x; break;
+                case 7: c.invert_other_y = !c.invert_other_y; break;
             }
+        }
+
+        void toggle_extra(int item) {
+            Config& c = current();
+            switch (item) {
+                case 0: c.skip_intro = !c.skip_intro; break;
+                case 1: c.cheat_health = !c.cheat_health; break;
+                case 2: c.cheat_lives = !c.cheat_lives; break;
+                case 3: c.cheat_cash = !c.cheat_cash; break;
+            }
+            save();
         }
 
         void press(uint32_t button) {
@@ -142,6 +159,7 @@ namespace conker::vita::menu {
             else if (button == SCE_CTRL_DOWN) cursor = (cursor + 1) % count;
             else if (page == Page::Controls && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) slot ^= 1;
             else if (page == Page::Stick && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) adjust_stick(cursor, button == SCE_CTRL_LEFT ? -1 : 1);
+            else if (page == Page::Extras && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) toggle_extra(cursor);
             else if (page == Page::Main && cursor >= 4 && cursor <= 8 && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) {
                 if (cursor == 4) current().cutscene_4x3 = !current().cutscene_4x3;
                 else if (cursor == 5) current().cutscene_skip = (current().cutscene_skip + (button == SCE_CTRL_LEFT ? 2 : 1)) % 3;
@@ -153,7 +171,7 @@ namespace conker::vita::menu {
             else if (page == Page::Debug && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT) && cursor != 5 && cursor != 6) debug_action(cursor, button == SCE_CTRL_LEFT ? -1 : 1);
             else if (button == SCE_CTRL_CIRCLE) {
                 if (page == Page::Main) close_menu();
-                else { cursor = page == Page::Controls ? 1 : page == Page::Stick ? 2 : 10; page = Page::Main; save(); }
+                else { cursor = page == Page::Controls ? 1 : page == Page::Stick ? 2 : page == Page::Extras ? 9 : 11; page = Page::Main; save(); }
             }
             else if (button == SCE_CTRL_TRIANGLE && page == Page::Controls) {
                 current().bindings[cursor][slot] = Input::None;
@@ -170,7 +188,8 @@ namespace conker::vita::menu {
                         case 6: current().language = (current().language + 1) % 6; current().language_chosen = true; save(); break;
                         case 7: current().censored = !current().censored; save(); break;
                         case 8: current().interpolation = !current().interpolation; save(); break;
-                        case 9: {
+                        case 9: page = Page::Extras; cursor = 0; break;
+                        case 10: {
                             const Config kept = current();
                             current() = defaults();
                             current().widescreen = kept.widescreen;
@@ -180,12 +199,16 @@ namespace conker::vita::menu {
                             current().language_chosen = kept.language_chosen;
                             current().censored = kept.censored;
                             current().interpolation = kept.interpolation;
+                            current().skip_intro = kept.skip_intro;
+                            current().cheat_health = kept.cheat_health;
+                            current().cheat_lives = kept.cheat_lives;
+                            current().cheat_cash = kept.cheat_cash;
                             save();
                             set_status("Controls reset to the defaults.");
                             break;
                         }
-                        case 10: page = Page::Debug; cursor = 0; break;
-                        case 11: quit = true; break;
+                        case 11: page = Page::Debug; cursor = 0; break;
+                        case 12: quit = true; break;
                     }
                 }
                 else if (page == Page::Controls) {
@@ -199,6 +222,9 @@ namespace conker::vita::menu {
                 else if (page == Page::Debug) {
                     debug_action(cursor, 1);
                 }
+                else if (page == Page::Extras) {
+                    toggle_extra(cursor);
+                }
             }
         }
 
@@ -210,21 +236,28 @@ namespace conker::vita::menu {
     void update(const VitaState& state) {
         std::lock_guard lock{mutex};
         const uint32_t held_buttons = state.pad.buttons;
-        const bool combo = (held_buttons & (SCE_CTRL_START | SCE_CTRL_SELECT)) == (SCE_CTRL_START | SCE_CTRL_SELECT);
-        if (combo && !combo_was_held) {
-            if (open) {
-                close_menu();
+        // SELECT pressed twice (within 0.4 s) opens and closes it, as the author's other ports
+        // do (START + SELECT pressed START on the way: the game paused).
+        const bool select = (held_buttons & SCE_CTRL_SELECT) != 0;
+        if (select && !select_was_held && !capturing) {
+            const uint64_t t = now_us();
+            if (t - last_select_us < 400000) {
+                last_select_us = 0;
+                if (open) {
+                    close_menu();
+                }
+                else {
+                    open = true;
+                    page = Page::Main;
+                    cursor = 0;
+                }
+                select_was_held = true;
+                previous_buttons = menu_buttons(state);
+                return;
             }
-            else {
-                open = true;
-                page = Page::Main;
-                cursor = 0;
-            }
-            combo_was_held = true;
-            previous_buttons = menu_buttons(state);
-            return;
+            last_select_us = t;
         }
-        combo_was_held = combo;
+        select_was_held = select;
         if (!open) {
             return;
         }
@@ -300,10 +333,10 @@ namespace conker::vita::menu {
         auto text = [&](float x, float y, const std::string& s, uint32_t color, float scale = 0.8f) {
             items.push_back({ Item::Text, x, y, scale, 0, color, s });
         };
-        const char* titles[] = { "Conker's Bad Fur Day", "Controls", "Analog stick", "Debug" };
+        const char* titles[] = { "Conker's Bad Fur Day", "Controls", "Analog stick", "Debug", "Extras" };
         text(x0 + 24, y0 + 16, titles[(int)page], 0xFFC34DFF, 1.0f);
 
-        const float row_h = page == Page::Controls ? 24.0f : page == Page::Main ? 27.0f : page == Page::Debug ? 30.0f : 34.0f;
+        const float row_h = page == Page::Controls ? 24.0f : page == Page::Main ? 25.0f : page == Page::Debug ? 30.0f : 34.0f;
         const float list_y = y0 + (page == Page::Controls ? 82 : 62);
         auto row_highlight = [&](int i) {
             items.push_back({ Item::Rect, x0 + 12, list_y + i * row_h - 3, w - 24, row_h, 0x3A3A55FF, "" });
@@ -325,7 +358,7 @@ namespace conker::vita::menu {
                     text(x0 + 360, list_y + i * row_h, value, i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
                 }
             }
-            text(x0 + 24, y0 + h - 70, "Cross: choose    Circle: back    START+SELECT: close", 0x8888A0FF, 0.62f);
+            text(x0 + 24, y0 + h - 70, "Cross: choose    Circle: back    SELECT twice: close", 0x8888A0FF, 0.62f);
             text(x0 + 24, y0 + h - 44, "Tip: pause the game (START) before changing settings.", 0x8888A0FF, 0.62f);
         }
         else if (page == Page::Controls) {
@@ -349,6 +382,19 @@ namespace conker::vita::menu {
             }
             text(x0 + 24, y0 + h - 30, "Cross: bind  Left/Right: column  Triangle: clear  Circle: back", 0x8888A0FF, 0.6f);
         }
+        else if (page == Page::Extras) {
+            const Config& c = current();
+            const bool on[extras_count] = { c.skip_intro, c.cheat_health, c.cheat_lives, c.cheat_cash };
+            for (int i = 0; i < extras_count; i++) {
+                if (i == cursor) row_highlight(i);
+                text(x0 + 30, list_y + i * row_h, extras_items[i], i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
+                text(x0 + 360, list_y + i * row_h, on[i] ? "On" : "Off", i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
+            }
+            text(x0 + 24, y0 + h - 100, "Skip intro: from the next start, the game opens at the bar.", 0x8888A0FF, 0.62f);
+            text(x0 + 24, y0 + h - 70, "Cross: on/off    Circle: back", 0x8888A0FF, 0.62f);
+            text(x0 + 24, y0 + h - 44, "The cheats are player 1's, as the PC version's Cheats mod.", 0x8888A0FF, 0.62f);
+        }
+
         else if (page == Page::Debug) {
             const uint32_t f = renderer_flags.load();
             const std::string rows[debug_count][2] = {
@@ -380,9 +426,11 @@ namespace conker::vita::menu {
             rows[0] = padded("N64 stick from", 22) + stick_name(c.stick);
             std::snprintf(buf, sizeof(buf), "%d%%", c.deadzone); rows[1] = padded("Dead zone", 22) + buf;
             std::snprintf(buf, sizeof(buf), "%d%%", c.sensitivity); rows[2] = padded("Sensitivity", 22) + buf;
-            rows[3] = padded("Invert X", 22) + (c.invert_x ? "On" : "Off");
-            rows[4] = padded("Invert Y", 22) + (c.invert_y ? "On" : "Off");
+            rows[3] = padded("N64 stick invert X", 22) + (c.invert_x ? "On" : "Off");
+            rows[4] = padded("N64 stick invert Y", 22) + (c.invert_y ? "On" : "Off");
             std::snprintf(buf, sizeof(buf), "%d%%", c.stick_threshold); rows[5] = padded("Stick as buttons at", 22) + buf;
+            rows[6] = padded("Other stick invert X", 22) + (c.invert_other_x ? "On" : "Off");
+            rows[7] = padded("Other stick invert Y", 22) + (c.invert_other_y ? "On" : "Off");
             for (int i = 0; i < stick_count; i++) {
                 if (i == cursor) row_highlight(i);
                 const size_t split = rows[i].find_first_not_of(' ', 22) == std::string::npos ? 22 : 22;

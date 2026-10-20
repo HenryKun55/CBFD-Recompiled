@@ -42,6 +42,8 @@ namespace conker::vita::controls {
         int sensitivity = 100;  // percent: above 100 reaches full tilt sooner
         bool invert_x = false;
         bool invert_y = false;
+        bool invert_other_x = false; // the other stick (the C-buttons' by default: the camera)
+        bool invert_other_y = false;
         int stick_threshold = 50; // percent of tilt for a stick direction to count as pressed
         bool widescreen = true;   // the 3D view widened to the Vita's 16:9 screen
         bool cutscene_4x3 = true; // in widescreen, cutscenes in the N64's 4:3 (black bars)
@@ -49,6 +51,8 @@ namespace conker::vita::controls {
         bool language_chosen = false; // picked in the menu (otherwise the Vita's system language)
         bool censored = false;    // translated swear words as the game's symbols (off: spelled out)
         int cutscene_skip = 1;    // L skips: 0 the game's rule (watched ones), 1 any, 2 also the unskippable
+        bool skip_intro = false;   // Extras: boot to the bar, a press from the main menu
+        bool cheat_health = false, cheat_lives = false, cheat_cash = false;
         bool interpolation = false; // a frame drawn between each two of the game's, where there's time (off: some effects, shadows and footprints, stay at 30)
     };
 

@@ -3,7 +3,7 @@
 // Boots straight into the game (there's no launcher): the ROM is read from
 // ux0:data/conker/baserom.us.z64 the first time and then kept by the runtime with
 // the saves in ux0:data/conker/. Everything printed goes to ux0:data/conker/log.txt.
-// START + SELECT quits.
+// The menu's Quit game quits.
 
 #include <atomic>
 #include <chrono>

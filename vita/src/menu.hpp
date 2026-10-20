@@ -10,7 +10,7 @@
 // The compiled shaders on the memory card (by vitaGL build: another's binaries don't fit).
 #define CONKER_SHADER_CACHE_DIR "shader_cache_v2"
 
-// The in-game menu (START + SELECT): controls remapping, the stick's settings, a debug
+// The in-game menu (SELECT twice): controls remapping, the stick's settings, a debug
 // page, and quitting.
 namespace conker::vita::menu {
     // Something to draw, in screen pixels (960x544).

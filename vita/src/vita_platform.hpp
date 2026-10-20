@@ -13,7 +13,7 @@ namespace conker::vita {
     void poll_input();
     bool get_input(int controller_num, uint16_t* buttons, float* x, float* y);
     void set_rumble(int controller_num, bool on);
-    // True while START + SELECT are held (quits the game).
+    // True once the menu's Quit game was chosen.
     bool quit_combo_held();
 
     // Audio: the game's mixed buffers go out through SceAudio at 48 kHz.
