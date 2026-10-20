@@ -22,6 +22,8 @@
 #include <cstring>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include "recomp.h"
 
@@ -36,9 +38,21 @@ namespace {
     constexpr uint32_t text_area_start = 0x80A00000;
     constexpr uint32_t text_area_end = 0x80C00000;
     constexpr size_t max_page = 1024;
-    // Bubble lines wider than this (the font's pixels) are wrapped: the English's widest
-    // lines are a little over it; the translations' measured up to ~240.
-    constexpr int bubble_wrap_px = 250;
+    // What a speech bubble holds (vita/tools/check_bubbles.py derives these from the game's
+    // sizing and checks every page against them, and that they're these). The game sizes a
+    // bubble to its text (func_1516A7B0: (widest page + pad / 2) * 1.15 by (tallest + pad) * 1.04,
+    // pad 18, or 25 with the message's flags & 2; drawn (2W + 1) * 0.575 wide by func_1516B6BC),
+    // with no limit of its own. The limits: the bubble, with pad 25 and its shadow, inside the
+    // 4:3 view (2..290, 4 pixels in; widescreen.cpp keeps it there): text 196 pixels wide by
+    // func_150428D4's measure; text as tall as the English's tallest page (dialogue 5 lines,
+    // 60 pixels; the hint book's 9 lines, 108); a line within func_1516C934's 84-byte buffer.
+    constexpr int bubble_text_px = 196;
+    constexpr int bubble_text_h_dialogue = 60;
+    constexpr int bubble_text_h_hint = 108;
+    constexpr size_t bubble_line_bytes = 83;
+    // A censored swear word is at most this many symbols (the English's runs are 4 to 7; one a
+    // letter made long words wider than their bubbles).
+    constexpr int swear_symbols = 7;
 
     // Control codes: 0xA1 resets the colour, 0xA2..0xA5 red, green, blue, yellow, 0xA6 makes
     // what follows pulse; 0xB2..0xB5 are the swearing symbols.
@@ -99,20 +113,23 @@ namespace {
         out += (char)cp;
     }
 
-    // A swear word in the game's symbols: one per letter, in one colour, pulsing.
+    // A swear word in the game's symbols: one per letter (swear_symbols a word at most), in one
+    // colour, pulsing.
     void put_symbols(std::string& out, const std::string& word, uint32_t seed) {
         const uint8_t colour = 0xA2 + seed % 4;
         out += (char)code_pulse;
-        int n = 0;
+        int n = 0, in_word = 0;
         for (size_t i = 0; i < word.size(); i++) {
             const char c = word[i];
-            if (c == ' ') { out += ' '; continue; }
+            if (c == ' ') { out += ' '; in_word = 0; continue; }
             // A swear across a line break keeps the break.
-            if (c == '\\' && i + 1 < word.size() && word[i + 1] == 'n') { out += '\n'; i++; continue; }
+            if (c == '\\' && i + 1 < word.size() && word[i + 1] == 'n') { out += '\n'; in_word = 0; i++; continue; }
             if ((uint8_t)c >= 0x80 && ((uint8_t)c & 0xC0) == 0x80) continue; // UTF-8 continuation
+            if (in_word >= swear_symbols) continue;
             out += (char)colour;
             out += (char)(0xB2 + (seed + n * 3) % 4);
             n++;
+            in_word++;
         }
         out += (char)code_plain;
     }
@@ -153,6 +170,7 @@ namespace {
     struct Language {
         bool loaded = false;
         std::unordered_map<uint32_t, std::string> pages; // key -> the line's text
+        std::unordered_set<uint32_t> hints;               // the hint book's pages (assets1A)
     };
     // By conker::text_language(): 0 English (the game's), 1 Portuguese, 2 Spanish, 3 French,
     // 4 German, 5 Italian; files vita/translation/<name>.txt and <name>_ui.txt.
@@ -160,7 +178,7 @@ namespace {
     const char* const language_files[language_count] = { "", "pt_br", "es", "fr", "de", "it" };
     Language languages[language_count];
 
-    void load(Language& lang, const char* name) {
+    void load(Language& lang, const char* name, bool ui) {
         lang.loaded = true;
         const std::string paths[] = {
 #if defined(__vita__)
@@ -174,13 +192,21 @@ namespace {
             FILE* f = std::fopen(path.c_str(), "r");
             if (!f) continue;
             char line[4096];
+            bool hints = false; // in a _ui file, from a "# assets1A" comment to an "# assets1C" one
             while (std::fgets(line, sizeof line, f)) {
                 size_t n = std::strlen(line);
                 while (n && (line[n - 1] == '\n' || line[n - 1] == '\r')) line[--n] = 0;
+                if (line[0] == '#') {
+                    if (ui && std::strstr(line, "assets1A")) hints = true;
+                    else if (ui && std::strstr(line, "assets1C")) hints = false;
+                    continue;
+                }
                 char* eq = std::strstr(line, " = ");
-                if (line[0] == '#' || !eq || eq - line != 8) continue;
+                if (!eq || eq - line != 8) continue;
                 *eq = 0;
-                lang.pages[(uint32_t)std::strtoul(line, nullptr, 16)] = eq + 3;
+                const uint32_t key = (uint32_t)std::strtoul(line, nullptr, 16);
+                lang.pages[key] = eq + 3;
+                if (hints) lang.hints.insert(key);
             }
             std::fclose(f);
             std::fprintf(stderr, "[text] %s: %u pages\n", path.c_str(), (unsigned)lang.pages.size());
@@ -198,15 +224,16 @@ namespace {
 namespace {
     void load_all(Language& lang, int language) {
         const std::string name = language_files[language];
-        load(lang, (name + ".txt").c_str());
+        load(lang, (name + ".txt").c_str(), false);
         lang.loaded = false;
-        load(lang, (name + "_ui.txt").c_str()); // menus and hints
+        load(lang, (name + "_ui.txt").c_str(), true); // menus and hints
     }
 
     // A translation's game bytes in RDRAM past the game's 8 MB (kept while there's room).
-    std::string wrap_to_width(uint8_t* rdram, const std::string& text, int max_px);
+    std::string fit_to_bubble(uint8_t* rdram, const std::string& text, int max_px, int max_h);
 
-    uint32_t place(uint8_t* rdram, uint32_t key, const std::string& line, bool censored, int wrap_px = 0,
+    // fit_h: a bubble's page, fitted to it (fit_to_bubble) with that much height at most.
+    uint32_t place(uint8_t* rdram, uint32_t key, const std::string& line, bool censored, int fit_h = 0,
                    bool capital = false) {
         std::string text = encode(line.c_str(), censored, key);
         // A page the game wrote with a capital first (32 of them: Birdy's, the Professor's...)
@@ -220,7 +247,7 @@ namespace {
                 if (u >= 0xC0) break; // an accented letter: already a capital in the font
             }
         }
-        if (wrap_px > 0) text = wrap_to_width(rdram, text, wrap_px);
+        if (fit_h > 0) text = fit_to_bubble(rdram, text, bubble_text_px, fit_h);
         const uint64_t slot = ((uint64_t)key << 4) | ((uint64_t)encoding_language << 1) | (censored ? 1 : 0);
         auto at = placed.find(slot);
         uint32_t dest;
@@ -309,7 +336,8 @@ extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
         return 0;
     }
 
-    ctx->r2 = addr(place(rdram, key, found->second, censored, bubble_wrap_px, bytes[0] >= 'A' && bytes[0] <= 'Z'));
+    const int fit_h = lang.hints.count(key) ? bubble_text_h_hint : bubble_text_h_dialogue;
+    ctx->r2 = addr(place(rdram, key, found->second, censored, fit_h, bytes[0] >= 'A' && bytes[0] <= 'Z'));
     return 1;
 }
 
@@ -606,69 +634,157 @@ extern "C" void conker_font_patch(uint8_t* rdram, recomp_context* ctx) {
 }
 
 namespace {
-    // A character's width in the font's pixels, as func_15042C40 picks its glyph (a space is 4).
-    int char_width(uint8_t* rdram, uint8_t c) {
-        if (c == ' ') return 4;
-        if (c >= 0xA1 && c <= 0xA7) return 0;  // colours, pulsing
-        if (c >= 0xA8 && c < 0xC0) return 14;  // button icons, swearing symbols
-        if (c >= 'a' && c <= 'z') c -= 'a' - 'A';
-        const uint32_t met = (uint32_t)MEM_W(0, addr(font_metrics));
-        for (int i = 0; i < 95; i++) {
-            if ((uint8_t)MEM_B(i, addr(font_chars)) == c) {
-                return ((met >> 24) == 0x80 ? (uint8_t)MEM_B(i * 4, addr(met)) : 8) + 1;
-            }
+    // A text's size as the game measures it, func_150428D4 (with the font as conker_font_patch
+    // left it): a glyph advances its width + x offset - 1 and makes its line at least height +
+    // y offset tall; a space 4, its line at least 12; colours nothing; a button icon or symbol
+    // (0xA8 on, func_150415E0) its width times its scale; 0xBC skips itself and its argument;
+    // a new line keeps the widest and adds the line's height (12 at least); the last line adds
+    // its own (no minimum), an empty text is 12. False if the font isn't loaded.
+    struct TextSize { int w = 0, h = 0; };
+
+    // func_150415E0: a button icon's (or symbol's) width, height, baseline and scale.
+    void icon_metrics(uint8_t c, int& w, int& h, float& baseline, float& scale) {
+        scale = 1.0f;
+        switch (c) {
+            case 0xA8: case 0xA9: w = 32; h = 18; baseline = 3.1f; break;
+            case 0xAA: case 0xAB: case 0xAC: case 0xAD: w = 32; h = 27; baseline = 2.0f; scale = 0.603f; break;
+            case 0xAE: w = 16; h = 17; baseline = -1.6f; break;
+            case 0xAF: case 0xB0: w = 46; h = 16; baseline = 2.0f; break;
+            case 0xB6: case 0xB7: case 0xB8: case 0xB9: w = 16; h = 12; baseline = 2.0f; break;
+            case 0xBA: w = 55; h = 12; baseline = 0.2f; break;
+            case 0xB1: w = 38; h = 24; baseline = 2.0f; scale = 0.726f; break;
+            default: w = 12; h = 16; baseline = 2.0f; break;
         }
-        return 8;
     }
 
-    // A page's lines wrapped at spaces to fit max_px (the translations are longer than the
-    // English, and some lines were too wide for their bubbles): a line too wide is broken
-    // before the word that crosses the width, its leading spaces kept.
-    std::string wrap_to_width(uint8_t* rdram, const std::string& text, int max_px) {
-        std::string out;
-        size_t start = 0;
-        while (start <= text.size()) {
-            size_t end = text.find('\n', start);
-            if (end == std::string::npos) end = text.size();
-            const std::string line = text.substr(start, end - start);
-            int px = 0;
-            for (char c : line) px += char_width(rdram, (uint8_t)c);
-            if (px <= max_px) {
-                out += line;
+    // func_15042C40: the glyph of a character (0x60 a space, the byte itself if none).
+    uint32_t glyph_of(uint8_t* rdram, uint8_t c) {
+        const uint8_t u = (c >= 'a' && c <= 'z') ? (uint8_t)(c - 0x20) : c;
+        if (c == ' ') return 0x60;
+        for (uint32_t i = 0; i < 95; i++) {
+            if ((uint8_t)MEM_B(i, addr(font_chars)) == u) return i;
+        }
+        return c;
+    }
+
+    bool measure_text(uint8_t* rdram, const std::string& s, TextSize& out) {
+        const uint32_t met = (uint32_t)MEM_W(0, addr(font_metrics));
+        if ((met >> 24) != 0x80) return false;
+        int w = 0, h = 0, widest = 0, line_h = 0;
+        if (s.empty()) h += 12;
+        for (size_t i = 0; i < s.size(); i++) {
+            const uint8_t c = (uint8_t)s[i];
+            if (c == 0xBC) { i++; continue; }
+            const uint32_t g = glyph_of(rdram, c);
+            if (g == 0x60) {
+                w += 4;
+                line_h = std::max(line_h, 12);
+            }
+            else if (g >= 0xA1 && g < 0xA8) {
+            }
+            else if (g >= 0xA8) {
+                int iw, ih;
+                float baseline, scale;
+                icon_metrics((uint8_t)g, iw, ih, baseline, scale);
+                // Single-precision steps as the game's (volatile: no fused multiply-add).
+                volatile float advance = (float)iw * scale;
+                volatile float sum = (float)w + advance;
+                w = (int)sum;
+                volatile float scaled = (float)ih * scale;
+                volatile float above = (float)(int)scaled - baseline;
+                line_h = std::max(line_h, (int)above + 1);
+            }
+            else if (c == '\n') {
+                widest = std::max(widest, w);
+                w = 0;
+                h += std::max(line_h, 12);
+                line_h = 0;
             }
             else {
-                size_t lead = 0;
-                while (lead < line.size() && line[lead] == ' ') lead++;
-                std::string cur = line.substr(0, lead);
-                int cur_px = (int)lead * 4;
-                size_t i = lead;
-                bool first = true;
-                while (i < line.size()) {
-                    size_t j = line.find(' ', i);
-                    if (j == std::string::npos) j = line.size();
-                    const std::string word = line.substr(i, j - i);
-                    int word_px = 0;
-                    for (char c : word) word_px += char_width(rdram, (uint8_t)c);
-                    if (!first && cur_px + 4 + word_px > max_px) {
-                        out += cur;
-                        out += '\n';
-                        cur.clear();
-                        cur_px = 0;
-                        first = true;
-                    }
-                    if (!first) { cur += ' '; cur_px += 4; }
-                    cur += word;
-                    cur_px += word_px;
-                    first = false;
-                    i = j + 1;
-                }
-                out += cur;
+                // (A byte with no glyph reads past the 95 glyphs' metrics, as the game does.)
+                w += (uint8_t)MEM_B(g * 4 + 0, addr(met)) + (uint8_t)MEM_B(g * 4 + 2, addr(met)) - 1;
+                line_h = std::max(line_h, (int)(uint8_t)MEM_B(g * 4 + 1, addr(met)) + (uint8_t)MEM_B(g * 4 + 3, addr(met)));
             }
-            if (end == text.size()) break;
-            out += '\n';
+        }
+        out.w = std::max(w, widest);
+        out.h = h + line_h;
+        return true;
+    }
+
+    std::vector<std::string> split(const std::string& s, char sep) {
+        std::vector<std::string> out;
+        size_t start = 0;
+        while (true) {
+            const size_t end = s.find(sep, start);
+            if (end == std::string::npos) { out.push_back(s.substr(start)); return out; }
+            out.push_back(s.substr(start, end - start));
             start = end + 1;
+        }
+    }
+
+    std::string join(const std::vector<std::string>& parts, char sep) {
+        std::string out;
+        for (size_t i = 0; i < parts.size(); i++) {
+            if (i) out += sep;
+            out += parts[i];
         }
         return out;
     }
-}
 
+    bool line_fits(uint8_t* rdram, const std::string& line, int max_px) {
+        TextSize size;
+        return line.size() <= bubble_line_bytes && measure_text(rdram, line, size) && size.w <= max_px;
+    }
+
+    // A page's lines that don't fit (wider than max_px, or longer than the line buffer) broken
+    // at spaces, before the word that would cross: its leading spaces stay on its first part,
+    // the space at a break goes. A word too wide alone stays as it is.
+    std::string wrap_lines(uint8_t* rdram, const std::string& text, int max_px) {
+        std::vector<std::string> out;
+        for (const std::string& line : split(text, '\n')) {
+            if (line_fits(rdram, line, max_px)) {
+                out.push_back(line);
+                continue;
+            }
+            size_t lead = 0;
+            while (lead < line.size() && line[lead] == ' ') lead++;
+            std::string cur = line.substr(0, lead);
+            bool first = true;
+            for (const std::string& word : split(line.substr(lead), ' ')) {
+                if (!first && !line_fits(rdram, cur + ' ' + word, max_px)) {
+                    out.push_back(cur);
+                    cur.clear();
+                    first = true;
+                }
+                cur += first ? word : ' ' + word;
+                first = false;
+            }
+            out.push_back(cur);
+        }
+        return join(out, '\n');
+    }
+
+    // A translated page fitted to its bubble (vita/tools/check_bubbles.py checks the result):
+    // its lines wrapped at max_px; if it's still taller than max_h, it's flowed again as one
+    // paragraph (its lines joined, their outer spaces and the empty ones dropped), kept if that
+    // makes it shorter. The bubble grows to the page (func_1516A7B0), so a page within the
+    // limits is a bubble within the view.
+    std::string fit_to_bubble(uint8_t* rdram, const std::string& text, int max_px, int max_h) {
+        conker_font_patch(rdram, nullptr); // the language's letters, as the page will be drawn
+        TextSize size;
+        if (!measure_text(rdram, text, size)) return text;
+        const std::string page = wrap_lines(rdram, text, max_px);
+        measure_text(rdram, page, size);
+        if (size.h <= max_h) return page;
+        std::vector<std::string> words;
+        for (const std::string& line : split(text, '\n')) {
+            const size_t a = line.find_first_not_of(' ');
+            if (a == std::string::npos) continue;
+            words.push_back(line.substr(a, line.find_last_not_of(' ') - a + 1));
+        }
+        const std::string flowed = wrap_lines(rdram, join(words, ' '), max_px);
+        TextSize flowed_size;
+        measure_text(rdram, flowed, flowed_size);
+        return flowed_size.h < size.h ? flowed : page;
+    }
+}
