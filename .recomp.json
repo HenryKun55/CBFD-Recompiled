@@ -7,7 +7,7 @@
   "original": { "region": "USA", "sha1": "4cbadd3c4e0729dec46af64ad018050eada4f47a" },
   "project": "Conker's Bad Fur Day for PS Vita (CBFD-Recompiled)",
   "status": "released",
-  "targets": ["PS Vita", "PS TV"],
+  "targets": ["PS Vita"],
   "toolchain": ["N64recomp", "N64ModernRuntime"],
   "approach": "Static recompilation (based on CBFD-Recompiled), a native sceGxm renderer for the N64's display lists and the audio microcode run on the Vita's CPU",
   "maintainers": [{ "name": "HenryKun55", "link": "https://github.com/HenryKun55" }],
