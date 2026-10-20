@@ -1,0 +1,21 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Conker's Bad Fur Day",
+  "wikidata": "Q841712",
+  "system": "N64",
+  "type": "recomp",
+  "original": { "region": "USA", "sha1": "4cbadd3c4e0729dec46af64ad018050eada4f47a" },
+  "project": "Conker's Bad Fur Day for PS Vita (CBFD-Recompiled)",
+  "status": "released",
+  "targets": ["PS Vita", "PS TV"],
+  "toolchain": ["N64recomp", "N64ModernRuntime"],
+  "approach": "Static recompilation (based on CBFD-Recompiled), a native sceGxm renderer for the N64's display lists and the audio microcode run on the Vita's CPU",
+  "maintainers": [{ "name": "HenryKun55", "link": "https://github.com/HenryKun55" }],
+  "links": [
+    { "label": "Releases (vpk)", "url": "https://github.com/HenryKun55/conker-vita/releases" },
+    { "label": "Upstream: CBFD-Recompiled", "url": "https://github.com/sciaschi/CBFD-Recompiled" }
+  ],
+  "help": ["Renderer performance on real hardware", "Testing multiplayer", "Translation review"],
+  "tags": ["vita", "homebrew", "widescreen", "60fps", "translations"],
+  "notes": "Plays start to finish on a real Vita at the game's 30 fps cap, with optional interpolated 60 fps, 16:9, saves, remappable controls and touch, in-game updates, and every text in English, Portuguese (Brazil), Spanish, French, German and Italian. Next: faster rendering on hardware and native rewrites of hot functions with the decomp's help."
+}
