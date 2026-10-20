@@ -1516,6 +1516,9 @@ namespace {
                     stats.draws, stats.tris);
             }
             if (dl_count % 60 == 0) {
+                std::fprintf(stderr, "[renderer] triangles a list: level %u, objects %u, shadows %u, other groups %u\n",
+                    tris_by_kind[0] / 60, tris_by_kind[1] / 60, tris_by_kind[2] / 60, tris_by_kind[3] / 60);
+                for (uint32_t& t : tris_by_kind) t = 0;
                 std::fprintf(stderr, "[renderer] work: %u vertex loads (%u vertices), %u contexts, %u matrices, %u block loads (%u KB), %u tile loads, %u palettes, %u state changes\n",
                     stats.vtx_loads, stats.vtx_count, stats.ctx_pushes, stats.matrices, stats.block_loads, stats.block_bytes / 1024, stats.tile_loads, stats.tlut_loads, stats.prepares);
             }
@@ -2175,6 +2178,7 @@ namespace {
         // interp_budget_us (the second reading takes as long; the Vita's busiest scenes don't
         // have it), and not for lists the CPU reads back from.
         bool interp_pass = false;
+        uint32_t tris_by_kind[4] = {}; // the log's share: the level, objects (0x43 groups), shadows (0x53), others
         float interp_t = 0.5f;
         static constexpr uint32_t interp_budget_us = 12000;
         static constexpr int max_groups = 16;
@@ -3103,6 +3107,10 @@ namespace {
         inline __attribute__((always_inline)) void triangle(uint32_t ia, uint32_t ib, uint32_t ic) {
             if (__builtin_expect(ia >= max_vertices || ib >= max_vertices || ic >= max_vertices, 0)) {
                 return;
+            }
+            if (!interp_pass) {
+                const uint32_t g = group_depth > 0 ? group_ids[std::min(group_depth, max_groups) - 1] >> 16 : 0;
+                tris_by_kind[g == 0 ? 0 : (g >> 8) == 0x43 ? 1 : (g >> 8) == 0x53 ? 2 : 3]++;
             }
             if (deferred_geometry) {
                 triangle_deferred(ia, ib, ic);
