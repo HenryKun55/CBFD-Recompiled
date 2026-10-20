@@ -100,6 +100,8 @@ add_executable(ConkerVita
     src/vita_renderer.cpp
     src/tmem.cpp
     src/bench.cpp
+    src/audio_hle.cpp
+    src/audio_capture.cpp
     src/controls.cpp
     src/menu.cpp
     src/vita_update.c
@@ -147,6 +149,8 @@ target_compile_definitions(ConkerVita PRIVATE CONKER_PORT_VERSION="${CONKER_PORT
 # without IEEE corner cases (no NaNs or infinities reach them).
 set_source_files_properties(src/vita_renderer.cpp PROPERTIES COMPILE_OPTIONS "-O3;-ffast-math")
 set_source_files_properties(src/tmem.cpp PROPERTIES COMPILE_OPTIONS "-O3;-ffast-math")
+# The HLE audio microcode (bit-exact integer maths: no -ffast-math needed or wanted).
+set_source_files_properties(src/audio_hle.cpp PROPERTIES COMPILE_OPTIONS "-O3;-fno-strict-aliasing")
 
 # The renderer draws with sceGxm directly (src/gxm_backend.inc). vitaGL (the SDK's) is only
 # used to show the startup error dialog, before there is a renderer.

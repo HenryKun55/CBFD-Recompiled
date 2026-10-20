@@ -1,0 +1,52 @@
+--- a/vita/src/main_vita.cpp
++++ b/vita/src/main_vita.cpp
+@@ -32,6 +32,8 @@
+ #include "vita_platform.hpp"
+ #include "vita_renderer.hpp"
+ #include "bench.hpp"
++#include "audio_hle.hpp"
++#include "audio_capture.hpp"
+ #include "vita_bootui.h"
+ 
+ // Memory: the newlib heap gets most of the app's budget (the ROM, RDRAM and the
+@@ -77,6 +79,18 @@
+         constexpr int32_t osRunningThread = 0x8002BE00;
+         ultramodern::set_running_thread_variable(osRunningThread);
+     }
++
++    // The audio microcode: debug_audio_hle holds 0 for the recompiled microcode, 1 (or
++    // nothing) for the HLE (audio_hle.cpp), 2 for both, compared, with the microcode's
++    // output used (differences go to the log).
++    int audio_hle_mode = [] {
++        int n = 0;
++        if (FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_audio_hle", "r")) {
++            if (std::fscanf(f, "%d", &n) != 1) n = 1;
++            std::fclose(f);
++        }
++        return n;
++    }();
+ 
+     // Debugging: debug_dump_audio_task holds N: the N-th audio task's DMEM and RDRAM go
+     // to files before it runs, and RDRAM after.
+@@ -108,7 +122,11 @@
+             int len = std::snprintf(info, sizeof(info), "%08X\n", ucode_addr);
+             dump_file("task_info.txt", info, (size_t)len);
+         }
+-        RspExitReason r = conker_audio_ucode(rdram, ucode_addr);
++        conker::vita::audio_capture::before_task(rdram, ucode_addr);
++        RspExitReason r = audio_hle_mode == 1 ? conker_audio_hle(rdram, ucode_addr)
++                        : audio_hle_mode == 2 ? conker_audio_hle_check(rdram, ucode_addr)
++                        : conker_audio_ucode(rdram, ucode_addr);
++        conker::vita::audio_capture::after_task(rdram);
+         if (dump) {
+             dump_file("task_rdram_after.bin", rdram, 8 * 1024 * 1024);
+             std::fprintf(stderr, "[vita] dumped audio task %d\n", task_number - 1);
+@@ -369,6 +387,8 @@
+     }
+ #endif
+     conker::vita::input_init();
++    conker::vita::audio_capture::init();
++    if (audio_hle_mode) std::fprintf(stderr, "[vita] audio: %s\n", audio_hle_mode == 2 ? "HLE checked against the microcode" : "HLE");
+     conker::vita::audio_init();
+ 
+     recomp::register_config_path(data_dir);
