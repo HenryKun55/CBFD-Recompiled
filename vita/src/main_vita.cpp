@@ -80,11 +80,12 @@ namespace {
         ultramodern::set_running_thread_variable(osRunningThread);
     }
 
-    // The audio microcode: debug_audio_hle holds 0 for the recompiled microcode, 1 (or
-    // nothing) for the HLE (audio_hle.cpp), 2 for both, compared, with the microcode's
-    // output used (differences go to the log).
+    // The audio microcode: the HLE (audio_hle.cpp; bit-exact with the recompiled microcode over
+    // 5000 tasks in check mode on a Vita, about 3.7x less CPU). debug_audio_hle holds 0 for the
+    // recompiled microcode, 1 (or nothing) for the HLE, 2 for both, compared, with the
+    // microcode's output used (differences go to the log).
     int audio_hle_mode = [] {
-        int n = 0;
+        int n = 1;
         if (FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_audio_hle", "r")) {
             if (std::fscanf(f, "%d", &n) != 1) n = 1;
             std::fclose(f);
