@@ -46,6 +46,7 @@ namespace conker::vita::controls {
         bool invert_other_y = false;
         bool aim_invert_x = false;   // aiming (hold R, the scope, the slingshot...): left/right turned around
         bool aim_invert_y = true;    // up/down: inverted is the game's own (up looks down)
+        bool aim_camera_stick = false; // while aiming the sticks swap: the camera stick aims, the movement stick moves
         int stick_threshold = 50; // percent of tilt for a stick direction to count as pressed
         bool widescreen = true;   // the 3D view widened to the Vita's 16:9 screen
         bool cutscene_4x3 = true; // in widescreen, cutscenes in the N64's 4:3 (black bars)

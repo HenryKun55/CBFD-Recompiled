@@ -202,6 +202,8 @@ namespace conker {
     bool vita_interpolation();
     bool vita_aim_invert_x();
     bool vita_aim_invert_y();
+    // Player 1 aims this game frame (the look mode or the second aiming mode ran).
+    void vita_note_aiming();
     // The Vita port's Extras (host/src/extras.cpp).
     bool vita_skip_intro();
     bool vita_cheat_health();

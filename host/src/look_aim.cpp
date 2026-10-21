@@ -382,6 +382,9 @@ namespace {
 // tangent of the field of view in use (the camera's + 0x74) against the unzoomed one's (+ 0x6C),
 // as func_1510B128 sets it.
 extern "C" void conker_aim_stick(uint8_t* rdram, recomp_context* ctx) {
+#if defined(__vita__)
+    if (MEM_BU(0x23D, ctx->r16) == 0) conker::vita_note_aiming();
+#endif
 #if defined(CONKER_RT64) || defined(__vita__)
     if (turn_stick_x()) {
         ctx->f14.fl = -ctx->f14.fl;
@@ -427,6 +430,10 @@ extern "C" void conker_look_yaw_from_facing_scaled(uint8_t* rdram, recomp_contex
 
 // Before the pitch clamp: $s0 is the look state, $t0 the targets (reloaded at 0x15120B40).
 extern "C" void conker_look_targets(uint8_t* rdram, recomp_context* ctx) {
+#if defined(__vita__)
+    // Aiming now (the Vita's Aim with the camera stick swaps the sticks while it lasts).
+    if (MEM_BU(0x23D, ctx->r16) == 0) conker::vita_note_aiming();
+#endif
     frame = Frame{};
     const float units_per_degree = aim_units_per_degree;
     aim_units_per_degree = 0.0f;

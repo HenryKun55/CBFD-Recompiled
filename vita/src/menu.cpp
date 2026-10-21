@@ -160,18 +160,19 @@ namespace conker::vita::menu {
                 toggle("Frame rate", &Config::interpolation, "Up to 60 (interpolated)", "30 (original)"),
             };
             static const std::vector<Row> stick_rows = {
-                setting("N64 stick from", [] { return std::string(stick_name(current().stick)); },
+                setting("Movement stick", [] { return std::string(stick_name(current().stick)); },
                         [](int) { current().stick = current().stick == StickSource::Left ? StickSource::Right : StickSource::Left; }),
                 setting("Dead zone", [] { return percent(current().deadzone); },
                         [](int dir) { current().deadzone = std::clamp(current().deadzone + dir * 2, 0, 60); }),
                 setting("Sensitivity", [] { return percent(current().sensitivity); },
                         [](int dir) { current().sensitivity = std::clamp(current().sensitivity + dir * 5, 50, 200); }),
-                toggle("N64 stick invert X", &Config::invert_x),
-                toggle("N64 stick invert Y", &Config::invert_y),
-                setting("Stick as buttons at", [] { return percent(current().stick_threshold); },
+                toggle("Movement stick invert X", &Config::invert_x),
+                toggle("Movement stick invert Y", &Config::invert_y),
+                setting("Camera stick press at", [] { return percent(current().stick_threshold); },
                         [](int dir) { current().stick_threshold = std::clamp(current().stick_threshold + dir * 5, 20, 90); }),
                 toggle("Camera stick invert X", &Config::invert_other_x),
                 toggle("Camera stick invert Y", &Config::invert_other_y),
+                toggle("Aim with the camera stick", &Config::aim_camera_stick, "On", "Off (original)"),
                 toggle("Aiming left/right", &Config::aim_invert_x, "Inverted", "Normal (original)"),
                 toggle("Aiming up/down", &Config::aim_invert_y, "Inverted (original)", "Normal"),
             };
@@ -385,7 +386,7 @@ namespace conker::vita::menu {
 
         if (page == Page::Controls) {
             const Config& c = current();
-            text(x0 + 30, list_y - 24, "N64", 0x8888A0FF, 0.62f);
+            text(x0 + 30, list_y - 24, "Game button (N64)", 0x8888A0FF, 0.62f);
             text(x0 + 200, list_y - 24, "Vita (1)", 0x8888A0FF, 0.62f);
             text(x0 + 420, list_y - 24, "Vita (2)", 0x8888A0FF, 0.62f);
             for (int i = 0; i < (int)N64::Count; i++) {
