@@ -351,26 +351,26 @@ static void launch_failed(void)
 /* What's new, told once (ux0:data/conker/notices.txt keeps the ones seen: the game's data
  * folder, which installing a vpk or an update leaves alone), in the Vita's language. Latin-1. */
 #define NOTICES_PATH "ux0:data/conker/notices.txt"
-#define NOTICE_ID "menu-select-1"
+#define NOTICE_ID "v1.2.0"
 /* English, Portuguese, Spanish, French, German, Italian. */
 static const char *const notice_text[6][3] = {
     { "New: the menu opens with SELECT twice",
-      "Press SELECT twice for the port's menu (it was START + SELECT). New in it: Extras (skip the intro, cheats), inverting the other stick, and Frame rate: up to 60 fps, interpolated (off by default).",
+      "Press SELECT twice for the port's menu (it was START + SELECT), now in pages. New: the Vita's buttons drawn in the game, aiming with the right stick, inverted aiming, skipping the intro and cheats.",
       "Press any button to continue." },
     { "Novidade: o menu abre com SELECT duas vezes",
-      "Aperte SELECT duas vezes para o menu do port (antes era START + SELECT). Novo nele: Extras (pular a abertura, trapa\347as), inverter o outro anal\363gico e Frame rate: at\351 60 fps, interpolado (vem desligado).",
+      "Aperte SELECT duas vezes para o menu do port (antes era START + SELECT), agora em p\341ginas. Novo: os bot\365es do Vita desenhados no jogo, mirar com o anal\363gico direito, inverter a mira, pular a abertura e trapa\347as.",
       "Aperte qualquer bot\343o para continuar." },
     { "Novedad: el men\372 se abre con SELECT dos veces",
-      "Pulsa SELECT dos veces para el men\372 del port (antes era START + SELECT). Nuevo en \351l: Extras (saltar la intro, trucos), invertir el otro stick y Frame rate: hasta 60 fps, interpolado (viene desactivado).",
+      "Pulsa SELECT dos veces para el men\372 del port (antes era START + SELECT), ahora en p\341ginas. Nuevo: los botones de la Vita dibujados en el juego, apuntar con el stick derecho, invertir la mira, saltar la intro y trucos.",
       "Pulsa cualquier bot\363n para continuar." },
     { "Nouveau : le menu s'ouvre avec SELECT deux fois",
-      "Appuie deux fois sur SELECT pour le menu du port (avant : START + SELECT). Nouveau : Extras (passer l'intro, codes de triche), inverser l'autre stick et Frame rate : jusqu'\340 60 fps, interpol\351 (d\351sactiv\351 par d\351faut).",
+      "Appuie deux fois sur SELECT pour le menu du port (avant : START + SELECT), maintenant en pages. Nouveau : les boutons de la Vita dans le jeu, viser avec le stick droit, inverser la vis\351e, passer l'intro et codes de triche.",
       "Appuie sur un bouton pour continuer." },
     { "Neu: das Men\374 \366ffnet sich mit zweimal SELECT",
-      "Dr\374ck zweimal SELECT f\374r das Men\374 des Ports (vorher START + SELECT). Neu darin: Extras (Intro \374berspringen, Cheats), den anderen Stick umkehren und Frame rate: bis zu 60 fps, interpoliert (standardm\344\337ig aus).",
+      "Dr\374ck zweimal SELECT f\374r das Men\374 des Ports (vorher START + SELECT), jetzt in Seiten. Neu: die Vita-Tasten im Spiel, Zielen mit dem rechten Stick, Zielen umkehren, Intro \374berspringen und Cheats.",
       "Beliebige Taste dr\374cken, um fortzufahren." },
     { "Novit\340: il menu si apre con SELECT due volte",
-      "Premi SELECT due volte per il menu del port (prima era START + SELECT). Novit\340: Extras (salta l'intro, trucchi), inverti l'altra levetta e Frame rate: fino a 60 fps, interpolato (disattivato di default).",
+      "Premi SELECT due volte per il menu del port (prima era START + SELECT), ora in pagine. Novit\340: i tasti della Vita nel gioco, mirare con la levetta destra, invertire la mira, saltare l'intro e trucchi.",
       "Premi un tasto qualsiasi per continuare." }
 };
 
