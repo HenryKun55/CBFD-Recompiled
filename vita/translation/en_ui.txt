@@ -1,0 +1,6 @@
+# Conker: the English menus' lines the Vita words differently (the rest is the game's own text).
+# Same format as the other languages' _ui files; only these lines are replaced.
+
+# assets1C/0000
+# The buttons as icons, so they show the Vita buttons bound to A and B (vita/src/button_icons.cpp).
+44193371 = CONFIRM <A8> YES, <A9> NO

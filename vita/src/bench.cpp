@@ -23,6 +23,8 @@ namespace {
         double time;
         uint16_t buttons;
         uint32_t vita = 0; // Vita buttons ("@..."), before the remapping
+        double hold = 0.25;
+        int lx = -1, ly = -1; // the left stick ("~x/y/seconds", 0..255), before the remapping
     };
 
     bool enabled = false;
@@ -116,7 +118,15 @@ void conker::vita::bench::init() {
         if (colon != std::string::npos) {
             const std::string what = item.substr(colon + 1);
             const double t = std::atof(item.substr(0, colon).c_str());
-            if (!what.empty() && what[0] == '@') {
+            if (!what.empty() && what[0] == '~') {
+                Press p{ t, 0, 0 };
+                double hold = 1.0;
+                if (std::sscanf(what.c_str() + 1, "%d/%d/%lf", &p.lx, &p.ly, &hold) >= 2) {
+                    p.hold = hold;
+                    script.push_back(p);
+                }
+            }
+            else if (!what.empty() && what[0] == '@') {
                 uint32_t v = 0;
                 for (char c : what.substr(1)) {
                     switch (c) {
@@ -161,6 +171,19 @@ uint16_t conker::vita::bench::scripted_buttons() {
         if (t >= p.time && t < p.time + 0.25) b |= p.buttons;
     }
     return b;
+}
+
+bool conker::vita::bench::scripted_stick(uint8_t* lx, uint8_t* ly) {
+    if (!enabled) return false;
+    const double t = elapsed();
+    for (const Press& p : script) {
+        if (p.lx >= 0 && t >= p.time && t < p.time + p.hold) {
+            *lx = (uint8_t)p.lx;
+            *ly = (uint8_t)p.ly;
+            return true;
+        }
+    }
+    return false;
 }
 
 uint32_t conker::vita::bench::scripted_vita_buttons() {

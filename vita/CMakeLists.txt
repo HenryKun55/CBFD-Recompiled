@@ -104,6 +104,8 @@ add_executable(ConkerVita
     src/audio_capture.cpp
     src/controls.cpp
     src/menu.cpp
+    src/button_icons.cpp
+    src/button_art.cpp
     src/vita_update.c
     src/vita_bootui.c
     "${HOST_DIR}/null_renderer.cpp"

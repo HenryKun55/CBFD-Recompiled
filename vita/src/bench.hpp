@@ -18,6 +18,8 @@ namespace conker::vita::bench {
     uint16_t scripted_buttons();
     // Vita buttons the script holds now ("<time>:@<buttons>": X O T Q S E U D L R l r).
     uint32_t scripted_vita_buttons();
+    // The left stick the script tilts now ("<time>:~<x>/<y>/<seconds>", 0..255, 128 centred).
+    bool scripted_stick(uint8_t* lx, uint8_t* ly);
     // From the gfx thread: a display list took this long to render.
     void on_display_list(uint32_t render_us, uint32_t tris);
     // From the gfx thread: a frame went to the screen.

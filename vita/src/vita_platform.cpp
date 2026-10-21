@@ -58,6 +58,7 @@ void conker::vita::poll_input() {
     sceTouchPeek(SCE_TOUCH_PORT_FRONT, &s.front, 1);
     sceTouchPeek(SCE_TOUCH_PORT_BACK, &s.back, 1);
     s.pad.buttons |= conker::vita::bench::scripted_vita_buttons();
+    conker::vita::bench::scripted_stick(&s.pad.lx, &s.pad.ly);
     {
         std::lock_guard lock{input_mutex};
         state = s;

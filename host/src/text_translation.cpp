@@ -172,10 +172,11 @@ namespace {
         std::unordered_map<uint32_t, std::string> pages; // key -> the line's text
         std::unordered_set<uint32_t> hints;               // the hint book's pages (assets1A)
     };
-    // By conker::text_language(): 0 English (the game's), 1 Portuguese, 2 Spanish, 3 French,
+    // By conker::text_language(): 0 English (the game's; en.txt and en_ui.txt only change the
+    // few lines the Vita words differently, its buttons), 1 Portuguese, 2 Spanish, 3 French,
     // 4 German, 5 Italian; files vita/translation/<name>.txt and <name>_ui.txt.
     constexpr int language_count = 6;
-    const char* const language_files[language_count] = { "", "pt_br", "es", "fr", "de", "it" };
+    const char* const language_files[language_count] = { "en", "pt_br", "es", "fr", "de", "it" };
     Language languages[language_count];
 
     void load(Language& lang, const char* name, bool ui) {
@@ -201,11 +202,11 @@ namespace {
                     else if (ui && std::strstr(line, "assets1C")) hints = false;
                     continue;
                 }
-                char* eq = std::strstr(line, " = ");
-                if (!eq || eq - line != 8) continue;
-                *eq = 0;
+                // "<key> = <text>", or "<key> =" for a text left out (drawn as nothing).
+                if (n < 10 || line[8] != ' ' || line[9] != '=' || (line[10] != ' ' && line[10] != 0)) continue;
+                line[8] = 0;
                 const uint32_t key = (uint32_t)std::strtoul(line, nullptr, 16);
-                lang.pages[key] = eq + 3;
+                lang.pages[key] = line[10] ? line + 11 : "";
                 if (hints) lang.hints.insert(key);
             }
             std::fclose(f);
@@ -277,10 +278,10 @@ extern "C" int conker_translate_page(uint8_t* rdram, recomp_context* ctx) {
     const int language = conker::text_language();
     const bool censored = conker::text_censored();
 #else
-    const int language = 0;
+    const int language = -1; // the game's own text
     const bool censored = true;
 #endif
-    if (language <= 0 || language >= language_count) {
+    if (language < 0 || language >= language_count) {
         return 0;
     }
     encoding_language = language;
@@ -367,10 +368,10 @@ extern "C" void conker_translate_ui(uint8_t* rdram, recomp_context* ctx) {
     const int language = conker::text_language();
     const bool censored = conker::text_censored();
 #else
-    const int language = 0;
+    const int language = -1; // the game's own text
     const bool censored = true;
 #endif
-    if (language <= 0 || language >= language_count) return;
+    if (language < 0 || language >= language_count) return;
     encoding_language = language;
     Language& lang = languages[language];
     if (!lang.loaded) load_all(lang, language);

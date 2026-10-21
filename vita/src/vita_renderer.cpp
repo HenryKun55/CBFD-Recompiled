@@ -58,6 +58,7 @@
 #include "xxHash/xxhash.h"
 
 #include "n64_gfx.hpp"
+#include "button_icons.hpp"
 #include "vita_platform.hpp"
 #include "vita_renderer.hpp"
 #include "bench.hpp"
@@ -4102,7 +4103,8 @@ namespace {
             const uint32_t hash = hash_tile(tmem, tile, w, h, tlut);
             const uint64_t key = ((uint64_t)hash << 32) ^ ((uint64_t)w << 20) ^ ((uint64_t)h << 8) ^
                 ((uint64_t)(wrap_s == GL_REPEAT ? 1 : wrap_s == GL_MIRRORED_REPEAT ? 2 : 0) << 4) ^
-                ((uint64_t)(wrap_t == GL_REPEAT ? 1 : wrap_t == GL_MIRRORED_REPEAT ? 2 : 0) << 6) ^ (linear ? 1 : 0);
+                ((uint64_t)(wrap_t == GL_REPEAT ? 1 : wrap_t == GL_MIRRORED_REPEAT ? 2 : 0) << 6) ^ (linear ? 1 : 0) ^
+                ((uint64_t)conker::vita::button_icons::generation() * 0x9E3779B97F4A7C15ull); // icons follow the bindings
             if (CachedTexture* cached = texture_cache.find(key)) {
                 cached->last_used = present_count;
                 tt.tex = cached->tex;
@@ -4119,6 +4121,7 @@ namespace {
             const uint64_t tex_start = sceKernelGetProcessTimeWide();
             std::vector<uint32_t> texels((size_t)w * h);
             decode_tile(tmem, tile, w, h, tlut, texels.data());
+            conker::vita::button_icons::replace(texels.data(), w, h); // N64 button icons -> Vita's
             // Decoded here (TMEM is the front's), uploaded by the GL thread.
             const uint32_t tex = new_tex_id();
             if (dumping()) {
