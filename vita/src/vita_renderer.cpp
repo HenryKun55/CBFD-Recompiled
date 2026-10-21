@@ -1415,8 +1415,12 @@ namespace {
             last_op = -1;
             const bool timing_tail = profiling;
             const uint64_t list_t0 = profiling ? sceKernelGetProcessTimeWide() : 0;
+            const auto stats0 = stats;
+            const uint32_t cmds0 = cmd_count;
+            const uint64_t read_t0 = list_csv ? sceKernelGetProcessTimeWide() : 0;
             start_matrices(true);
             run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
+            const uint32_t read_us = list_csv ? (uint32_t)(sceKernelGetProcessTimeWide() - read_t0) : 0;
             // The screen it drew (an in-between frame goes there).
             interp_main = (current_fb != nullptr && current_fb->width >= 256 && current_fb->siz != SIZ_8b) ? current_fb : nullptr;
             if (profiling) {
@@ -1492,6 +1496,23 @@ namespace {
             }
             const uint32_t dl_us = (uint32_t)(sceKernelGetProcessTimeWide() - dl_start);
             last_list_us = dl_us;
+            if (list_csv) {
+                // Debug (ux0:data/conker/debug_listcsv): a line a list, its reading's time and what it
+                // read, for a regression of each part's cost without a clock in the loop.
+                char line[256];
+                std::snprintf(line, sizeof(line), "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n", dl_count, read_us, dl_us,
+                    cmd_count - cmds0, stats.vtx_loads - stats0.vtx_loads, stats.vtx_count - stats0.vtx_count,
+                    stats.tris - stats0.tris, stats.prepares - stats0.prepares, stats.textures - stats0.textures,
+                    stats.block_loads - stats0.block_loads, stats.block_bytes - stats0.block_bytes,
+                    stats.tile_loads - stats0.tile_loads, stats.tlut_loads - stats0.tlut_loads,
+                    stats.matrices - stats0.matrices, stats.rects - stats0.rects, (unsigned)(stats.ctx_pushes - stats0.ctx_pushes));
+                list_csv_buf += line;
+                if (list_csv_buf.size() > 16384) {
+                    std::fputs(list_csv_buf.c_str(), list_csv);
+                    std::fflush(list_csv);
+                    list_csv_buf.clear();
+                }
+            }
             if (ab_on) {
                 ab_us[ab_phase] += dl_us;
                 ab_lists[ab_phase]++;
@@ -1605,6 +1626,16 @@ namespace {
             uint32_t tris = 0, tris_clipped = 0, tris_culled = 0, tris_nofb = 0, rects = 0, fills = 0, draws = 0, verts = 0;
         } stats;
         uint32_t present_count = 1;
+        uint32_t cmd_count = 0;
+        FILE* list_csv = [] {
+            FILE* on = std::fopen(CONKER_VITA_DATA_DIR "/debug_listcsv", "r");
+            if (on == nullptr) return (FILE*)nullptr;
+            std::fclose(on);
+            FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/lists.csv", "w");
+            if (f) std::fputs("dl,read_us,dl_us,cmds,vtx_loads,vtx,tris,prepares,textures,block_loads,block_bytes,tile_loads,tlut_loads,matrices,rects,ctx_pushes\n", f);
+            return f;
+        }();
+        std::string list_csv_buf;
 
         // -------------------------------------------------------- RSP state
         uint32_t segments[16] = {};
@@ -1846,6 +1877,7 @@ namespace {
                 mark_read(pc, 8, 1);
                 pc += 8;
                 const uint8_t op = w0 >> 24;
+                cmd_count++;
                 if (__builtin_expect(profiling, 0)) {
                     op_hist[op]++;
                     if (cmd_timing) {
@@ -2212,6 +2244,7 @@ namespace {
             if (key == 0 || count == 0) return;
             const uint32_t slot0 = (uint32_t)((key * 0x9E3779B97F4A7C15ull) >> 51) & (vtx_slots - 1);
             if (!interp_pass) {
+                if (!interp_recording) return;
                 const int c = mtx_cur;
                 for (uint32_t n = 0, i = slot0; n < vtx_slots; n++, i = (i + 1) & (vtx_slots - 1)) {
                     VtxSlot& slot = vtx_table[c][i];
@@ -2267,7 +2300,11 @@ namespace {
             return (0xFFFFFFFFull << 32) | ((uint64_t)(loose_count++) << 4) | params;
         }
         static uint32_t mtx_slot(uint64_t key) { return (uint32_t)((key * 0x9E3779B97F4A7C15ull) >> 51) & (mtx_slots - 1); }
+        // Whether this list's matrices and vertex positions are kept for an in-between frame (not
+        // with the interpolation off: the next list would only throw them away).
+        bool interp_recording = false;
         void record_matrix(uint64_t key, const Mat4& m) {
+            if (!interp_recording) return;
             std::vector<MtxSlot>& t = mtx_table[mtx_cur];
             for (uint32_t n = 0, i = mtx_slot(key); n < mtx_slots; n++, i = (i + 1) & (mtx_slots - 1)) {
                 MtxSlot& slot = t[i];
@@ -2312,6 +2349,7 @@ namespace {
             group_depth = 0;
             loose_count = 0;
             if (real) {
+                interp_recording = conker::vita_interpolation();
                 mtx_cur ^= 1;
                 mtx_stamp[mtx_cur]++;
                 mtx_values[mtx_cur].clear();
@@ -2873,11 +2911,27 @@ namespace {
                     vtx_mem = mem(va);
                 }
                 const uint8_t* const vb = (va & 0xFFF) <= 0xFF0 ? vtx_mem : nullptr;
+                SrcVertex& sv = out[i];
+                const uint32_t vindex = (uint32_t)dst + i;
+#if defined(__ARM_NEON)
+                if (__builtin_expect(vb != nullptr && (va & 3) == 0, 1)) {
+                    // RDRAM keeps big-endian words in host order: the halves of the first three
+                    // words swapped give x, y, z, flag, s, t; the colour word's bytes reversed
+                    // give r, g, b, a: SrcVertex's first 16 bytes in one store.
+                    static_assert(offsetof(SrcVertex, x) == 0 && offsetof(SrcVertex, r) == 12 && offsetof(SrcVertex, n0) == 16, "SrcVertex layout");
+                    const uint8x16_t raw = vld1q_u8(vb + (va & rdram_mask));
+                    const uint32x4_t halves = vreinterpretq_u32_u16(vrev32q_u16(vreinterpretq_u16_u8(raw)));
+                    const uint32x4_t bytes = vreinterpretq_u32_u8(vrev32q_u8(raw));
+                    static const uint32_t colour_lane[4] = { 0, 0, 0, ~0u };
+                    vst1q_u8((uint8_t*)&sv, vreinterpretq_u8_u32(vbslq_u32(vld1q_u32(colour_lane), bytes, halves)));
+                }
+                else
+#endif
+                {
                 const uint32_t w_xy = vb ? read32(vb, va) : m32(va);
                 const uint32_t w_zf = vb ? read32(vb, va + 4) : m32(va + 4);
                 const uint32_t w_st = vb ? read32(vb, va + 8) : m32(va + 8);
                 const uint32_t w_c = vb ? read32(vb, va + 12) : m32(va + 12);
-                SrcVertex& sv = out[i];
                 sv.x = (int16_t)(w_xy >> 16);
                 sv.y = (int16_t)(w_xy & 0xFFFF);
                 sv.z = (int16_t)(w_zf >> 16);
@@ -2885,7 +2939,7 @@ namespace {
                 sv.s = (int16_t)(w_st >> 16);
                 sv.t = (int16_t)(w_st & 0xFFFF);
                 sv.r = w_c >> 24; sv.g = (w_c >> 16) & 0xFF; sv.b = (w_c >> 8) & 0xFF; sv.a = w_c & 0xFF;
-                const uint32_t vindex = (uint32_t)dst + i;
+                }
                 if (normals) {
                     const uint32_t na = n0 + i * 2;
                     if ((na >> capture::page_shift) != nrm_page) {
