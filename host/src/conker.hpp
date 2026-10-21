@@ -200,6 +200,8 @@ namespace conker {
     // How much wider than 4:3 the Vita build shows the 3D view (1: not at all).
     float vita_widescreen_ratio();
     bool vita_interpolation();
+    bool vita_aim_invert_x();
+    bool vita_aim_invert_y();
     // The Vita port's Extras (host/src/extras.cpp).
     bool vita_skip_intro();
     bool vita_cheat_health();

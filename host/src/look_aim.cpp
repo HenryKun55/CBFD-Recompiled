@@ -271,12 +271,19 @@ namespace {
         return invert == Invert::None || invert == Invert::X;
     }
 }
+#elif defined(__vita__)
+namespace {
+    // The Vita port's menu (Sticks and aiming): aiming left/right and up/down, each normal or
+    // inverted; up/down inverted is the game's own.
+    bool turn_stick_x() { return conker::vita_aim_invert_x(); }
+    bool turn_stick_y() { return !conker::vita_aim_invert_y(); }
+}
 #endif
 
 // The stick's yaw: target - stick x * scale, stored at 0x15120A14 (one state, which then goes on
 // through the next one too) and at 0x15120A44 (every state). Turned around, it's a +.
 extern "C" void conker_look_stick_yaw_a(uint8_t* rdram, recomp_context* ctx) {
-#if defined(CONKER_RT64)
+#if defined(CONKER_RT64) || defined(__vita__)
     if (turn_stick_x()) {
         ctx->f6.fl = ctx->f8.fl + ctx->f18.fl;  // 0x15120A10: sub.s $f6, $f8, $f18
     }
@@ -284,7 +291,7 @@ extern "C" void conker_look_stick_yaw_a(uint8_t* rdram, recomp_context* ctx) {
 }
 
 extern "C" void conker_look_stick_yaw_b(uint8_t* rdram, recomp_context* ctx) {
-#if defined(CONKER_RT64)
+#if defined(CONKER_RT64) || defined(__vita__)
     if (turn_stick_x()) {
         ctx->f18.fl = ctx->f4.fl + ctx->f10.fl;  // 0x15120A40: sub.s $f18, $f4, $f10
     }
@@ -293,7 +300,7 @@ extern "C" void conker_look_stick_yaw_b(uint8_t* rdram, recomp_context* ctx) {
 
 // The stick's pitch: target + stick y * scale, stored at 0x15120A98. Turned around, it's a -.
 extern "C" void conker_look_stick_pitch(uint8_t* rdram, recomp_context* ctx) {
-#if defined(CONKER_RT64)
+#if defined(CONKER_RT64) || defined(__vita__)
     if (turn_stick_y()) {
         ctx->f10.fl = ctx->f6.fl - ctx->f8.fl;  // 0x15120A94: add.s $f10, $f6, $f8
     }
@@ -375,13 +382,15 @@ namespace {
 // tangent of the field of view in use (the camera's + 0x74) against the unzoomed one's (+ 0x6C),
 // as func_1510B128 sets it.
 extern "C" void conker_aim_stick(uint8_t* rdram, recomp_context* ctx) {
-#if defined(CONKER_RT64)
+#if defined(CONKER_RT64) || defined(__vita__)
     if (turn_stick_x()) {
         ctx->f14.fl = -ctx->f14.fl;
     }
     if (turn_stick_y()) {
         ctx->f12.fl = -ctx->f12.fl;
     }
+#endif
+#if defined(CONKER_RT64)
 
     const gpr camera = ctx->r16;
     if (!is_player_one(rdram, camera)) {

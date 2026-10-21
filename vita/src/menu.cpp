@@ -3,11 +3,16 @@
 // It reads the Vita's buttons directly (not through the remapping), so it always works:
 // D-pad or left stick to move, Cross to choose, Circle to go back, SELECT twice to
 // open and close it.
+//
+// The main page leads to a page for each kind of setting (picture, buttons, sticks and aiming,
+// the game, cheats, debug). Every page but the buttons' is a table of rows: a label, the value
+// shown, and what Left/Right and Cross do.
 
 #include <algorithm>
 #include <atomic>
 #include <cstdio>
 #include <filesystem>
+#include <functional>
 #include <mutex>
 
 #include <psp2/kernel/processmgr.h>
@@ -19,7 +24,7 @@ namespace conker::vita::menu {
     namespace {
         using namespace controls;
 
-        enum class Page { Main, Controls, Stick, Debug, Extras };
+        enum class Page { Main, Display, Controls, Sticks, Game, Cheats, Debug, Count };
 
         std::mutex mutex;
         bool open = false;
@@ -29,46 +34,7 @@ namespace conker::vita::menu {
         std::atomic<bool> capture_requested{false}; // the Debug page's "Capture 5 seconds"
         int output_mode = 0; // 0 normal, 1 texture only, 2 shade only, 3 without the blender
         const char* const output_names[] = { "Normal", "Texture only", "Shade only", "No blender" };
-        constexpr int debug_count = 11;
 
-        void set_flag(uint32_t bit, bool on) {
-            uint32_t f = renderer_flags.load();
-            renderer_flags = on ? (f | bit) : (f & ~bit);
-        }
-        void set_output(int mode) {
-            output_mode = (mode + 4) % 4;
-            uint32_t f = renderer_flags.load() & ~(32u | 64u | 128u);
-            if (output_mode == 1) f |= 32;
-            if (output_mode == 2) f |= 64;
-            if (output_mode == 3) f |= 128;
-            renderer_flags = f;
-        }
-        void debug_action(int item, int dir) {
-            const uint32_t f = renderer_flags.load();
-            switch (item) {
-                case 0: set_flag(4, !(f & 4)); break;
-                case 1: set_flag(2, !(f & 2)); break;
-                case 2: set_output(output_mode + dir); break;
-                case 3: set_flag(256, !(f & 256)); break;
-                case 4: set_flag(512, !(f & 512)); break;
-                case 7: set_flag(131072, !(f & 131072)); break;
-                case 8: set_flag(262144, !(f & 262144)); break;
-                case 9: set_flag(524288, !(f & 524288)); break;
-                case 10: set_flag(1048576, !(f & 1048576)); break;
-                case 5:
-                    capture_requested = true;
-                    set_status("Capturing 5 seconds once you close the menu...");
-                    break;
-                case 6: {
-                    std::error_code ec;
-                    std::filesystem::remove_all(CONKER_VITA_DATA_DIR "/" CONKER_SHADER_CACHE_DIR, ec);
-                    std::filesystem::remove_all(CONKER_VITA_DATA_DIR "/shader_cache", ec);
-                    std::filesystem::remove_all(CONKER_VITA_DATA_DIR "/gxm_shader_cache", ec);
-                    set_status("Shader cache cleared (rebuilt as shaders are needed).");
-                    break;
-                }
-            }
-        }
         Page page = Page::Main;
         int cursor = 0;
         int slot = 0;            // the binding column on the controls page
@@ -101,23 +67,18 @@ namespace conker::vita::menu {
             return b;
         }
 
-        static const char* const language_names[] = { "English", "Portugues (Brasil)", "Espanol", "Francais", "Deutsch", "Italiano" };
-        const char* main_items[] = { "Resume", "Controls", "Analog stick", "Widescreen", "Cutscenes", "Skip cutscenes (L)", "Language (text)", "Censorship", "Frame rate", "Extras", "Reset controls to defaults", "Debug", "Quit game" };
-        constexpr int main_count = 13;
-        const char* const extras_items[] = { "Skip intro", "Infinite health", "Infinite lives", "Max cash" };
-        constexpr int extras_count = 4;
-        const char* skip_names[] = { "Watched ones (original)", "Any", "Any, even unskippable" };
-        constexpr int stick_count = 8;
-
-        int item_count() {
-            switch (page) {
-                case Page::Main: return main_count;
-                case Page::Controls: return (int)N64::Count;
-                case Page::Stick: return stick_count;
-                case Page::Debug: return debug_count;
-                case Page::Extras: return extras_count;
-            }
-            return 0;
+        void set_flag(uint32_t bit, bool on) {
+            uint32_t f = renderer_flags.load();
+            renderer_flags = on ? (f | bit) : (f & ~bit);
+        }
+        void toggle_flag(uint32_t bit) { set_flag(bit, !(renderer_flags.load() & bit)); }
+        void set_output(int mode) {
+            output_mode = (mode + 4) % 4;
+            uint32_t f = renderer_flags.load() & ~(32u | 64u | 128u);
+            if (output_mode == 1) f |= 32;
+            if (output_mode == 2) f |= 64;
+            if (output_mode == 3) f |= 128;
+            renderer_flags = f;
         }
 
         void close_menu() {
@@ -128,108 +89,185 @@ namespace conker::vita::menu {
             }
         }
 
-        void adjust_stick(int item, int dir) {
-            Config& c = current();
-            switch (item) {
-                case 0: c.stick = c.stick == StickSource::Left ? StickSource::Right : StickSource::Left; break;
-                case 1: c.deadzone = std::clamp(c.deadzone + dir * 2, 0, 60); break;
-                case 2: c.sensitivity = std::clamp(c.sensitivity + dir * 5, 50, 200); break;
-                case 3: c.invert_x = !c.invert_x; break;
-                case 4: c.invert_y = !c.invert_y; break;
-                case 5: c.stick_threshold = std::clamp(c.stick_threshold + dir * 5, 20, 90); break;
-                case 6: c.invert_other_x = !c.invert_other_x; break;
-                case 7: c.invert_other_y = !c.invert_other_y; break;
+        // Back to the defaults: the buttons and the sticks (aiming included). The picture, the
+        // game's settings and the cheats are kept.
+        void reset_controls() {
+            const Config kept = current();
+            current() = defaults();
+            current().widescreen = kept.widescreen;
+            current().cutscene_4x3 = kept.cutscene_4x3;
+            current().cutscene_skip = kept.cutscene_skip;
+            current().language = kept.language;
+            current().language_chosen = kept.language_chosen;
+            current().censored = kept.censored;
+            current().interpolation = kept.interpolation;
+            current().skip_intro = kept.skip_intro;
+            current().cheat_health = kept.cheat_health;
+            current().cheat_lives = kept.cheat_lives;
+            current().cheat_cash = kept.cheat_cash;
+            save();
+            set_status("Buttons and sticks reset to the defaults.");
+        }
+
+        std::string on_off(bool on) { return on ? "On" : "Off"; }
+        std::string percent(int n) { char b[16]; std::snprintf(b, sizeof(b), "%d%%", n); return b; }
+
+        // A row: its label, the value shown (none: an action or a page), and what Left/Right
+        // (dir -1 or 1) and Cross (dir 0) do.
+        struct Row {
+            const char* label;
+            std::function<std::string()> value;
+            std::function<void(int dir)> change;
+            bool opens_page = false; // shown with a ">"
+        };
+
+        // Cross opens a page; Circle there comes back to the row that opened it.
+        Row open_page(const char* label, Page to) {
+            return { label, nullptr, [to](int dir) { if (dir == 0) { page = to; cursor = 0; slot = 0; } }, true };
+        }
+        // A setting: Cross and Left/Right both change it (dir 0 as forward), then it's saved.
+        Row setting(const char* label, std::function<std::string()> value, std::function<void(int dir)> change) {
+            return { label, std::move(value), [change](int dir) { change(dir == 0 ? 1 : dir); save(); } };
+        }
+        Row toggle(const char* label, bool Config::* field, const char* on = "On", const char* off = "Off") {
+            return setting(label, [=] { return std::string(current().*field ? on : off); },
+                           [=](int) { current().*field = !(current().*field); });
+        }
+        Row action(const char* label, std::function<void()> run) {
+            return { label, nullptr, [run](int dir) { if (dir == 0) run(); } };
+        }
+
+        static const char* const language_names[] = { "English", "Portugues (Brasil)", "Espanol", "Francais", "Deutsch", "Italiano" };
+        static const char* const skip_names[] = { "Watched ones (original)", "Any", "Any, even unskippable" };
+
+        const std::vector<Row>& rows(Page p) {
+            static const std::vector<Row> main_rows = {
+                action("Resume", [] { close_menu(); }),
+                open_page("Picture", Page::Display),
+                open_page("Buttons", Page::Controls),
+                open_page("Sticks and aiming", Page::Sticks),
+                open_page("Game", Page::Game),
+                open_page("Cheats", Page::Cheats),
+                action("Reset buttons and sticks", [] { reset_controls(); }),
+                open_page("Debug", Page::Debug),
+                action("Quit game", [] { quit = true; }),
+            };
+            static const std::vector<Row> display_rows = {
+                toggle("Widescreen", &Config::widescreen, "16:9", "4:3 (original)"),
+                setting("Cutscenes", [] {
+                    return std::string(!current().widescreen ? "4:3 (as the game)" : current().cutscene_4x3 ? "4:3 (original)" : "16:9");
+                }, [](int) { current().cutscene_4x3 = !current().cutscene_4x3; }),
+                toggle("Frame rate", &Config::interpolation, "Up to 60 (interpolated)", "30 (original)"),
+            };
+            static const std::vector<Row> stick_rows = {
+                setting("N64 stick from", [] { return std::string(stick_name(current().stick)); },
+                        [](int) { current().stick = current().stick == StickSource::Left ? StickSource::Right : StickSource::Left; }),
+                setting("Dead zone", [] { return percent(current().deadzone); },
+                        [](int dir) { current().deadzone = std::clamp(current().deadzone + dir * 2, 0, 60); }),
+                setting("Sensitivity", [] { return percent(current().sensitivity); },
+                        [](int dir) { current().sensitivity = std::clamp(current().sensitivity + dir * 5, 50, 200); }),
+                toggle("N64 stick invert X", &Config::invert_x),
+                toggle("N64 stick invert Y", &Config::invert_y),
+                setting("Stick as buttons at", [] { return percent(current().stick_threshold); },
+                        [](int dir) { current().stick_threshold = std::clamp(current().stick_threshold + dir * 5, 20, 90); }),
+                toggle("Camera stick invert X", &Config::invert_other_x),
+                toggle("Camera stick invert Y", &Config::invert_other_y),
+                toggle("Aiming left/right", &Config::aim_invert_x, "Inverted", "Normal (original)"),
+                toggle("Aiming up/down", &Config::aim_invert_y, "Inverted (original)", "Normal"),
+            };
+            static const std::vector<Row> game_rows = {
+                setting("Language (text)", [] { return std::string(language_names[std::clamp(current().language, 0, 5)]); },
+                        [](int dir) { current().language = (current().language + (dir < 0 ? 5 : 1)) % 6; current().language_chosen = true; }),
+                toggle("Censorship", &Config::censored, "On (symbols)", "Off (swear words)"),
+                setting("Skip cutscenes (L)", [] { return std::string(skip_names[current().cutscene_skip]); },
+                        [](int dir) { current().cutscene_skip = (current().cutscene_skip + (dir < 0 ? 2 : 1)) % 3; }),
+                toggle("Skip intro", &Config::skip_intro),
+            };
+            static const std::vector<Row> cheat_rows = {
+                toggle("Infinite health", &Config::cheat_health),
+                toggle("Infinite lives", &Config::cheat_lives),
+                toggle("Max cash", &Config::cheat_cash),
+            };
+            static const std::vector<Row> debug_rows = {
+                { "Depth test", [] { return std::string((renderer_flags.load() & 4) ? "Off" : "On"); }, [](int) { toggle_flag(4); } },
+                { "Back-face culling", [] { return std::string((renderer_flags.load() & 2) ? "Off" : "On"); }, [](int) { toggle_flag(2); } },
+                { "Colour output", [] { return std::string(output_names[output_mode]); }, [](int dir) { set_output(output_mode + (dir < 0 ? -1 : 1)); } },
+                { "Wait for the GPU each frame", [] { return on_off(renderer_flags.load() & 256); }, [](int) { toggle_flag(256); } },
+                { "Log the water (each frame)", [] { return on_off(renderer_flags.load() & 512); }, [](int) { toggle_flag(512); } },
+                action("Capture 5 seconds (for Claude)", [] {
+                    capture_requested = true;
+                    set_status("Capturing 5 seconds once you close the menu...");
+                }),
+                action("Clear shader cache", [] {
+                    std::error_code ec;
+                    std::filesystem::remove_all(CONKER_VITA_DATA_DIR "/" CONKER_SHADER_CACHE_DIR, ec);
+                    std::filesystem::remove_all(CONKER_VITA_DATA_DIR "/shader_cache", ec);
+                    std::filesystem::remove_all(CONKER_VITA_DATA_DIR "/gxm_shader_cache", ec);
+                    set_status("Shader cache cleared (rebuilt as shaders are needed).");
+                }),
+                { "Draw shadows", [] { return std::string((renderer_flags.load() & 131072) ? "Off" : "On"); }, [](int) { toggle_flag(131072); } },
+                { "Decal depth bias", [] { return std::string((renderer_flags.load() & 262144) ? "Strong" : "Normal"); }, [](int) { toggle_flag(262144); } },
+                { "Perf test: skip triangles", [] { return on_off(renderer_flags.load() & 524288); }, [](int) { toggle_flag(524288); } },
+                { "Perf test: skip texture loads", [] { return on_off(renderer_flags.load() & 1048576); }, [](int) { toggle_flag(1048576); } },
+            };
+            static const std::vector<Row> none;
+            switch (p) {
+                case Page::Main: return main_rows;
+                case Page::Display: return display_rows;
+                case Page::Sticks: return stick_rows;
+                case Page::Game: return game_rows;
+                case Page::Cheats: return cheat_rows;
+                case Page::Debug: return debug_rows;
+                default: return none;
             }
         }
 
-        void toggle_extra(int item) {
-            Config& c = current();
-            switch (item) {
-                case 0: c.skip_intro = !c.skip_intro; break;
-                case 1: c.cheat_health = !c.cheat_health; break;
-                case 2: c.cheat_lives = !c.cheat_lives; break;
-                case 3: c.cheat_cash = !c.cheat_cash; break;
-            }
-            save();
+        // Each page's title, the main page's row that opens it, and its notes at the bottom.
+        struct PageInfo { const char* title; int main_row; const char* notes[2]; };
+        const PageInfo page_info[(int)Page::Count] = {
+            { "Conker's Bad Fur Day", 0, { "Cross: choose    Circle: back    SELECT twice: close",
+                                           "Tip: pause the game (START) before changing settings." } },
+            { "Picture", 1, { "Left/Right or Cross: change    Circle: back",
+                              "Up to 60: shadows, footprints and dust still move at 30." } },
+            { "Buttons", 2, { "Cross: bind  Left/Right: column  Triangle: clear  Circle: back", nullptr } },
+            { "Sticks and aiming", 3, { "Left/Right or Cross: change    Circle: back",
+                                        "Aiming: hold R, the scope, the slingshot, the guns." } },
+            { "Game", 4, { "Left/Right or Cross: change    Circle: back",
+                           "Skip intro: from the next start, the game opens at the bar." } },
+            { "Cheats", 5, { "Cross: on/off    Circle: back",
+                             "Player 1's, as the PC version's Cheats mod." } },
+            { "Debug", 7, { "Cross / Left/Right: change    Circle: back",
+                            "For finding rendering problems; not saved." } },
+        };
+
+        int item_count() {
+            return page == Page::Controls ? (int)N64::Count : (int)rows(page).size();
         }
 
         void press(uint32_t button) {
             const int count = item_count();
+            const bool left_right = button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT;
             if (button == SCE_CTRL_UP) cursor = (cursor + count - 1) % count;
             else if (button == SCE_CTRL_DOWN) cursor = (cursor + 1) % count;
-            else if (page == Page::Controls && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) slot ^= 1;
-            else if (page == Page::Stick && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) adjust_stick(cursor, button == SCE_CTRL_LEFT ? -1 : 1);
-            else if (page == Page::Extras && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) toggle_extra(cursor);
-            else if (page == Page::Main && cursor >= 4 && cursor <= 8 && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT)) {
-                if (cursor == 4) current().cutscene_4x3 = !current().cutscene_4x3;
-                else if (cursor == 5) current().cutscene_skip = (current().cutscene_skip + (button == SCE_CTRL_LEFT ? 2 : 1)) % 3;
-                else if (cursor == 6) { current().language = (current().language + (button == SCE_CTRL_LEFT ? 5 : 1)) % 6; current().language_chosen = true; }
-                else if (cursor == 7) current().censored = !current().censored;
-                else current().interpolation = !current().interpolation;
-                save();
-            }
-            else if (page == Page::Debug && (button == SCE_CTRL_LEFT || button == SCE_CTRL_RIGHT) && cursor != 5 && cursor != 6) debug_action(cursor, button == SCE_CTRL_LEFT ? -1 : 1);
             else if (button == SCE_CTRL_CIRCLE) {
                 if (page == Page::Main) close_menu();
-                else { cursor = page == Page::Controls ? 1 : page == Page::Stick ? 2 : page == Page::Extras ? 9 : 11; page = Page::Main; save(); }
+                else { cursor = page_info[(int)page].main_row; page = Page::Main; save(); }
             }
-            else if (button == SCE_CTRL_TRIANGLE && page == Page::Controls) {
-                current().bindings[cursor][slot] = Input::None;
-            }
-            else if (button == SCE_CTRL_CROSS) {
-                if (page == Page::Main) {
-                    switch (cursor) {
-                        case 0: close_menu(); break;
-                        case 1: page = Page::Controls; cursor = 0; slot = 0; break;
-                        case 2: page = Page::Stick; cursor = 0; break;
-                        case 3: current().widescreen = !current().widescreen; save(); break;
-                        case 4: current().cutscene_4x3 = !current().cutscene_4x3; save(); break;
-                        case 5: current().cutscene_skip = (current().cutscene_skip + 1) % 3; save(); break;
-                        case 6: current().language = (current().language + 1) % 6; current().language_chosen = true; save(); break;
-                        case 7: current().censored = !current().censored; save(); break;
-                        case 8: current().interpolation = !current().interpolation; save(); break;
-                        case 9: page = Page::Extras; cursor = 0; break;
-                        case 10: {
-                            const Config kept = current();
-                            current() = defaults();
-                            current().widescreen = kept.widescreen;
-                            current().cutscene_4x3 = kept.cutscene_4x3;
-                            current().cutscene_skip = kept.cutscene_skip;
-                            current().language = kept.language;
-                            current().language_chosen = kept.language_chosen;
-                            current().censored = kept.censored;
-                            current().interpolation = kept.interpolation;
-                            current().skip_intro = kept.skip_intro;
-                            current().cheat_health = kept.cheat_health;
-                            current().cheat_lives = kept.cheat_lives;
-                            current().cheat_cash = kept.cheat_cash;
-                            save();
-                            set_status("Controls reset to the defaults.");
-                            break;
-                        }
-                        case 11: page = Page::Debug; cursor = 0; break;
-                        case 12: quit = true; break;
-                    }
-                }
-                else if (page == Page::Controls) {
+            else if (page == Page::Controls) {
+                if (left_right) slot ^= 1;
+                else if (button == SCE_CTRL_TRIANGLE) current().bindings[cursor][slot] = Input::None;
+                else if (button == SCE_CTRL_CROSS) {
                     capturing = true;
                     capture_armed = false;
                     capture_start = now_us();
                 }
-                else if (page == Page::Stick) {
-                    adjust_stick(cursor, 1);
-                }
-                else if (page == Page::Debug) {
-                    debug_action(cursor, 1);
-                }
-                else if (page == Page::Extras) {
-                    toggle_extra(cursor);
-                }
             }
-        }
-
-        std::string padded(const std::string& s, size_t n) {
-            return s.size() >= n ? s : s + std::string(n - s.size(), ' ');
+            else {
+                const Row& row = rows(page)[cursor];
+                // Left/Right only change values (not open pages or run actions).
+                if (left_right && row.value) row.change(button == SCE_CTRL_LEFT ? -1 : 1);
+                else if (button == SCE_CTRL_CROSS) row.change(0);
+            }
         }
     }
 
@@ -333,35 +371,19 @@ namespace conker::vita::menu {
         auto text = [&](float x, float y, const std::string& s, uint32_t color, float scale = 0.8f) {
             items.push_back({ Item::Text, x, y, scale, 0, color, s });
         };
-        const char* titles[] = { "Conker's Bad Fur Day", "Controls", "Analog stick", "Debug", "Extras" };
-        text(x0 + 24, y0 + 16, titles[(int)page], 0xFFC34DFF, 1.0f);
+        const PageInfo& info = page_info[(int)page];
+        text(x0 + 24, y0 + 16, info.title, 0xFFC34DFF, 1.0f);
 
-        const float row_h = page == Page::Controls ? 24.0f : page == Page::Main ? 25.0f : page == Page::Debug ? 30.0f : 34.0f;
+        // The rows share what's left between the title and the notes, at most 34 px each.
+        const int count = item_count();
         const float list_y = y0 + (page == Page::Controls ? 82 : 62);
+        const float list_bottom = y0 + h - (page == Page::Controls ? 40 : 110);
+        const float row_h = std::min(34.0f, (list_bottom - list_y) / (float)std::max(count, 1));
         auto row_highlight = [&](int i) {
             items.push_back({ Item::Rect, x0 + 12, list_y + i * row_h - 3, w - 24, row_h, 0x3A3A55FF, "" });
         };
 
-        if (page == Page::Main) {
-            for (int i = 0; i < main_count; i++) {
-                if (i == cursor) row_highlight(i);
-                text(x0 + 30, list_y + i * row_h, main_items[i], i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
-                if (i == 3) {
-                    text(x0 + 360, list_y + i * row_h, current().widescreen ? "16:9" : "4:3 (original)", i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
-                }
-                const char* value = i == 4 ? (!current().widescreen ? "4:3 (as the game)" : current().cutscene_4x3 ? "4:3 (original)" : "16:9")
-                                  : i == 5 ? skip_names[current().cutscene_skip]
-                                  : i == 6 ? language_names[std::clamp(current().language, 0, 5)]
-                                  : i == 7 ? (current().censored ? "On (symbols)" : "Off (swear words)")
-                                  : i == 8 ? (current().interpolation ? "Up to 60 (interpolated)" : "30 (original)") : nullptr;
-                if (value) {
-                    text(x0 + 360, list_y + i * row_h, value, i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
-                }
-            }
-            text(x0 + 24, y0 + h - 70, "Cross: choose    Circle: back    SELECT twice: close", 0x8888A0FF, 0.62f);
-            text(x0 + 24, y0 + h - 44, "Tip: pause the game (START) before changing settings.", 0x8888A0FF, 0.62f);
-        }
-        else if (page == Page::Controls) {
+        if (page == Page::Controls) {
             const Config& c = current();
             text(x0 + 30, list_y - 24, "N64", 0x8888A0FF, 0.62f);
             text(x0 + 200, list_y - 24, "Vita (1)", 0x8888A0FF, 0.62f);
@@ -380,65 +402,21 @@ namespace conker::vita::menu {
                     text(x0 + (k == 0 ? 200 : 420), y, name, col, 0.68f);
                 }
             }
-            text(x0 + 24, y0 + h - 30, "Cross: bind  Left/Right: column  Triangle: clear  Circle: back", 0x8888A0FF, 0.6f);
-        }
-        else if (page == Page::Extras) {
-            const Config& c = current();
-            const bool on[extras_count] = { c.skip_intro, c.cheat_health, c.cheat_lives, c.cheat_cash };
-            for (int i = 0; i < extras_count; i++) {
-                if (i == cursor) row_highlight(i);
-                text(x0 + 30, list_y + i * row_h, extras_items[i], i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
-                text(x0 + 360, list_y + i * row_h, on[i] ? "On" : "Off", i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
-            }
-            text(x0 + 24, y0 + h - 100, "Skip intro: from the next start, the game opens at the bar.", 0x8888A0FF, 0.62f);
-            text(x0 + 24, y0 + h - 70, "Cross: on/off    Circle: back", 0x8888A0FF, 0.62f);
-            text(x0 + 24, y0 + h - 44, "The cheats are player 1's, as the PC version's Cheats mod.", 0x8888A0FF, 0.62f);
-        }
-
-        else if (page == Page::Debug) {
-            const uint32_t f = renderer_flags.load();
-            const std::string rows[debug_count][2] = {
-                { "Depth test", (f & 4) ? "Off" : "On" },
-                { "Back-face culling", (f & 2) ? "Off" : "On" },
-                { "Colour output", output_names[output_mode] },
-                { "Wait for the GPU each frame", (f & 256) ? "On" : "Off" },
-                { "Log the water (each frame)", (f & 512) ? "On" : "Off" },
-                { "Capture 5 seconds (for Claude)", "" },
-                { "Clear shader cache", "" },
-                { "Draw shadows", (f & 131072) ? "Off" : "On" },
-                { "Decal depth bias", (f & 262144) ? "Strong" : "Normal" },
-                { "Perf test: skip triangles", (f & 524288) ? "On" : "Off" },
-                { "Perf test: skip texture loads", (f & 1048576) ? "On" : "Off" },
-            };
-            for (int i = 0; i < debug_count; i++) {
-                if (i == cursor) row_highlight(i);
-                const uint32_t col = i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF;
-                text(x0 + 30, list_y + i * row_h, rows[i][0], col);
-                text(x0 + 360, list_y + i * row_h, rows[i][1], col);
-            }
-            text(x0 + 24, y0 + h - 70, "Cross / Left/Right: change    Circle: back", 0x8888A0FF, 0.62f);
-            text(x0 + 24, y0 + h - 44, "For finding rendering problems; not saved.", 0x8888A0FF, 0.62f);
+            text(x0 + 24, y0 + h - 30, info.notes[0], 0x8888A0FF, 0.6f);
         }
         else {
-            const Config& c = current();
-            char buf[64];
-            std::string rows[stick_count];
-            rows[0] = padded("N64 stick from", 22) + stick_name(c.stick);
-            std::snprintf(buf, sizeof(buf), "%d%%", c.deadzone); rows[1] = padded("Dead zone", 22) + buf;
-            std::snprintf(buf, sizeof(buf), "%d%%", c.sensitivity); rows[2] = padded("Sensitivity", 22) + buf;
-            rows[3] = padded("N64 stick invert X", 22) + (c.invert_x ? "On" : "Off");
-            rows[4] = padded("N64 stick invert Y", 22) + (c.invert_y ? "On" : "Off");
-            std::snprintf(buf, sizeof(buf), "%d%%", c.stick_threshold); rows[5] = padded("Stick as buttons at", 22) + buf;
-            rows[6] = padded("Other stick invert X", 22) + (c.invert_other_x ? "On" : "Off");
-            rows[7] = padded("Other stick invert Y", 22) + (c.invert_other_y ? "On" : "Off");
-            for (int i = 0; i < stick_count; i++) {
+            const std::vector<Row>& list = rows(page);
+            for (int i = 0; i < count; i++) {
+                const float y = list_y + i * row_h;
+                const uint32_t col = i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF;
                 if (i == cursor) row_highlight(i);
-                const size_t split = rows[i].find_first_not_of(' ', 22) == std::string::npos ? 22 : 22;
-                text(x0 + 30, list_y + i * row_h, rows[i].substr(0, split), i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
-                text(x0 + 360, list_y + i * row_h, rows[i].substr(split), i == cursor ? 0xFFFFFFFF : 0xB8B8C8FF);
+                const Row& row = list[i];
+                text(x0 + 30, y, row.opens_page ? std::string(row.label) + "  >" : row.label, col);
+                if (row.value) text(x0 + 360, y, row.value(), col);
             }
-            text(x0 + 24, y0 + h - 70, "Left/Right: change    Circle: back", 0x8888A0FF, 0.62f);
-            text(x0 + 24, y0 + h - 44, "The other stick's directions can be bound to buttons.", 0x8888A0FF, 0.62f);
+            for (int k = 0; k < 2; k++) {
+                if (info.notes[k]) text(x0 + 24, y0 + h - 70 + k * 26, info.notes[k], 0x8888A0FF, 0.62f);
+            }
         }
         if (!status.empty() && now_us() < status_until) {
             text(x0 + 24, y0 + h - 100, status, 0x7CE38BFF, 0.7f);
