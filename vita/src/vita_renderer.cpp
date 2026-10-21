@@ -976,9 +976,11 @@ namespace {
     };
 
     // A raw or done vertex lit, coloured and mapped onto its textures (not its flat colour).
-    inline void finish_one(const CommandList& list, const VertexIn& v, GLVertex& g) {
+    // clamp: its depth clamped to the range here (exact only when the whole triangle is on one
+    // side of the range's edge; split_depth does the others).
+    inline void finish_one(const CommandList& list, const VertexIn& v, GLVertex& g, bool clamp = true) {
         g.x = v.x; g.y = v.y; g.z = v.z; g.w = v.w;
-        if (g.w > 0.0f) {
+        if (clamp && g.w > 0.0f) {
             const float lim = g.w * 0.99999f;
             g.z = g.z > lim ? lim : (g.z < -lim ? -lim : g.z);
         }
@@ -1063,6 +1065,38 @@ namespace {
 
     constexpr float deferred_w_cut = 1e-3f; // as the reader's w_cut
 
+    // The depth range's edges, as finish_one clamps to them: z = -k w (near) and z = k w (far).
+    constexpr float depth_k = 0.99999f;
+
+    inline GLVertex lerp_gl(const GLVertex& a, const GLVertex& b, float t) {
+        auto lf = [t](float x, float y) { return x + (y - x) * t; };
+        GLVertex o;
+        o.x = lf(a.x, b.x); o.y = lf(a.y, b.y); o.z = lf(a.z, b.z); o.w = lf(a.w, b.w);
+        for (int i = 0; i < 4; i++) o.color[i] = (uint8_t)std::lround(lf(a.color[i], b.color[i]));
+        o.u0 = lf(a.u0, b.u0); o.v0 = lf(a.v0, b.v0); o.u1 = lf(a.u1, b.u1); o.v1 = lf(a.v1, b.v1);
+        return o;
+    }
+
+    // A convex polygon (finished vertices, w > 0) split by k w + s z = 0 (s 1: the near edge, -1:
+    // the far one) into its part inside the depth range and its part outside. What the GPU
+    // interpolates (clip-space position, colour, texture coordinates) is linear in clip space,
+    // so the new vertices are exact.
+    inline void split_poly(const GLVertex* in, int n, float s, GLVertex* inside, int& ni, GLVertex* outside, int& no) {
+        ni = no = 0;
+        for (int i = 0; i < n; i++) {
+            const GLVertex& a = in[i];
+            const GLVertex& b = in[(i + 1) % n];
+            const float da = depth_k * a.w + s * a.z, db = depth_k * b.w + s * b.z;
+            if (da >= 0.0f) inside[ni++] = a;
+            else outside[no++] = a;
+            if ((da >= 0.0f) != (db >= 0.0f)) {
+                const GLVertex m = lerp_gl(a, b, da / (da - db));
+                inside[ni++] = m;
+                outside[no++] = m;
+            }
+        }
+    }
+
     inline VertexIn lerp_in(const VertexIn& a, const VertexIn& b, float t, bool normals) {
         auto lf = [t](float x, float y) { return x + (y - x) * t; };
         auto li = [t](int x, int y) { return (int)std::lround(x + (y - x) * t); };
@@ -1106,6 +1140,40 @@ namespace {
             return p;
         }
     };
+
+    // A convex polygon as a fan of the draw's (from vb) vertices.
+    inline void emit_fan(ExpandScratch& x, size_t vb, const GLVertex* p, int n) {
+        if (n < 3) return;
+        const uint16_t first = (uint16_t)(x.nv - vb);
+        GLVertex* out = x.grow_v(n);
+        for (int i = 0; i < n; i++) out[i] = p[i];
+        uint16_t* ix = x.grow_i((uint32_t)(n - 2) * 3);
+        for (int i = 1; i + 1 < n; i++) {
+            *ix++ = first;
+            *ix++ = (uint16_t)(first + i);
+            *ix++ = (uint16_t)(first + i + 1);
+        }
+    }
+
+    // A polygon (finished, depth not clamped, w > 0) drawn with the RDP's depth: it clamps each
+    // pixel's depth to the range, the GPU clips there. Its part nearer than the near edge is
+    // drawn at the near edge, its part past the far edge at the far edge, the rest as it is.
+    // (Clamping each vertex instead moved the whole triangle's depth: a railing or a plank
+    // running past the camera got the depth of its far end and the ladder behind it showed
+    // through.)
+    inline void emit_depth_split(ExpandScratch& x, size_t vb, const GLVertex* p, int n) {
+        GLVertex in_near[8], out_near[8], in_far[9], out_far[9];
+        int n_in, n_out;
+        split_poly(p, n, 1.0f, in_near, n_in, out_near, n_out);
+        for (int i = 0; i < n_out; i++) out_near[i].z = -depth_k * out_near[i].w;
+        emit_fan(x, vb, out_near, n_out);
+        if (n_in < 3) return;
+        int f_in, f_out;
+        split_poly(in_near, n_in, -1.0f, in_far, f_in, out_far, f_out);
+        for (int i = 0; i < f_out; i++) out_far[i].z = depth_k * out_far[i].w;
+        emit_fan(x, vb, in_far, f_in);
+        emit_fan(x, vb, out_far, f_out);
+    }
 
     // A draw's stretch of the geometry stream made into its vertices and indices (scratch.verts/
     // idx from 0): the loads worked out into the slots; for each triangle what the reader did
@@ -1170,8 +1238,16 @@ namespace {
                 if (zero || (cull == TRI_CULL_FRONT ? !below : below)) continue;
             }
             const bool flat = (t.flags & TRI_FLAT) != 0, zprim = (t.flags & TRI_ZPRIM) != 0;
-            const bool cut = (v[0]->w <= deferred_w_cut || v[1]->w <= deferred_w_cut || v[2]->w <= deferred_w_cut) && !(dbg & 16384);
-            if (cut) {
+            const bool behind = v[0]->w <= deferred_w_cut || v[1]->w <= deferred_w_cut || v[2]->w <= deferred_w_cut;
+            const bool cut = behind && !(dbg & 16384);
+            // Debug (flag 8): each vertex's depth clamped to the range, as before, triangles
+            // across its edges too.
+            const bool vertex_clamp = (dbg & 8) != 0;
+            // Across the near or far edge of the depth range (some of its vertices beyond it,
+            // not all): split there (emit_depth_split). A primitive depth is inside the range.
+            const uint32_t c_any = v[0]->clip | v[1]->clip | v[2]->clip, c_all = v[0]->clip & v[1]->clip & v[2]->clip;
+            const bool across = !behind && !zprim && ((c_any & ~c_all) & 48) != 0;
+            if (cut || (across && !vertex_clamp)) {
                 // Cut at the camera's plane to its part in front (a fan of up to four vertices).
                 VertexIn tri[3];
                 for (int i = 0; i < 3; i++) {
@@ -1184,31 +1260,33 @@ namespace {
                 }
                 VertexIn poly[4];
                 int n = 0;
-                for (int i = 0; i < 3; i++) {
-                    const VertexIn& a = tri[i];
-                    const VertexIn& b = tri[(i + 1) % 3];
-                    const float da = a.w - deferred_w_cut, db = b.w - deferred_w_cut;
-                    if (da >= 0.0f) poly[n++] = a;
-                    if ((da >= 0.0f) != (db >= 0.0f) && n < 4) poly[n++] = lerp_in(a, b, da / (da - db), normals);
+                if (cut) {
+                    for (int i = 0; i < 3; i++) {
+                        const VertexIn& a = tri[i];
+                        const VertexIn& b = tri[(i + 1) % 3];
+                        const float da = a.w - deferred_w_cut, db = b.w - deferred_w_cut;
+                        if (da >= 0.0f) poly[n++] = a;
+                        if ((da >= 0.0f) != (db >= 0.0f) && n < 4) poly[n++] = lerp_in(a, b, da / (da - db), normals);
+                    }
+                }
+                else {
+                    for (int i = 0; i < 3; i++) poly[n++] = tri[i];
                 }
                 if (n < 3) continue;
-                const uint16_t first = (uint16_t)(x.nv - vb);
-                GLVertex* out = x.grow_v(n);
+                // Up to 17 vertices once split: past 16 bits of indices, clamped as before.
+                const bool split = !vertex_clamp && x.nv - vb + 17 <= 65535;
+                GLVertex out[4];
                 for (int i = 0; i < n; i++) {
                     if (flat && i == 0) {
                         poly[0].r = tri[0].r; poly[0].g = tri[0].g; poly[0].b = tri[0].b; poly[0].a = tri[0].a;
                     }
-                    finish_one(list, poly[i], out[i]);
+                    finish_one(list, poly[i], out[i], !split);
                     if (flat && i > 0) {
                         out[i].color[0] = out[0].color[0]; out[i].color[1] = out[0].color[1]; out[i].color[2] = out[0].color[2];
                     }
                 }
-                uint16_t* ix = x.grow_i((uint32_t)(n - 2) * 3);
-                for (int i = 1; i + 1 < n; i++) {
-                    *ix++ = first;
-                    *ix++ = (uint16_t)(first + i);
-                    *ix++ = (uint16_t)(first + i + 1);
-                }
+                if (split) emit_depth_split(x, vb, out, n);
+                else emit_fan(x, vb, out, n);
                 continue;
             }
             uint16_t* ix = x.grow_i(3);
@@ -1274,6 +1352,29 @@ namespace {
         }
     }
 
+
+    // Debug (the capture): a deferred draw's vertices as the expander made them, summed up: the
+    // first's clip-space position, the range of depth (z/w, -1..1 the GPU's near..far), of w and
+    // of the screen, and how many sit on the near or far edge (clamped or split there).
+    inline void log_expanded(const CommandList& list, const DrawCmd& d, const ExpandScratch& x, uint32_t index) {
+        float z0 = 1e9f, z1 = -1e9f, w0 = 1e9f, w1 = -1e9f, sx0 = 1e9f, sx1 = -1e9f, sy0 = 1e9f, sy1 = -1e9f;
+        uint32_t at_near = 0, at_far = 0;
+        for (uint32_t i = 0; i < d.vcount; i++) {
+            const GLVertex& v = x.verts[d.vbase + i];
+            const float iw = v.w > 1e-9f ? 1.0f / v.w : 0.0f;
+            const float zn = v.z * iw;
+            z0 = std::min(z0, zn); z1 = std::max(z1, zn);
+            w0 = std::min(w0, v.w); w1 = std::max(w1, v.w);
+            sx0 = std::min(sx0, v.x * iw); sx1 = std::max(sx1, v.x * iw);
+            sy0 = std::min(sy0, v.y * iw); sy1 = std::max(sy1, v.y * iw);
+            if (zn <= -0.99998f) at_near++;
+            if (zn >= 0.99998f) at_far++;
+        }
+        const GLVertex* f = d.vcount ? &x.verts[d.vbase] : nullptr;
+        std::fprintf(stderr, "[dexp] L%u #%u v=%u i=%u v0(%.2f %.2f %.3f %.3f) z/w[%.4f %.4f] w[%.3f %.3f] ndc x[%.2f %.2f] y[%.2f %.2f] near=%u far=%u\n",
+            list.serial, index, d.vcount, d.icount, f ? f->x : 0.0f, f ? f->y : 0.0f, f ? f->z : 0.0f, f ? f->w : 0.0f,
+            z0, z1, w0, w1, sx0, sx1, sy0, sy1, at_near, at_far);
+    }
 
     // Debug: a draw's finished vertices, summed up (from the back).
     inline void log_finished(const CommandList& list, const DrawCmd& d) {
@@ -4091,7 +4192,8 @@ namespace {
             return false;
         }();
         uint32_t dumped_textures = 0;
-        // debug_flags: 1 no clip rejection, 2 no culling, 4 no depth test; the output of
+        // debug_flags: 1 no clip rejection, 2 no culling, 4 no depth test, 8 depth clamped at
+        // each vertex (deferred geometry: triangles across the range's edges not split); the output of
         // the combiner's draws: 32 the first texture only, 64 the shade only, 128 without
         // the blender; 256 the GPU finishes each display list. From the file debug_flags
         // and the menu's Debug page.
@@ -4488,6 +4590,23 @@ namespace {
             d.vcount = (uint32_t)batch.size();
             d.raw = batch_raw;
             d.debug = dumping();
+            if (deferred_tris && dumping()) {
+                // The capture's deferred batches: their state (the expander logs the vertices
+                // it made of them as [dexp] with the same list and draw numbers).
+                uint32_t tris = 0, loads = 0, zprims = 0;
+                float pz = 0.0f;
+                for (size_t i = tri_base; i < list->tris.size(); i++) {
+                    const TriRec& r = list->tris[i];
+                    if (r.flags & REC_LOAD) { loads++; continue; }
+                    if (r.flags & TRI_SKIP) continue;
+                    tris++;
+                    if (r.flags & TRI_ZPRIM) { zprims++; pz = r.prim_z; }
+                }
+                std::fprintf(stderr, "[ddraw] L%u #%u tris=%u loads=%u cc=%06X:%08X omh=%06X oml=%08X geo=%06X tile=%u t0=%u t1=%u blend=%d(%X,%X) cw=%d zt=%d zw=%d dec=%d zmode=%u zprim=%u(%.4f) sc(%d %d %d %d)\n",
+                    list->serial, (unsigned)list->draws.size() - 1, tris, loads, s.dbg_cc0, s.dbg_cc1, s.dbg_omh, s.dbg_oml, s.dbg_geo, s.dbg_tile,
+                    s.tex[0], s.tex[1], s.blend, s.blend_src, s.blend_dst, s.color_write, d.depth_test, d.depth_write, d.decal,
+                    (s.dbg_oml >> OML_ZMODE_SHIFT) & 3, zprims, pz, s.scissor[0], s.scissor[1], s.scissor[2], s.scissor[3]);
+            }
             if (deferred_tris) {
                 d.deferred = true;
                 d.tbase = (uint32_t)tri_base;

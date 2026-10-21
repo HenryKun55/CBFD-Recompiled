@@ -1196,7 +1196,10 @@ private:
             x.idx.swap(list.didx);
             x.nv = x.ni = 0;
             for (DrawCmd& d : list.draws) {
-                if (d.deferred) expand_triangles(list, d, x);
+                if (d.deferred) {
+                    expand_triangles(list, d, x);
+                    if (d.debug) log_expanded(list, d, x, (uint32_t)(&d - list.draws.data()));
+                }
             }
             x.verts.swap(list.dverts);
             x.idx.swap(list.didx);
