@@ -568,6 +568,14 @@ func = "func_151284C4"
 before_vram = 0x151284C8
 text = "{ extern void conker_mouse_camera(uint8_t*, recomp_context*); conker_mouse_camera(rdram, ctx); }"
 
+# Camera: avoid walls (the Vita's, vita/src/vita_hooks.cpp; nothing on the desktop). The hook
+# above may draw the view from an eye pulled in towards Conker, put at +0x2F8 for func_1512C490;
+# once it returns, the game's own eye is put back, so only the view moves ($a0 saved at $sp + 0x18).
+[[patches.hook]]
+func = "func_151284C4"
+before_vram = 0x151284D4
+text = "{ extern void conker_camera_view_done(uint8_t*, recomp_context*); conker_camera_view_done(rdram, ctx); }"
+
 [[patches.hook]]
 func = "func_15120158"
 before_vram = 0x1512015C

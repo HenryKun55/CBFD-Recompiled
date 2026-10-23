@@ -284,6 +284,7 @@ namespace conker::vita::controls {
             else if (!std::strcmp(key, "LanguageChosen")) config.language_chosen = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Censored")) config.censored = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Interpolation")) config.interpolation = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "CameraAvoidWalls")) config.camera_avoid_walls = std::atoi(a) != 0;
             else if (!std::strcmp(key, "SkipIntro")) config.skip_intro = std::atoi(a) != 0;
             else if (!std::strcmp(key, "InfiniteHealth")) config.cheat_health = std::atoi(a) != 0;
             else if (!std::strcmp(key, "InfiniteLives")) config.cheat_lives = std::atoi(a) != 0;
@@ -310,12 +311,12 @@ namespace conker::vita::controls {
             if (b != Input::None) std::fprintf(f, "%s = %s, %s\n", n64_names[i], input_names[(int)a], input_names[(int)b]);
             else std::fprintf(f, "%s = %s\n", n64_names[i], input_names[(int)a]);
         }
-        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nInvertOtherX = %d\nInvertOtherY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nLanguageChosen = %d\nCensored = %d\nInterpolation = %d\nSkipIntro = %d\nInfiniteHealth = %d\nInfiniteLives = %d\nMaxCash = %d\nAimInvertX = %d\nAimInvertY = %d\nAimCameraStick = %d\n",
+        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nInvertOtherX = %d\nInvertOtherY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nLanguageChosen = %d\nCensored = %d\nInterpolation = %d\nSkipIntro = %d\nInfiniteHealth = %d\nInfiniteLives = %d\nMaxCash = %d\nAimInvertX = %d\nAimInvertY = %d\nAimCameraStick = %d\nCameraAvoidWalls = %d\n",
             config.stick == StickSource::Right ? "Right" : "Left", config.deadzone, config.sensitivity,
             config.invert_x ? 1 : 0, config.invert_y ? 1 : 0, config.invert_other_x ? 1 : 0, config.invert_other_y ? 1 : 0, config.stick_threshold, config.widescreen ? 1 : 0,
             config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.language_chosen ? 1 : 0, config.censored ? 1 : 0, config.interpolation ? 1 : 0,
             config.skip_intro ? 1 : 0, config.cheat_health ? 1 : 0, config.cheat_lives ? 1 : 0, config.cheat_cash ? 1 : 0,
-            config.aim_invert_x ? 1 : 0, config.aim_invert_y ? 1 : 0, config.aim_camera_stick ? 1 : 0);
+            config.aim_invert_x ? 1 : 0, config.aim_invert_y ? 1 : 0, config.aim_camera_stick ? 1 : 0, config.camera_avoid_walls ? 1 : 0);
         std::fclose(f);
         return true;
     }

@@ -355,6 +355,10 @@ extern "C" void conker_mouse_camera(uint8_t* rdram, recomp_context* ctx) {
     orbit.moved = false;
 }
 
+// func_151284C4, once func_1512C490 has built the view: the Vita's Camera: Avoid Walls puts the
+// game's eye back here (vita/src/vita_hooks.cpp). The desktop's orbit has nothing to do.
+extern "C" void conker_camera_view_done(uint8_t*, recomp_context*) {}
+
 // frontend.cpp, once SDL is up: listen for the scroll wheel.
 void conker_mouse_camera_init() {
     SDL_AddEventWatch(watch_wheel, nullptr);

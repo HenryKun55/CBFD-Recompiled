@@ -101,6 +101,7 @@ namespace conker::vita::menu {
             current().language_chosen = kept.language_chosen;
             current().censored = kept.censored;
             current().interpolation = kept.interpolation;
+            current().camera_avoid_walls = kept.camera_avoid_walls;
             current().skip_intro = kept.skip_intro;
             current().cheat_health = kept.cheat_health;
             current().cheat_lives = kept.cheat_lives;
@@ -175,6 +176,7 @@ namespace conker::vita::menu {
                 toggle("Aim with the camera stick", &Config::aim_camera_stick, "On", "Off (original)"),
                 toggle("Aiming left/right", &Config::aim_invert_x, "Inverted", "Normal (original)"),
                 toggle("Aiming up/down", &Config::aim_invert_y, "Inverted (original)", "Normal"),
+                toggle("Camera", &Config::camera_avoid_walls, "Avoids walls", "Original"),
             };
             static const std::vector<Row> game_rows = {
                 setting("Language (text)", [] { return std::string(language_names[std::clamp(current().language, 0, 5)]); },

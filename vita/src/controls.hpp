@@ -57,6 +57,7 @@ namespace conker::vita::controls {
         bool skip_intro = false;   // Extras: boot to the bar, a press from the main menu
         bool cheat_health = false, cheat_lives = false, cheat_cash = false;
         bool interpolation = false; // a frame drawn between each two of the game's, where there's time (off: some effects, shadows and footprints, stay at 30)
+        bool camera_avoid_walls = false; // the follow camera's view pulled in towards Conker where a wall is between them (off: the game's)
     };
 
     // The state of the Vita's inputs at one poll.
