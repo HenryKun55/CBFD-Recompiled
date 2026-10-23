@@ -778,3 +778,45 @@ func = "func_15095B08"
 before_vram = 0x15095C84
 text = "{ extern void conker_widen_piece_cull_right(uint8_t*, recomp_context*); conker_widen_piece_cull_right(rdram, ctx); }"
 
+
+# ---- EXPERIMENT: native 60 Hz game logic (Vita only, vita/src/native60.cpp; off unless
+# ux0:data/conker/debug_native60 exists). func_10004FE0 swaps a finished frame in only once a
+# VI passed since its task started ($t6 = D_8003B238 at 0x10004FF0): the game's 2-VI frame cap.
+[[patches.hook]]
+func = "func_10004FE0"
+before_vram = 0x10004FF0
+text = """{
+#ifdef __vita__
+extern void conker_native60_swap(uint8_t*, recomp_context*); conker_native60_swap(rdram, ctx);
+#endif
+}"""
+
+# Log: a task started ($v0 = the delta just stored in D_800BE9E4).
+[[patches.hook]]
+func = "func_10004F00"
+before_vram = 0x10004FB4
+text = """{
+#ifdef __vita__
+extern void conker_native60_task_start(uint8_t*, recomp_context*); conker_native60_task_start(rdram, ctx);
+#endif
+}"""
+
+# Log: the game thread's message (type 1 = build the next frame) and the list's submission.
+[[patches.hook]]
+func = "func_1501878C"
+before_vram = 0x150187C0
+text = """{
+#ifdef __vita__
+extern void conker_native60_frame_go(uint8_t*, recomp_context*); conker_native60_frame_go(rdram, ctx);
+#endif
+}"""
+
+[[patches.hook]]
+func = "func_1501C880"
+before_vram = 0x1501C880
+text = """{
+#ifdef __vita__
+extern void conker_native60_submit(uint8_t*, recomp_context*); conker_native60_submit(rdram, ctx);
+#endif
+}"""
+# ---- end of EXPERIMENT

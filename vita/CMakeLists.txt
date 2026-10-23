@@ -123,6 +123,7 @@ add_executable(ConkerVita
     "${HOST_DIR}/render_fixes.cpp"
     "${HOST_DIR}/look_aim.cpp"
     src/vita_hooks.cpp
+    src/native60.cpp
     "${REPO_ROOT}/RecompiledFuncs/rsp/audio_ucode.cpp"
 )
 # Debugging the audio microcode against a native run (vita/debug).
