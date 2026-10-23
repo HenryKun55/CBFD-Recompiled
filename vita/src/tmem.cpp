@@ -420,18 +420,48 @@ namespace n64gfx {
         }
     }
 
+    namespace {
+        // The rows a tile's texture reads: from its start, height lines (TMEM wraps), span bytes
+        // in a half (32-bit texels: the same in both) or in the whole.
+        inline void tile_span(const Tile& tile, uint32_t width, uint32_t height, uint32_t& start, uint32_t& span, uint32_t& half) {
+            const uint32_t row_bytes = (tile.siz == SIZ_32b) ? width * 2 : (width * (4u << tile.siz) + 7) / 8;
+            span = (height > 0 ? (height - 1) : 0) * tile.line * 8 + ((row_bytes + 7) & ~7u);
+            half = (tile.siz == SIZ_32b) ? 2048 : 4096;
+            span = std::min(span, half);
+            start = (tile.siz == SIZ_32b) ? ((tile.tmem * 8) & 0x7FF) : ((tile.tmem * 8) & 0xFFF);
+        }
+    }
+
+    uint64_t tmem_blocks(uint32_t word, uint32_t n, bool split) {
+        // 64 blocks of 8 words (32 a half when split), the range rotated to its first.
+        const uint32_t ring = split ? 256 : 512, bits = ring / 8;
+        if (n == 0) return 0;
+        if (n >= ring) return ~0ull;
+        word &= ring - 1;
+        const uint32_t first = word / 8, len = (word + n - 1) / 8 - first + 1;
+        if (len >= bits) return ~0ull;
+        const uint64_t run = (1ull << len) - 1;
+        if (!split) return (run << first) | (first ? run >> (64 - first) : 0);
+        const uint32_t m = (uint32_t)((run << first) | (run >> (32 - first)));
+        return m | ((uint64_t)m << 32);
+    }
+
+    void tile_words(const Tile& tile, uint32_t width, uint32_t height, uint32_t& word, uint32_t& n, bool& split) {
+        uint32_t start, span, half;
+        tile_span(tile, width, height, start, span, half);
+        word = start / 8; // start is whole words
+        n = (span + 7) / 8;
+        split = half == 2048;
+    }
+
     uint32_t hash_tile(const Tmem& tmem, const Tile& tile, uint32_t width, uint32_t height, uint32_t tlut_type) {
         const uint32_t params[8] = {
             tile.fmt, tile.siz, tile.line, tile.tmem, tile.palette, width, height, tlut_type
         };
         uint32_t h = hash_range((const uint8_t*)params, sizeof(params), 0);
 
-        // The rows the texture reads: from its start, height lines (TMEM wraps).
-        const uint32_t row_bytes = (tile.siz == SIZ_32b) ? width * 2 : (width * (4u << tile.siz) + 7) / 8;
-        uint32_t span = (height > 0 ? (height - 1) : 0) * tile.line * 8 + ((row_bytes + 7) & ~7u);
-        const uint32_t half = (tile.siz == SIZ_32b) ? 2048 : 4096;
-        span = std::min(span, half);
-        const uint32_t start = (tile.siz == SIZ_32b) ? ((tile.tmem * 8) & 0x7FF) : ((tile.tmem * 8) & 0xFFF);
+        uint32_t start, span, half;
+        tile_span(tile, width, height, start, span, half);
         auto add_range = [&](uint32_t offset) {
             const uint32_t first = std::min(span, half - (start & (half - 1)));
             h = hash_range(&tmem.data[offset + (start & (half - 1))], first, h);

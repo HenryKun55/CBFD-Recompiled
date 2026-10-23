@@ -103,6 +103,13 @@ namespace n64gfx {
     // A hash of everything decode_tile reads for this tile and size.
     uint32_t hash_tile(const Tmem& tmem, const Tile& tile, uint32_t width, uint32_t height, uint32_t tlut_type);
 
+    // TMEM's 64-byte blocks, a bit each: those of n words from word on, wrapping in TMEM (split:
+    // in each half, the same words in both, as 32-bit texels are).
+    uint64_t tmem_blocks(uint32_t word, uint32_t n, bool split);
+    // The TMEM words hash_tile reads for this tile and size (the palette apart): n from word,
+    // wrapping in TMEM (split: in each half, the same words in both).
+    void tile_words(const Tile& tile, uint32_t width, uint32_t height, uint32_t& word, uint32_t& n, bool& split);
+
     // Decodes an RDRAM framebuffer (16 or 32-bit) to RGBA8888.
     void decode_framebuffer(const uint8_t* rdram, uint32_t addr, uint32_t siz, uint32_t width, uint32_t height, uint32_t* out);
 }

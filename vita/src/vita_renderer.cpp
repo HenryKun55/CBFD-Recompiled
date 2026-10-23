@@ -531,6 +531,11 @@ namespace {
         uint32_t generation = ~0u;
         Tile tile{};
         uint32_t tlut = 0, filter = 0;
+        // With repeated loads skipped (VitaRenderer::load_skip): the TMEM blocks it read, whether
+        // it read the palette or TMEM's upper half, and whether any of it was written since.
+        uint64_t blocks = 0;
+        bool palette = false, upper = false, stale = true;
+        uint32_t hash = 0; // its texture's hash (0: none, a framebuffer's), for debug_tmem_check
     };
 
     // Everything a batch of triangles shares.
@@ -1510,6 +1515,9 @@ namespace {
             // lists going in turn with triangles only culled, prepared up to their draw state, or
             // none (a list each: a short scene gets them all).
             ab_phase = ab_on ? dl_count % 4 : 0;
+            // Debug (flag 8388608): repeated texture loads done, as before.
+            load_skip = (debug_flags & 8388608) == 0;
+            start_tmem_list();
             if (dumping()) std::fprintf(stderr, "[dl] start %u\n", dl_count);
             // One list in 300 timed by parts (two of them averaged in each [parts] line): the clock
             // costs ~1 us a read on the Vita, so a timed list takes half as long again.
@@ -1522,6 +1530,7 @@ namespace {
             const uint64_t read_t0 = list_csv ? sceKernelGetProcessTimeWide() : 0;
             start_matrices(true);
             run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
+            if (load_skip) finish_tmem_list();
             const uint32_t read_us = list_csv ? (uint32_t)(sceKernelGetProcessTimeWide() - read_t0) : 0;
             // The screen it drew (an in-between frame goes there).
             interp_main = (current_fb != nullptr && current_fb->width >= 256 && current_fb->siz != SIZ_8b) ? current_fb : nullptr;
@@ -1642,8 +1651,10 @@ namespace {
                 std::fprintf(stderr, "[renderer] triangles a list: level %u, objects %u, shadows %u, other groups %u\n",
                     tris_by_kind[0] / 60, tris_by_kind[1] / 60, tris_by_kind[2] / 60, tris_by_kind[3] / 60);
                 for (uint32_t& t : tris_by_kind) t = 0;
-                std::fprintf(stderr, "[renderer] work: %u vertex loads (%u vertices), %u contexts, %u matrices, %u block loads (%u KB), %u tile loads, %u palettes, %u state changes\n",
-                    stats.vtx_loads, stats.vtx_count, stats.ctx_pushes, stats.matrices, stats.block_loads, stats.block_bytes / 1024, stats.tile_loads, stats.tlut_loads, stats.prepares);
+                std::fprintf(stderr, "[renderer] work: %u vertex loads (%u vertices), %u contexts, %u matrices, %u block loads (%u KB; %u repeats, %u done late), %u tile loads, %u palettes (%u repeats), %u state changes, %u textures hashed (%u from the memo)\n",
+                    stats.vtx_loads, stats.vtx_count, stats.ctx_pushes, stats.matrices, stats.block_loads, stats.block_bytes / 1024, stats.block_repeats, stats.block_late,
+                    stats.tile_loads, stats.tlut_loads, stats.tlut_repeats, stats.prepares, stats.tile_hashes, stats.memo_hits);
+                if (tmem_check) std::fprintf(stderr, "[tmemcheck] %u checks, %u differing; %u pending loads' images written in RDRAM meanwhile\n", check_count, check_bad, check_raced);
             }
             if (dl_count < 5 || dl_count % 60 == 0) {
                 std::fprintf(stderr, "[renderer] display list #%u: %u tris (+%u clipped, %u culled, %u without fb), %u rects, %u fills, %u draws, %u verts, cimg 0x%06X w%u\n",
@@ -1725,6 +1736,7 @@ namespace {
         struct {
             uint32_t programs = 0, program_us = 0, textures = 0, texture_us = 0, flush_us = 0;
             uint32_t ctx_pushes = 0, vtx_loads = 0, vtx_count = 0, block_loads = 0, block_bytes = 0, tlut_loads = 0, tile_loads = 0, matrices = 0, prepares = 0;
+            uint32_t block_repeats = 0, block_late = 0, tlut_repeats = 0, tile_hashes = 0, memo_hits = 0;
             uint32_t tris = 0, tris_clipped = 0, tris_culled = 0, tris_nofb = 0, rects = 0, fills = 0, draws = 0, verts = 0;
         } stats;
         uint32_t present_count = 1;
@@ -2135,7 +2147,8 @@ namespace {
                     case G_LOADTLUT: {
                         PartTimer part_timer(*this, P_LOAD);
                         const Tile& t = tiles[(w1 >> 24) & 7];
-                        load_tlut(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
+                        if (load_skip) load_tlut_held(t, w0, w1);
+                        else load_tlut(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
                         stats.tlut_loads++;
                         state_dirty = true;
                         break;
@@ -2153,7 +2166,8 @@ namespace {
                         PartTimer part_timer(*this, P_LOAD);
                         if (__builtin_expect((debug_flags & 1048576) != 0, 0)) break; // debug: no texture loads
                         const Tile& t = tiles[(w1 >> 24) & 7];
-                        load_block(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
+                        if (load_skip) load_block_held(t, w0, w1);
+                        else load_block(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
                         if (__builtin_expect(profiling && cmd_timing, 0)) {
                             const uint64_t key = ((uint64_t)timg.addr << 32) ^ ((uint64_t)w0 << 7) ^ w1 ^ ((uint64_t)t.tmem << 50);
                             if (!std::count(seen_loads.begin(), seen_loads.end(), key)) seen_loads.push_back(key);
@@ -2161,13 +2175,23 @@ namespace {
                         }
                         stats.block_loads++;
                         stats.block_bytes += ((((w1 >> 12) & 0xFFF) - ((w0 >> 12) & 0xFFF) + 1) * (4u << timg.siz)) / 8;
-                        note_tmem_load(t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, true);
+                        if (note_tmem_load(t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, true) && load_skip) {
+                            // From a framebuffer: its tiles sample the image, the load isn't held.
+                            uint32_t word, n;
+                            bool split;
+                            tmem_writing(block_load_words(t, w0, w1, word, n, split), 0, 0, false);
+                        }
                         state_dirty = true;
                         break;
                     }
                     case G_LOADTILE: {
                         const Tile& t = tiles[(w1 >> 24) & 7];
+                        if (load_skip) {
+                            tmem_writing(~0ull, 0, 0, false); // rare: all of TMEM taken as written
+                            if (tmem_check) load_tile(check_tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
+                        }
                         load_tile(tmem, rdram, timg, t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, (w1 >> 12) & 0xFFF, w1 & 0xFFF);
+                        if (load_skip && tmem_check) check_took(0, 512, false);
                         stats.tile_loads++;
                         note_tmem_load(t, (w0 >> 12) & 0xFFF, w0 & 0xFFF, false);
                         state_dirty = true;
@@ -2485,7 +2509,9 @@ namespace {
             vctx_dirty = true;
             profiling = false;
             list->debug_flags = debug_flags;
+            start_tmem_list();
             run_display_list((uint32_t)task->t.data_ptr & 0x1FFFFFFF);
+            if (load_skip) finish_tmem_list();
             flush();
             for (auto& [base, f] : framebuffers) f.drawn_this_dl = false;
             submit();
@@ -3865,6 +3891,7 @@ namespace {
             // Tiles may still name its texture.
             for (TileTexture& tt : tile_textures) {
                 tt.generation = ~0u;
+                tt.stale = true;
             }
             state_dirty = true;
         }
@@ -3958,6 +3985,325 @@ namespace {
             return nullptr;
         }
 
+        // ======================================================== repeated texture loads
+        // Conker loads a texture again for every object drawn with it: at the bar's entrance ~490
+        // block loads and ~390 palettes a list, ~100 of them different, and each load made the
+        // tiles' textures hashed again (TMEM's ~2.5 KB). With load_skip:
+        // - TMEM is described by the loads that last wrote it (held, a few). A block load into the
+        //   lower half is held pending, done only when TMEM there is read (a texture hashed without
+        //   the memo, or decoded), partly written over or at the list's end; one wholly written
+        //   over first, or the same as a load held (the same bytes again), is never done.
+        // - A palette load into the upper half (its entries copied into TMEM only later) the same
+        //   as one held, its entries not loaded since, isn't done again.
+        // - A tile's texture is looked up again only when TMEM or palette entries it read were
+        //   written, not after every load (tmem.generation). Its hash, when its words are within
+        //   one held block load and its palette within one held palette load, comes from a memo
+        //   of the list's hashes keyed by those loads and the tile.
+        // A texture's RDRAM is taken not to change within a list. b4675fa (reverted, slower on the
+        // Vita) did the like with a tag a TMEM word: loops over the words at every load and tile,
+        // a palette hashed for every tile, 96 KB of tables. This keeps a few loads, TMEM's 64-byte
+        // blocks as the bits of a word, and an 8 KB memo.
+        struct HeldLoad {
+            uint64_t key;    // a fingerprint of the rest (the memo's)
+            uint64_t blocks; // the blocks it wrote (a palette's: its entries', as upper-half words)
+            uint32_t addr, w0, w1; // the image and the command's words (the tile's index apart)
+            uint16_t width, tmem;
+            uint16_t word, n; // its words (a palette's: its entries)
+            uint8_t siz;
+            bool split;   // 32-bit texels: n words in each half
+            bool palette; // a LoadTLUT
+            bool pending; // a block load not done yet
+            uint32_t source_sum; // debug_tmem_check: its RDRAM's when held
+        };
+        static constexpr int held_max = 8;
+        HeldLoad held[held_max];
+        int held_count = 0;
+        struct MemoSlot { uint64_t key; uint32_t hash, stamp; };
+        alignas(32) MemoSlot hash_memo[512] = {};
+        uint32_t memo_stamp = 1;
+        bool load_skip = true; // off with debug flag 8388608
+        // Debug (ux0:data/conker/debug_tmem_check): every load also done in a copy of TMEM, compared
+        // with TMEM whenever nothing is pending, and each hash taken from the memo or kept with
+        // its texture checked against the copy's ([tmemcheck] lines).
+        const bool tmem_check = [] {
+            FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_tmem_check", "r");
+            if (f) std::fclose(f);
+            return f != nullptr;
+        }();
+        Tmem check_tmem;
+        uint32_t check_count = 0, check_bad = 0, check_raced = 0;
+        void check_failed(const char* what, uint32_t index) {
+            if (++check_bad <= 20) std::fprintf(stderr, "[tmemcheck] dl %u: %s differs (tile %u)\n", dl_count, what, index);
+        }
+        // A load done now in both: TMEM's words as the real one read them (the game may be writing
+        // RDRAM as it's read: the two readings would differ).
+        void check_took(uint32_t word, uint32_t n, bool split) {
+            const uint32_t ring = split ? 256 : 512;
+            for (uint32_t k = 0; k < std::min(n, ring); k++) {
+                const uint32_t w = (word + k) & (ring - 1);
+                std::memcpy(&check_tmem.data[w * 8], &tmem.data[w * 8], 8);
+                if (split) std::memcpy(&check_tmem.data[(256 + w) * 8], &tmem.data[(256 + w) * 8], 8);
+            }
+        }
+        void check_all_done(uint32_t index) {
+            check_count++;
+            if (std::memcmp(check_tmem.data, tmem.data, sizeof(tmem.data)) != 0 || std::memcmp(check_tmem.tlut, tmem.tlut, sizeof(tmem.tlut)) != 0 ||
+                check_tmem.tlut_dirty_lo != tmem.tlut_dirty_lo || check_tmem.tlut_dirty_hi != tmem.tlut_dirty_hi) {
+                uint32_t at = 0;
+                while (at < sizeof(tmem.data) && check_tmem.data[at] == tmem.data[at]) at++;
+                if (++check_bad <= 20) std::fprintf(stderr, "[tmemcheck] dl %u: TMEM differs (%s %u) from byte %u\n", dl_count, index < 8 ? "tile" : "list end", index, at);
+            }
+        }
+
+        // Around a list's reading: nothing held before (RDRAM may have changed), every tile looked
+        // up; the pending loads done after.
+        void start_tmem_list() {
+            held_count = 0;
+            memo_stamp++;
+            for (TileTexture& tt : tile_textures) tt.stale = true;
+            if (tmem_check) check_tmem = tmem;
+        }
+        void finish_tmem_list() {
+            do_pending(~0ull);
+            if (tmem_check && load_skip) check_all_done(8);
+        }
+        uint64_t load_key(bool palette, const Tile& t, uint32_t w0, uint32_t w1) const {
+            uint64_t k = palette ? 0xC2B2AE3D27D4EB4Full : 0x9E3779B97F4A7C15ull;
+            const uint32_t fields[4] = { timg.addr, w0 & 0x00FFFFFF, w1 & 0x00FFFFFF, (uint32_t)timg.width | ((uint32_t)timg.siz << 13) | ((uint32_t)t.tmem << 16) };
+            for (uint32_t v : fields) {
+                k = (k ^ v) * 0xFF51AFD7ED558CCDull;
+                k ^= k >> 32;
+            }
+            return k;
+        }
+        const HeldLoad* find_held(uint64_t key, bool palette, const Tile& t, uint32_t w0, uint32_t w1) const {
+            for (int i = 0; i < held_count; i++) {
+                const HeldLoad& h = held[i];
+                if (h.key == key && h.palette == palette && h.addr == timg.addr && h.w0 == (w0 & 0x00FFFFFF) &&
+                    h.w1 == (w1 & 0x00FFFFFF) && h.tmem == t.tmem && h.width == timg.width && h.siz == timg.siz) {
+                    return &h;
+                }
+            }
+            return nullptr;
+        }
+        void hold(uint64_t key, bool palette, const Tile& t, uint32_t w0, uint32_t w1, uint64_t blocks, uint32_t word, uint32_t n, bool split, bool pending) {
+            if (held_count == held_max) {
+                if (held[0].pending) do_held(held[0]);
+                std::memmove(&held[0], &held[1], sizeof(HeldLoad) * (held_max - 1));
+                held_count--;
+            }
+            held[held_count++] = HeldLoad{ key, blocks, timg.addr, w0 & 0x00FFFFFF, w1 & 0x00FFFFFF, timg.width, t.tmem,
+                                           (uint16_t)word, (uint16_t)n, timg.siz, split, palette, pending, 0 };
+            if (__builtin_expect(tmem_check, 0)) held[held_count - 1].source_sum = source_sum(held[held_count - 1]);
+        }
+        // debug_tmem_check: a sum of the RDRAM a load reads.
+        uint32_t source_sum(const HeldLoad& h) const {
+            const uint32_t uls = (h.w0 >> 12) & 0xFFF, ult = h.w0 & 0xFFF, lrs = (h.w1 >> 12) & 0xFFF;
+            uint32_t src, bytes;
+            if (h.palette) {
+                src = h.addr + ((ult >> 2) * h.width + (uls >> 2)) * 2;
+                bytes = h.n * 2;
+            }
+            else {
+                const uint32_t bpt = 4u << h.siz, texels = std::min<uint32_t>(lrs - uls + 1, 2048);
+                src = h.addr + ((ult * h.width + uls) * bpt) / 8;
+                bytes = (texels * bpt + 7) / 8;
+            }
+            uint32_t sum = 0x811C9DC5u;
+            for (uint32_t a = src & ~3u; a < src + bytes; a += 4) sum = (sum ^ read32(rdram, a)) * 0x01000193u;
+            return sum;
+        }
+        // A pending block load done now.
+        void do_held(HeldLoad& h) {
+            if (__builtin_expect(tmem_check, 0) && source_sum(h) != h.source_sum && ++check_raced <= 20) {
+                std::fprintf(stderr, "[tmemcheck] dl %u: image 0x%06X (TMEM word %u) written in RDRAM before its pending load was done\n", dl_count, h.addr, h.word);
+            }
+            const TextureImage img{ h.addr, 0, h.siz, h.width };
+            Tile t;
+            t.tmem = h.tmem;
+            load_block(tmem, rdram, img, t, (h.w0 >> 12) & 0xFFF, h.w0 & 0xFFF, (h.w1 >> 12) & 0xFFF, h.w1 & 0xFFF);
+            h.pending = false;
+            stats.block_late++;
+        }
+        // The pending loads in these blocks done.
+        void do_pending(uint64_t blocks) {
+            for (int i = 0; i < held_count; i++) {
+                if (held[i].pending && (held[i].blocks & blocks)) do_held(held[i]);
+            }
+        }
+        // TMEM's blocks about to be written, n words from word (n 0: not known): the block loads
+        // held there go (done first if pending and not wholly written over), the tiles reading
+        // them are looked up again.
+        void tmem_writing(uint64_t blocks, uint32_t word, uint32_t n, bool split) {
+            int k = 0;
+            for (int i = 0; i < held_count; i++) {
+                HeldLoad& h = held[i];
+                if (h.palette || !(h.blocks & blocks)) {
+                    held[k++] = h;
+                    continue;
+                }
+                const uint32_t ring = split ? 256 : 512;
+                const bool covered = n != 0 && split == h.split && (n >= ring || ((h.word - word) & (ring - 1)) + h.n <= n);
+                if (h.pending && !covered) do_held(h);
+            }
+            held_count = k;
+            for (TileTexture& tt : tile_textures) {
+                if (tt.blocks & blocks) tt.stale = true;
+            }
+        }
+        // Palette entries about to be loaded (n from first, wrapping): the palette loads held
+        // there go, the tiles reading the palette are looked up again.
+        void palette_writing(uint32_t first, uint32_t n) {
+            const uint64_t blocks = tmem_blocks(first, n, true) & 0xFFFFFFFF00000000ull;
+            int k = 0;
+            for (int i = 0; i < held_count; i++) {
+                if (!held[i].palette || !(held[i].blocks & blocks)) held[k++] = held[i];
+            }
+            held_count = k;
+            for (TileTexture& tt : tile_textures) {
+                if (tt.palette) tt.stale = true;
+            }
+        }
+        // The palette's copy in the upper half written (sync_tlut_mirror, also by a load) when
+        // there were entries to copy (lo..hi before).
+        void tlut_copied(uint32_t lo, uint32_t hi) {
+            if (lo <= hi && tmem.tlut_dirty_lo > tmem.tlut_dirty_hi) {
+                tmem_writing(tmem_blocks(256 + lo, std::min(hi, 255u) - lo + 1, false), 0, 0, false);
+            }
+        }
+        // The words a LoadBlock writes (as load_block), and their blocks.
+        uint64_t block_load_words(const Tile& t, uint32_t w0, uint32_t w1, uint32_t& word, uint32_t& n, bool& split) const {
+            const uint32_t texels = std::min<uint32_t>(((w1 >> 12) & 0xFFF) - ((w0 >> 12) & 0xFFF) + 1, 2048);
+            split = timg.siz == SIZ_32b;
+            word = t.tmem & (split ? 0xFF : 0x1FF);
+            n = split ? (texels + 3) / 4 : (texels * (4u << timg.siz) + 63) / 64;
+            return tmem_blocks(word, n, split);
+        }
+        // G_LOADBLOCK with load_skip. One into the upper half is done at once; a repeat of a
+        // held load is not, unless palette entries are to be copied to the upper half first (the
+        // load would write after them).
+        void load_block_held(const Tile& t, uint32_t w0, uint32_t w1) {
+            const uint32_t uls = (w0 >> 12) & 0xFFF, ult = w0 & 0xFFF, lrs = (w1 >> 12) & 0xFFF, dxt = w1 & 0xFFF;
+            if (__builtin_expect(tmem_check, 0)) load_block(check_tmem, rdram, timg, t, uls, ult, lrs, dxt);
+            uint32_t word, n;
+            bool split;
+            const uint64_t blocks = block_load_words(t, w0, w1, word, n, split);
+            const bool upper = (blocks >> 32) != 0;
+            const uint64_t key = load_key(false, t, w0, w1);
+            if (!(upper && tmem.tlut_dirty_lo <= tmem.tlut_dirty_hi)) {
+                if (const HeldLoad* h = find_held(key, false, t, w0, w1)) {
+                    if (__builtin_expect(tmem_check, 0) && source_sum(*h) != h->source_sum && ++check_raced <= 20) {
+                        std::fprintf(stderr, "[tmemcheck] dl %u: image 0x%06X (TMEM word %u) written in RDRAM since its load, loaded again\n", dl_count, h->addr, h->word);
+                    }
+                    stats.block_repeats++;
+                    return;
+                }
+            }
+            tmem_writing(blocks, word, n, split);
+            if (upper) {
+                const uint32_t lo = tmem.tlut_dirty_lo, hi = tmem.tlut_dirty_hi;
+                load_block(tmem, rdram, timg, t, uls, ult, lrs, dxt);
+                tlut_copied(lo, hi);
+                if (__builtin_expect(tmem_check, 0)) check_took(word, n, split);
+            }
+            hold(key, false, t, w0, w1, blocks, word, n, split, !upper);
+        }
+        // G_LOADTLUT with load_skip: one into the upper half (copied into TMEM later) the same as
+        // a palette load held isn't done again; the entries to copy grow as it would grow them.
+        void load_tlut_held(const Tile& t, uint32_t w0, uint32_t w1) {
+            const uint32_t uls = (w0 >> 12) & 0xFFF, ult = w0 & 0xFFF, lrs = (w1 >> 12) & 0xFFF, lrt = w1 & 0xFFF;
+            if (__builtin_expect(tmem_check, 0)) load_tlut(check_tmem, rdram, timg, t, uls, ult, lrs, lrt);
+            if ((lrs >> 2) < (uls >> 2)) {
+                return; // nothing to load (as load_tlut)
+            }
+            const uint32_t count = std::min<uint32_t>((lrs >> 2) - (uls >> 2) + 1, 256);
+            const uint32_t first = (t.tmem - 256) & 0xFF;
+            const bool later = t.tmem >= 256 && first + count <= 256; // as load_tlut
+            const uint64_t key = load_key(true, t, w0, w1);
+            const HeldLoad* again = later ? find_held(key, true, t, w0, w1) : nullptr;
+            if (again != nullptr && __builtin_expect(tmem_check, 0) && source_sum(*again) != again->source_sum && ++check_raced <= 20) {
+                std::fprintf(stderr, "[tmemcheck] dl %u: palette 0x%06X written in RDRAM since its load, loaded again\n", dl_count, again->addr);
+            }
+            if (again != nullptr) {
+                tmem.tlut_dirty_lo = std::min(tmem.tlut_dirty_lo, first);
+                tmem.tlut_dirty_hi = std::max(tmem.tlut_dirty_hi, first + count - 1);
+                stats.tlut_repeats++;
+                return;
+            }
+            palette_writing(first, count);
+            // Its entries' place in the upper half (copied there later); or the words it writes.
+            const uint64_t blocks = tmem_blocks(t.tmem, count, false);
+            tmem_writing(blocks, 0, 0, false);
+            load_tlut(tmem, rdram, timg, t, uls, ult, lrs, lrt);
+            if (__builtin_expect(tmem_check, 0)) {
+                for (uint32_t k = 0; k < count; k++) check_tmem.tlut[(first + k) & 0xFF] = tmem.tlut[(first + k) & 0xFF];
+                if (!later) check_took(t.tmem, count, false);
+            }
+            if (later) hold(key, true, t, w0, w1, blocks, first, count, false, false);
+        }
+        // The memo's key for a tile's hash: the held block load its words are within, the held
+        // palette load its entries are within (if it reads the palette), the tile. False if none.
+        bool memo_key(const TileTexture& tt, const Tile& tile, uint32_t w, uint32_t h, uint32_t tlut, uint64_t& key) const {
+            uint32_t word, n;
+            bool split;
+            tile_words(tile, w, h, word, n, split);
+            const uint32_t ring = split ? 256 : 512;
+            const HeldLoad* data = nullptr;
+            for (int i = 0; i < held_count && data == nullptr; i++) {
+                const HeldLoad& l = held[i];
+                if (!l.palette && l.split == split && ((word - l.word) & (ring - 1)) + n <= l.n) data = &l;
+            }
+            if (data == nullptr) return false;
+            uint64_t k = data->key;
+            if (tt.palette) {
+                const uint32_t first = tile.siz == SIZ_4b ? (tile.palette << 4) & 0xFF : 0, count = tile.siz == SIZ_4b ? 16 : 256;
+                const HeldLoad* pal = nullptr;
+                for (int i = 0; i < held_count && pal == nullptr; i++) {
+                    const HeldLoad& l = held[i];
+                    if (l.palette && l.word <= first && first + count <= (uint32_t)l.word + l.n) pal = &l;
+                }
+                if (pal == nullptr) return false;
+                k = (k ^ pal->key) * 0xFF51AFD7ED558CCDull;
+            }
+            const uint32_t fields[4] = { (uint32_t)tile.fmt | ((uint32_t)tile.siz << 4) | ((uint32_t)tile.palette << 8) | (tlut << 12),
+                                         (uint32_t)tile.line | ((uint32_t)tile.tmem << 16), w, h };
+            for (uint32_t v : fields) {
+                k = (k ^ v) * 0xC2B2AE3D27D4EB4Full;
+                k ^= k >> 29;
+            }
+            key = k;
+            return true;
+        }
+        // hash_tile, from the memo when it can be.
+        uint32_t tile_hash(const TileTexture& tt, const Tile& tile, uint32_t index, uint32_t w, uint32_t h, uint32_t tlut) {
+            uint64_t key = 0;
+            MemoSlot* set = nullptr;
+            if (load_skip && memo_key(tt, tile, w, h, tlut, key)) {
+                // Two ways a set (a cache line), the newer first.
+                set = &hash_memo[(key >> 56) * 2];
+                for (int way = 0; way < 2; way++) {
+                    if (set[way].stamp != memo_stamp || set[way].key != key) continue;
+                    stats.memo_hits++;
+                    if (__builtin_expect(tmem_check, 0)) {
+                        check_count++;
+                        if (hash_tile(check_tmem, tile, w, h, tlut) != set[way].hash) check_failed("hash from the memo", index);
+                    }
+                    return set[way].hash;
+                }
+            }
+            if (load_skip) {
+                do_pending(__builtin_expect(tmem_check, 0) ? ~0ull : tt.blocks);
+                if (__builtin_expect(tmem_check, 0)) check_all_done(index);
+            }
+            stats.tile_hashes++;
+            const uint32_t hash = hash_tile(tmem, tile, w, h, tlut);
+            if (set != nullptr) {
+                set[1] = set[0];
+                set[0] = MemoSlot{ key, hash, memo_stamp };
+            }
+            return hash;
+        }
+
         bool note_tmem_load(const Tile& t, uint32_t uls, uint32_t ult, bool block) {
             // Loads overwrite what an earlier framebuffer load put at the same place.
             for (FbLoad& l : fb_loads) {
@@ -4044,8 +4390,18 @@ namespace {
             const Tile& tile = tiles[index];
             const uint32_t tlut = (other_mode_h >> OMH_TLUT_SHIFT) & 3;
             const uint32_t filter = (other_mode_h >> OMH_FILTER_SHIFT) & 3;
-            if (tt.generation == tmem.generation && std::memcmp(&tt.tile, &tile, sizeof(Tile)) == 0 &&
-                tt.tlut == tlut && tt.filter == filter) {
+            auto same = [&] { return std::memcmp(&tt.tile, &tile, sizeof(Tile)) == 0 && tt.tlut == tlut && tt.filter == filter; };
+            if (load_skip) {
+                // Unless what it read was written, or palette entries are to be copied where it reads.
+                if (!tt.stale && !(tt.upper && tmem.tlut_dirty_lo <= tmem.tlut_dirty_hi) && same()) {
+                    if (__builtin_expect(tmem_check, 0) && tt.hash != 0) {
+                        check_count++;
+                        if (hash_tile(check_tmem, tile, (uint32_t)tt.width, (uint32_t)tt.height, tlut) != tt.hash) check_failed("texture kept", index);
+                    }
+                    return;
+                }
+            }
+            else if (tt.generation == tmem.generation && same()) {
                 return;
             }
             tt.generation = tmem.generation;
@@ -4077,6 +4433,16 @@ namespace {
             }
             w = std::min<uint32_t>(w, 1024);
             h = std::min<uint32_t>(h, 1024);
+            if (load_skip) {
+                uint32_t word, n;
+                bool split;
+                tile_words(tile, w, h, word, n, split);
+                tt.blocks = tmem_blocks(word, n, split);
+                tt.palette = tlut >= 2 && (tile.siz == SIZ_4b || tile.siz == SIZ_8b);
+            }
+            tt.upper = tile_reads_upper(tile, h);
+            tt.stale = false;
+            tt.hash = 0;
 
             auto shift_factor = [](uint32_t shift) {
                 if (shift == 0) return 1.0f;
@@ -4097,10 +4463,15 @@ namespace {
             const bool linear = filter == 2 || filter == 3;
             tt.offset = linear ? 0.5f : 0.0f;
 
-            if (tmem.tlut_dirty_lo <= tmem.tlut_dirty_hi && tile_reads_upper(tile, h)) {
+            if (tmem.tlut_dirty_lo <= tmem.tlut_dirty_hi && tt.upper) {
+                const uint32_t lo = tmem.tlut_dirty_lo, hi = tmem.tlut_dirty_hi;
                 sync_tlut_mirror(tmem);
+                tlut_copied(lo, hi);
+                tt.stale = false; // its own reading's
+                if (tmem_check && load_skip) sync_tlut_mirror(check_tmem);
             }
-            const uint32_t hash = hash_tile(tmem, tile, w, h, tlut);
+            const uint32_t hash = tile_hash(tt, tile, index, w, h, tlut);
+            tt.hash = hash;
             const uint64_t key = ((uint64_t)hash << 32) ^ ((uint64_t)w << 20) ^ ((uint64_t)h << 8) ^
                 ((uint64_t)(wrap_s == GL_REPEAT ? 1 : wrap_s == GL_MIRRORED_REPEAT ? 2 : 0) << 4) ^
                 ((uint64_t)(wrap_t == GL_REPEAT ? 1 : wrap_t == GL_MIRRORED_REPEAT ? 2 : 0) << 6) ^ (linear ? 1 : 0) ^
@@ -4109,6 +4480,7 @@ namespace {
                 cached->last_used = present_count;
                 tt.tex = cached->tex;
                 if (dumping()) {
+                    if (load_skip) do_pending(tt.blocks);
                     std::vector<uint32_t> check((size_t)w * h);
                     decode_tile(tmem, tile, w, h, tlut, check.data());
                     uint32_t opaque = 0, clear = 0;
@@ -4120,6 +4492,7 @@ namespace {
             }
             const uint64_t tex_start = sceKernelGetProcessTimeWide();
             std::vector<uint32_t> texels((size_t)w * h);
+            if (load_skip) do_pending(tt.blocks);
             decode_tile(tmem, tile, w, h, tlut, texels.data());
             conker::vita::button_icons::replace(texels.data(), w, h); // N64 button icons -> Vita's
             // Decoded here (TMEM is the front's), uploaded by the GL thread.
@@ -4182,6 +4555,7 @@ namespace {
             // Tiles may still name deleted textures.
             for (TileTexture& tt : tile_textures) {
                 tt.generation = ~0u;
+                tt.stale = true;
             }
         }
 
