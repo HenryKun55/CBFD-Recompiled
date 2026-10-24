@@ -351,26 +351,26 @@ static void launch_failed(void)
 /* What's new, told once (ux0:data/conker/notices.txt keeps the ones seen: the game's data
  * folder, which installing a vpk or an update leaves alone), in the Vita's language. Latin-1. */
 #define NOTICES_PATH "ux0:data/conker/notices.txt"
-#define NOTICE_ID "v1.2.0"
+#define NOTICE_ID "v1.3.0"
 /* English, Portuguese, Spanish, French, German, Italian. */
 static const char *const notice_text[6][3] = {
-    { "New: the menu opens with SELECT twice",
-      "Press SELECT twice for the port's menu (it was START + SELECT), now in pages. New: the Vita's buttons drawn in the game, aiming with the right stick, inverted aiming, skipping the intro and cheats.",
+    { "New: real 60 fps",
+      "Picture > Frame rate 60 runs the game itself at 60 fps (where a scene is too heavy it drops toward 30). Also new: Sticks and aiming > Camera keeps the camera out of walls, and the B pads on the ground show the Vita button you bound to B.",
       "Press any button to continue." },
-    { "Novidade: o menu abre com SELECT duas vezes",
-      "Aperte SELECT duas vezes para o menu do port (antes era START + SELECT), agora em p\341ginas. Novo: os bot\365es do Vita desenhados no jogo, mirar com o anal\363gico direito, inverter a mira, pular a abertura e trapa\347as.",
+    { "Novidade: 60 fps de verdade",
+      "Picture > Frame rate 60 roda o pr\363prio jogo a 60 fps (onde a cena \351 pesada demais, cai em dire\347\343o a 30). Tamb\351m novo: Sticks and aiming > Camera tira a c\342mera de dentro das paredes, e as plataformas B no ch\343o mostram o bot\343o do Vita que voc\352 ligou ao B.",
       "Aperte qualquer bot\343o para continuar." },
-    { "Novedad: el men\372 se abre con SELECT dos veces",
-      "Pulsa SELECT dos veces para el men\372 del port (antes era START + SELECT), ahora en p\341ginas. Nuevo: los botones de la Vita dibujados en el juego, apuntar con el stick derecho, invertir la mira, saltar la intro y trucos.",
+    { "Novedad: 60 fps de verdad",
+      "Picture > Frame rate 60 hace que el propio juego vaya a 60 fps (donde la escena es demasiado pesada baja hacia 30). Tambi\351n nuevo: Sticks and aiming > Camera saca la c\341mara de las paredes, y las plataformas B del suelo muestran el bot\363n de la Vita asignado a B.",
       "Pulsa cualquier bot\363n para continuar." },
-    { "Nouveau : le menu s'ouvre avec SELECT deux fois",
-      "Appuie deux fois sur SELECT pour le menu du port (avant : START + SELECT), maintenant en pages. Nouveau : les boutons de la Vita dans le jeu, viser avec le stick droit, inverser la vis\351e, passer l'intro et codes de triche.",
+    { "Nouveau : du vrai 60 fps",
+      "Picture > Frame rate 60 fait tourner le jeu lui-m\352me \340 60 fps (quand une sc\350ne est trop lourde, il descend vers 30). Aussi : Sticks and aiming > Camera garde la cam\351ra hors des murs, et les dalles B au sol montrent le bouton de la Vita associ\351 \340 B.",
       "Appuie sur un bouton pour continuer." },
-    { "Neu: das Men\374 \366ffnet sich mit zweimal SELECT",
-      "Dr\374ck zweimal SELECT f\374r das Men\374 des Ports (vorher START + SELECT), jetzt in Seiten. Neu: die Vita-Tasten im Spiel, Zielen mit dem rechten Stick, Zielen umkehren, Intro \374berspringen und Cheats.",
+    { "Neu: echte 60 fps",
+      "Picture > Frame rate 60 l\344sst das Spiel selbst mit 60 fps laufen (wo eine Szene zu schwer ist, sinkt es Richtung 30). Au\337erdem: Sticks and aiming > Camera h\344lt die Kamera aus W\344nden heraus, und die B-Platten am Boden zeigen die Vita-Taste, die auf B liegt.",
       "Beliebige Taste dr\374cken, um fortzufahren." },
-    { "Novit\340: il menu si apre con SELECT due volte",
-      "Premi SELECT due volte per il menu del port (prima era START + SELECT), ora in pagine. Novit\340: i tasti della Vita nel gioco, mirare con la levetta destra, invertire la mira, saltare l'intro e trucchi.",
+    { "Novit\340: 60 fps veri",
+      "Picture > Frame rate 60 fa girare il gioco stesso a 60 fps (dove una scena \350 troppo pesante scende verso 30). Inoltre: Sticks and aiming > Camera tiene la telecamera fuori dai muri, e le piastre B a terra mostrano il tasto della Vita assegnato a B.",
       "Premi un tasto qualsiasi per continuare." }
 };
 
