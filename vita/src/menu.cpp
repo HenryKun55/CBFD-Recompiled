@@ -100,7 +100,7 @@ namespace conker::vita::menu {
             current().language = kept.language;
             current().language_chosen = kept.language_chosen;
             current().censored = kept.censored;
-            current().interpolation = kept.interpolation;
+            current().native60 = kept.native60;
             current().camera_avoid_walls = kept.camera_avoid_walls;
             current().skip_intro = kept.skip_intro;
             current().cheat_health = kept.cheat_health;
@@ -158,7 +158,7 @@ namespace conker::vita::menu {
                 setting("Cutscenes", [] {
                     return std::string(!current().widescreen ? "4:3 (as the game)" : current().cutscene_4x3 ? "4:3 (original)" : "16:9");
                 }, [](int) { current().cutscene_4x3 = !current().cutscene_4x3; }),
-                toggle("Frame rate", &Config::interpolation, "Up to 60 (interpolated)", "30 (original)"),
+                toggle("Frame rate", &Config::native60, "60", "30 (original)"),
             };
             static const std::vector<Row> stick_rows = {
                 setting("Movement stick", [] { return std::string(stick_name(current().stick)); },
@@ -231,7 +231,7 @@ namespace conker::vita::menu {
             { "Conker's Bad Fur Day", 0, { "Cross: choose    Circle: back    SELECT twice: close",
                                            "Tip: pause the game (START) before changing settings." } },
             { "Picture", 1, { "Left/Right or Cross: change    Circle: back",
-                              "Up to 60: shadows, footprints and dust still move at 30." } },
+                              "Frame rate 60: where a scene is too heavy, it runs at 30." } },
             { "Buttons", 2, { "Cross: bind  Left/Right: column  Triangle: clear  Circle: back", nullptr } },
             { "Sticks and aiming", 3, { "Left/Right or Cross: change    Circle: back",
                                         "Aiming: hold R, the scope, the slingshot, the guns." } },

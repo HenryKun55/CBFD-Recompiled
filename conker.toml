@@ -779,9 +779,9 @@ before_vram = 0x15095C84
 text = "{ extern void conker_widen_piece_cull_right(uint8_t*, recomp_context*); conker_widen_piece_cull_right(rdram, ctx); }"
 
 
-# ---- EXPERIMENT: native 60 Hz game logic (Vita only, vita/src/native60.cpp; off unless
-# ux0:data/conker/debug_native60 exists). func_10004FE0 swaps a finished frame in only once a
-# VI passed since its task started ($t6 = D_8003B238 at 0x10004FF0): the game's 2-VI frame cap.
+# Native 60 Hz game logic, the menu's Frame rate "60" (Vita only, vita/src/native60.cpp).
+# func_10004FE0 swaps a finished frame in only once a VI passed since its task started ($t6 =
+# D_8003B238 at 0x10004FF0): the game's 2-VI frame cap. At 60 the hook lets it swap at once.
 [[patches.hook]]
 func = "func_10004FE0"
 before_vram = 0x10004FF0
@@ -791,7 +791,98 @@ extern void conker_native60_swap(uint8_t*, recomp_context*); conker_native60_swa
 #endif
 }"""
 
-# Log: a task started ($v0 = the delta just stored in D_800BE9E4).
+# At 60: the title music's fade counts down by (delta >> 1) * 4 ($t1 before 0x1000C2C4), 0 at a
+# delta of 1; the halved delta's remainder is carried to the next frame.
+[[patches.hook]]
+func = "func_1000BF60"
+before_vram = 0x1000C2C4
+text = """{
+#ifdef __vita__
+extern void conker_native60_fade(uint8_t*, recomp_context*); conker_native60_fade(rdram, ctx);
+#endif
+}"""
+
+# At 60: objects' gravity sub-steps ($f16 = trunc(time / 0.1) before 0x1505A7C8), split over a
+# pair of frames as one 30 fps frame takes them.
+[[patches.hook]]
+func = "func_1505A770"
+before_vram = 0x1505A7C8
+text = """{
+#ifdef __vita__
+extern void conker_native60_substeps(uint8_t*, recomp_context*); conker_native60_substeps(rdram, ctx);
+#endif
+}"""
+
+# At 60: an animation's events ($a0 = the object, $a1 = the time) only every other frame, as at 30;
+# only for func_1507BDB0's call after the animation's advance (the jal at 0x1507BF0C).
+[[patches.hook]]
+func = "func_1507BDB0"
+before_vram = 0x1507BF0C
+text = """{
+#ifdef __vita__
+extern void conker_native60_animation_call(uint8_t*, recomp_context*); conker_native60_animation_call(rdram, ctx);
+#endif
+}"""
+
+[[patches.hook]]
+func = "func_1506AD30"
+before_vram = 0x1506AD30
+text = """{
+#ifdef __vita__
+extern int conker_native60_events(uint8_t*, recomp_context*); if (conker_native60_events(rdram, ctx)) { ctx->f0.fl = 0.0f; return; }
+#endif
+}"""
+
+# At 60, counters the game moves by a fixed amount a frame, split over a pair of frames:
+# an object's stun counter ($t1 before 0x1505873C), a falling drop's speed and fall ($t5 before
+# 0x15193580, $t0 before 0x151935B4), moving scenery's step ($t6 before 0x15116C60, $t2 before
+# 0x15116AA8).
+[[patches.hook]]
+func = "func_150585F0"
+before_vram = 0x1505873C
+text = """{
+#ifdef __vita__
+extern void conker_native60_stun(uint8_t*, recomp_context*); conker_native60_stun(rdram, ctx);
+#endif
+}"""
+
+[[patches.hook]]
+func = "func_151934B4"
+before_vram = 0x15193580
+text = """{
+#ifdef __vita__
+extern void conker_native60_drop_speed(uint8_t*, recomp_context*); conker_native60_drop_speed(rdram, ctx);
+#endif
+}"""
+
+[[patches.hook]]
+func = "func_151934B4"
+before_vram = 0x151935B4
+text = """{
+#ifdef __vita__
+extern void conker_native60_drop_fall(uint8_t*, recomp_context*); conker_native60_drop_fall(rdram, ctx);
+#endif
+}"""
+
+[[patches.hook]]
+func = "func_15116BAC"
+before_vram = 0x15116C60
+text = """{
+#ifdef __vita__
+extern void conker_native60_mover_a(uint8_t*, recomp_context*); conker_native60_mover_a(rdram, ctx);
+#endif
+}"""
+
+[[patches.hook]]
+func = "func_151169B4"
+before_vram = 0x15116AA8
+text = """{
+#ifdef __vita__
+extern void conker_native60_mover_b(uint8_t*, recomp_context*); conker_native60_mover_b(rdram, ctx);
+#endif
+}"""
+
+# A task started ($v0 = the delta just stored in D_800BE9E4): the debug_native60 log.
 [[patches.hook]]
 func = "func_10004F00"
 before_vram = 0x10004FB4
@@ -801,7 +892,8 @@ extern void conker_native60_task_start(uint8_t*, recomp_context*); conker_native
 #endif
 }"""
 
-# Log: the game thread's message (type 1 = build the next frame) and the list's submission.
+# The game thread's message (type 1 = build the next frame: counts game frames) and the list's
+# submission (the debug_native60 log's logic time).
 [[patches.hook]]
 func = "func_1501878C"
 before_vram = 0x150187C0
@@ -819,4 +911,3 @@ text = """{
 extern void conker_native60_submit(uint8_t*, recomp_context*); conker_native60_submit(rdram, ctx);
 #endif
 }"""
-# ---- end of EXPERIMENT

@@ -56,7 +56,7 @@ namespace conker::vita::controls {
         int cutscene_skip = 1;    // L skips: 0 the game's rule (watched ones), 1 any, 2 also the unskippable
         bool skip_intro = false;   // Extras: boot to the bar, a press from the main menu
         bool cheat_health = false, cheat_lives = false, cheat_cash = false;
-        bool interpolation = false; // a frame drawn between each two of the game's, where there's time (off: some effects, shadows and footprints, stay at 30)
+        bool native60 = false; // the game's logic run at 60 Hz where it has the time (native60.cpp; off: the original 30 fps cap)
         bool camera_avoid_walls = false; // the follow camera's view pulled in towards Conker where a wall is between them (off: the game's)
     };
 

@@ -249,6 +249,7 @@ namespace conker::vita::controls {
         // Language is only taken from the file once it was picked in the menu: 1.0.0 saved
         // its default (Portuguese) with any other setting.
         int file_language = -1;
+        bool have_frame_rate = false, old_interpolation = false;
         FILE* f = std::fopen(path, "r");
         if (f == nullptr) {
             return;
@@ -283,7 +284,9 @@ namespace conker::vita::controls {
             else if (!std::strcmp(key, "Language")) file_language = std::clamp(std::atoi(a), 0, 5);
             else if (!std::strcmp(key, "LanguageChosen")) config.language_chosen = std::atoi(a) != 0;
             else if (!std::strcmp(key, "Censored")) config.censored = std::atoi(a) != 0;
-            else if (!std::strcmp(key, "Interpolation")) config.interpolation = std::atoi(a) != 0;
+            else if (!std::strcmp(key, "FrameRate60")) { config.native60 = std::atoi(a) != 0; have_frame_rate = true; }
+            // Up to 1.x the Frame rate setting was frame interpolation: on there means 60 now.
+            else if (!std::strcmp(key, "Interpolation")) old_interpolation = std::atoi(a) != 0;
             else if (!std::strcmp(key, "CameraAvoidWalls")) config.camera_avoid_walls = std::atoi(a) != 0;
             else if (!std::strcmp(key, "SkipIntro")) config.skip_intro = std::atoi(a) != 0;
             else if (!std::strcmp(key, "InfiniteHealth")) config.cheat_health = std::atoi(a) != 0;
@@ -293,6 +296,7 @@ namespace conker::vita::controls {
         }
         std::fclose(f);
         if (config.language_chosen && file_language >= 0) config.language = file_language;
+        if (!have_frame_rate && old_interpolation) config.native60 = true;
     }
 
     bool save() {
@@ -311,10 +315,10 @@ namespace conker::vita::controls {
             if (b != Input::None) std::fprintf(f, "%s = %s, %s\n", n64_names[i], input_names[(int)a], input_names[(int)b]);
             else std::fprintf(f, "%s = %s\n", n64_names[i], input_names[(int)a]);
         }
-        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nInvertOtherX = %d\nInvertOtherY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nLanguageChosen = %d\nCensored = %d\nInterpolation = %d\nSkipIntro = %d\nInfiniteHealth = %d\nInfiniteLives = %d\nMaxCash = %d\nAimInvertX = %d\nAimInvertY = %d\nAimCameraStick = %d\nCameraAvoidWalls = %d\n",
+        std::fprintf(f, "Stick = %s\nDeadzone = %d\nSensitivity = %d\nInvertX = %d\nInvertY = %d\nInvertOtherX = %d\nInvertOtherY = %d\nStickThreshold = %d\nWidescreen = %d\nCutscene4x3 = %d\nCutsceneSkip = %d\nLanguage = %d\nLanguageChosen = %d\nCensored = %d\nFrameRate60 = %d\nSkipIntro = %d\nInfiniteHealth = %d\nInfiniteLives = %d\nMaxCash = %d\nAimInvertX = %d\nAimInvertY = %d\nAimCameraStick = %d\nCameraAvoidWalls = %d\n",
             config.stick == StickSource::Right ? "Right" : "Left", config.deadzone, config.sensitivity,
             config.invert_x ? 1 : 0, config.invert_y ? 1 : 0, config.invert_other_x ? 1 : 0, config.invert_other_y ? 1 : 0, config.stick_threshold, config.widescreen ? 1 : 0,
-            config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.language_chosen ? 1 : 0, config.censored ? 1 : 0, config.interpolation ? 1 : 0,
+            config.cutscene_4x3 ? 1 : 0, config.cutscene_skip, config.language, config.language_chosen ? 1 : 0, config.censored ? 1 : 0, config.native60 ? 1 : 0,
             config.skip_intro ? 1 : 0, config.cheat_health ? 1 : 0, config.cheat_lives ? 1 : 0, config.cheat_cash ? 1 : 0,
             config.aim_invert_x ? 1 : 0, config.aim_invert_y ? 1 : 0, config.aim_camera_stick ? 1 : 0, config.camera_avoid_walls ? 1 : 0);
         std::fclose(f);
@@ -345,9 +349,16 @@ namespace conker {
         return vita::controls::current().censored;
     }
 
-    // Frames drawn between the game's (vita_renderer.cpp).
+    // Frames drawn between the game's (vita_renderer.cpp): no longer in the menu (real 60,
+    // native60.cpp, replaced it); only with ux0:data/conker/debug_interpolation, and only
+    // while the game runs at 30.
     bool vita_interpolation() {
-        return vita::controls::current().interpolation;
+        static const bool debug = [] {
+            FILE* f = std::fopen(CONKER_VITA_DATA_DIR "/debug_interpolation", "r");
+            if (f != nullptr) std::fclose(f);
+            return f != nullptr;
+        }();
+        return debug && !vita::controls::current().native60;
     }
 
     bool vita_skip_intro() { return vita::controls::current().skip_intro; }

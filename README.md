@@ -16,9 +16,9 @@ starting from the [Conker decompilation](https://github.com/mkst/conker). It run
 
 This branch also builds a **native PS Vita / PS TV port** (`vita/`): the same
 recompiled game on the Vita, drawn with sceGxm by a renderer written for the
-game's microcode, with six text languages, an optional interpolated 60 fps mode
-and an in-game updater. Ready-to-install builds (`conker.vpk`, no game data) and
-the install guide are at
+game's microcode, with six text languages, an optional 60 fps mode (the game's
+logic run at 60) and an in-game updater. Ready-to-install builds (`conker.vpk`, no
+game data) and the install guide are at
 [HenryKun55/conker-vita](https://github.com/HenryKun55/conker-vita/releases).
 
 To build it you need [VitaSDK](https://vitasdk.org) (with its vitaGL, vitashark,

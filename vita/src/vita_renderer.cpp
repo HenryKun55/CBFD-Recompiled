@@ -2328,8 +2328,9 @@ namespace {
         // ======================================================== frame interpolation
         // A frame drawn between each two of the game's (30 a second, the VI 60): the list just
         // read is read again with each matrix halfway from its last frame's, and that frame
-        // shown at the VI the game shows its own, its own a VI later (vita_interpolation, the
-        // menu's "Frame rate"). Matrices pair by the object they're drawn for (the matrix
+        // shown at the VI the game shows its own, its own a VI later (vita_interpolation: a
+        // debug mode now, ux0:data/conker/debug_interpolation, at 30; the menu's "Frame rate" 60
+        // runs the game itself at 60, native60.cpp). Matrices pair by the object they're drawn for (the matrix
         // groups host/src/interpolation.cpp puts around each object) and their order in it;
         // the rest (the camera's) by their order in the list. A matrix far from its pair (a cut,
         // a teleport) isn't moved. Only where there's time for it: a list read in under
