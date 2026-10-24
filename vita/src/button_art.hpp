@@ -26,11 +26,28 @@ namespace conker::vita::button_art {
     // by that many texels (the N64 stick icon's animation).
     void draw(uint32_t* px, int w, int h, Box box, Art art, int dir, float knob = 0.0f);
 
-    // The context-sensitive pads' wooden "B" (a raised greenish letter on an octagon of wood
-    // rings, 64 x 64): the letter carved off (wood rings put back from the same ring) and a
-    // face button's symbol raised in its place, in the letter's own texels. False (px kept)
-    // for anything but a face button.
-    bool carve_pad(uint32_t* px, int w, int h, Art art);
+    // The context-sensitive pads on the ground ("another one of those B buttons!"): what they're made of.
+    enum class PadKind : uint8_t {
+        Wood,  // a raised greenish "B" on wood rings (an octagon; a hexagon in two halves)
+        Stone, // a disc with the "B" cut in its outline, grey-blue (in two halves)
+        Count
+    };
+    // A texture that's (part of) a pad's picture.
+    struct PadPiece {
+        PadKind kind;
+        int x, y;          // where the texture lies in the pad's picture
+        int pad_w, pad_h;  // the whole picture
+        Box letter;        // the "B"'s box in the picture
+    };
+    // A pad's "B" taken off (the material put back from around it) and the input's glyph
+    // (art, dir as for draw) put in its place in the material's style: raised wood with its
+    // shadow, or a groove cut in the stone. False (px kept) if the texture isn't as expected.
+    bool carve_pad(uint32_t* px, int w, int h, const PadPiece& pad, Art art, int dir);
+
+    // Every pad texture known: the hash of its decoded texels (button_icons.cpp), its size, its piece.
+    struct PadTexture { uint32_t hash; int w, h; PadPiece piece; };
+    extern const PadTexture pad_textures[];
+    extern const int pad_texture_count;
 }
 
 #endif

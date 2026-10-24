@@ -8,8 +8,9 @@
 // Each is recognised by a hash of its decoded texels (logged with debug_dump_icons) and
 // redrawn, at its size and within its outline, as the first Vita input bound to that N64
 // button (a button before a stick direction before a touch pad corner).
-// The context-sensitive pads' carved "B" in the world (a 64 x 64 wood texture) gets the
-// symbol of the face button bound to B carved instead.
+// The context-sensitive pads' "B" on the ground (button_art's pad_textures: wood octagons
+// and hexagons, stone discs, some in two halves) gets the picture of whatever Vita input is
+// bound to B in its place, raised or cut like the original letter (button_art::carve_pad).
 
 #include <cstdio>
 #include <cstring>
@@ -41,7 +42,6 @@ namespace conker::vita::button_icons {
             int button;     // N64 or stick_icon
             Box box;        // its picture's outline in the texture
             float knob;     // the stick's frames: where the N64 knob leans
-            bool pad = false; // a context-sensitive pad's carved letter (button_art::carve_pad)
         };
         constexpr Box ab_box{ 4, 6, 28, 26 }, c_box{ 1, 1, 31, 31 }, z_box{ 0, 1, 16, 32 }, lr_box{ 2, 1, 30, 15 },
             stick_box{ 1, 1, 31, 31 };
@@ -62,8 +62,6 @@ namespace conker::vita::button_icons {
             { 0x5A4C2EC3, 32, 32, stick_icon, stick_box, (19.8f - 18.6f) * 0.5f },
             { 0x87098D48, 32, 32, stick_icon, stick_box, (22.1f - 18.6f) * 0.5f },
             { 0x1706E512, 32, 32, stick_icon, stick_box, (23.0f - 18.6f) * 0.5f },
-            // The B-pads on the ground ("seems to be another one of those B buttons!").
-            { 0x243528B3, 64, 64, (int)N64::B, c_box, 0, true },
         };
 
         struct Pick { Art art; int dir; };
@@ -169,13 +167,14 @@ namespace conker::vita::button_icons {
     }
 
     bool replace(uint32_t* texels, uint32_t w, uint32_t h) {
-        const bool icon_size = ((w == 32 || w == 16) && (h == 32 || h == 16)) || (w == 64 && h == 64);
+        const bool icon_size = ((w == 32 || w == 16) && (h == 32 || h == 16)) || (w == 64 && h == 64) || (w == 32 && h == 64);
         if (!icon_size && !dump) return false;
         if (w > 64 || h > 64) return false;
         const uint32_t hash = XXH32(texels, (size_t)w * h * 4, 0);
         if (dump) dump_texture(texels, w, h, hash);
         if (keep_n64) return false;
-        for (int i = 0; i < (int)(sizeof(originals) / sizeof(originals[0])); i++) {
+        constexpr int count = (int)(sizeof(originals) / sizeof(originals[0]));
+        for (int i = 0; i < count; i++) {
             const Original& o = originals[i];
             if (o.hash != hash || o.w != w || o.h != h) continue;
             Pick p;
@@ -183,16 +182,27 @@ namespace conker::vita::button_icons {
             const uint32_t key = ((uint32_t)i << 16) | ((uint32_t)p.art << 8) | (uint32_t)p.dir;
             std::vector<uint32_t>& img = drawn[key];
             if (img.empty()) {
-                if (o.pad) {
-                    img.assign(texels, texels + (size_t)w * h);
-                    if (!carve_pad(img.data(), (int)w, (int)h, p.art)) return false; // not a face button: the B stays
-                }
-                else {
-                    img.resize((size_t)w * h);
-                    draw(img.data(), (int)w, (int)h, o.box, p.art, p.dir, o.knob);
-                }
+                img.resize((size_t)w * h);
+                draw(img.data(), (int)w, (int)h, o.box, p.art, p.dir, o.knob);
             }
             std::memcpy(texels, img.data(), img.size() * 4);
+            return true;
+        }
+        // The pads on the ground ("seems to be another one of those B buttons!").
+        for (int i = 0; i < pad_texture_count; i++) {
+            const PadTexture& t = pad_textures[i];
+            if (t.hash != hash || t.w != (int)w || t.h != (int)h) continue;
+            Pick p;
+            if (!pick((int)N64::B, p)) return false;
+            const uint32_t key = ((uint32_t)(count + i) << 16) | ((uint32_t)p.art << 8) | (uint32_t)p.dir;
+            auto found = drawn.find(key);
+            if (found == drawn.end()) {
+                std::vector<uint32_t> img(texels, texels + (size_t)w * h);
+                if (!carve_pad(img.data(), (int)w, (int)h, t.piece, p.art, p.dir)) img.clear(); // not as expected: the B stays
+                found = drawn.emplace(key, std::move(img)).first;
+            }
+            if (found->second.empty()) return false;
+            std::memcpy(texels, found->second.data(), found->second.size() * 4);
             return true;
         }
         return false;
